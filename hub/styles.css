@@ -309,6 +309,12 @@ input[type="file"]:disabled {
   margin-bottom: 2px;
   font-size: 24px;
 }
+.auth-help {
+  margin: -2px 0 2px;
+  color: var(--blue-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
 .auth-form label {
   gap: 6px;
 }
