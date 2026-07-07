@@ -115,6 +115,19 @@ function closePaymentWindow() {
   $("#paymentPanel").hidden = true;
 }
 
+function shouldForceSignIn() {
+  const params = new URLSearchParams(window.location.search);
+  return params.has("signin") || params.has("login");
+}
+
+function signOut(openLogin = true) {
+  localStorage.removeItem(keys.session);
+  closeAuth();
+  closePaymentWindow();
+  showMemberArea();
+  if (openLogin) showAuth("login");
+}
+
 function setAuthTab(tab) {
   $all("[data-auth-tab]").forEach((button) => button.classList.toggle("active", button.dataset.authTab === tab));
   $("#loginForm").hidden = tab !== "login";
@@ -127,7 +140,15 @@ function showMemberArea() {
   $all(".public-view").forEach((section) => { section.hidden = isLoggedIn; });
   $("#appShell").hidden = !isLoggedIn;
   $(".public-nav").hidden = isLoggedIn;
-  if (!isLoggedIn) return;
+  if (!isLoggedIn) {
+    $all(".sidebar button[data-view]").forEach((button) => button.classList.remove("active"));
+    const dashboardButton = $('.sidebar button[data-view="dashboard"]');
+    if (dashboardButton) dashboardButton.classList.add("active");
+    $all(".view").forEach((panel) => panel.classList.remove("active"));
+    const dashboard = $("#view-dashboard");
+    if (dashboard) dashboard.classList.add("active");
+    return;
+  }
 
   $all('[data-view="admin"]').forEach((button) => { button.hidden = !isAdmin(user); });
   $("#memberPill").textContent = user.business ? `${user.name} | ${user.business} | ${user.role || roleForEmail(user.email)}` : `${user.name} | ${user.role || roleForEmail(user.email)}`;
@@ -450,9 +471,10 @@ function registerHandlers() {
   });
 
   $("#logoutButton").addEventListener("click", () => {
-    localStorage.removeItem(keys.session);
-    showMemberArea();
+    signOut(true);
   });
+
+  $all("[data-logout]").forEach((button) => button.addEventListener("click", () => signOut(true)));
 
   $all(".sidebar button[data-view]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
 
@@ -534,7 +556,13 @@ function registerHandlers() {
 function init() {
   seedData();
   registerHandlers();
+  if (shouldForceSignIn()) {
+    localStorage.removeItem(keys.session);
+  }
   showMemberArea();
+  if (shouldForceSignIn()) {
+    showAuth("login");
+  }
 }
 
 init();
