@@ -104,17 +104,6 @@ function closeAuth() {
   $("#authPanel").hidden = true;
 }
 
-function showPaymentWindow(email = "") {
-  const panel = $("#paymentPanel");
-  const emailInput = $('#paymentInterestForm [name="email"]');
-  if (emailInput) emailInput.value = email;
-  panel.hidden = false;
-}
-
-function closePaymentWindow() {
-  $("#paymentPanel").hidden = true;
-}
-
 function shouldForceSignIn() {
   const params = new URLSearchParams(window.location.search);
   return params.has("signin") || params.has("login");
@@ -123,7 +112,6 @@ function shouldForceSignIn() {
 function signOut(openLogin = true) {
   localStorage.removeItem(keys.session);
   closeAuth();
-  closePaymentWindow();
   showMemberArea();
   if (openLogin) showAuth("login");
 }
@@ -382,10 +370,17 @@ function hydrateProfile() {
   store.set(keys.profile, profile);
 }
 
+function showInterestSentMessage() {
+  const params = new URLSearchParams(window.location.search);
+  const status = $("#applyStatus");
+  if (params.get("interest") === "sent" && status) {
+    status.textContent = "Thanks. Your interest has been sent to JP Innovation. You will receive a reply after review.";
+  }
+}
+
 function registerHandlers() {
   $all("[data-open-auth]").forEach((button) => button.addEventListener("click", () => showAuth(button.dataset.openAuth)));
   $("[data-close-auth]").addEventListener("click", closeAuth);
-  $("[data-close-payment]").addEventListener("click", closePaymentWindow);
   $all("[data-auth-tab]").forEach((button) => button.addEventListener("click", () => setAuthTab(button.dataset.authTab)));
 
   document.addEventListener("click", (event) => {
@@ -402,12 +397,6 @@ function registerHandlers() {
       return;
     }
 
-    if (event.target.closest("[data-close-payment]")) {
-      event.preventDefault();
-      closePaymentWindow();
-      return;
-    }
-
     const authTab = event.target.closest("[data-auth-tab]");
     if (authTab) {
       event.preventDefault();
@@ -416,40 +405,16 @@ function registerHandlers() {
   });
 
   $("#applyForm").addEventListener("submit", (event) => {
-    event.preventDefault();
     const apps = store.get(keys.applications, []);
     apps.push({ id: uid("app"), ...formData(event.currentTarget), submitted: new Date().toISOString() });
     store.set(keys.applications, apps);
-    const email = event.currentTarget.email.value;
-    event.currentTarget.reset();
-    $("#applyStatus").textContent = `Interest received. Continue with ${membershipPrice} membership interest.`;
-    showPaymentWindow(email);
-  });
-
-  $("#paymentInterestForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const interests = store.get(keys.membershipInterest, []);
-    interests.push({ id: uid("membership"), ...formData(event.currentTarget), price: membershipPrice, submitted: new Date().toISOString(), status: "Interest registered" });
-    store.set(keys.membershipInterest, interests);
-    event.currentTarget.reset();
-    $("#paymentStatus").textContent = "Interest registered. No payment has been taken.";
-    setTimeout(closePaymentWindow, 900);
+    $("#applyStatus").textContent = "Sending your interest to JP Innovation...";
   });
 
   $("#registerForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const data = formData(event.currentTarget);
-    const users = store.get(keys.users, []);
-    if (users.some((user) => user.email === data.email)) {
-      $("#registerStatus").textContent = "That email is already registered.";
-      return;
-    }
-    users.push({ id: uid("user"), name: data.name, business: data.business, email: normaliseEmail(data.email), password: data.password, status: "Active", role: roleForEmail(data.email) });
-    store.set(keys.users, users);
-    store.set(keys.session, normaliseEmail(data.email));
     closeAuth();
-    showMemberArea();
-    switchView("dashboard");
+    document.querySelector("#apply").scrollIntoView({ behavior: "smooth" });
   });
 
   $("#loginForm").addEventListener("submit", (event) => {
@@ -556,6 +521,7 @@ function registerHandlers() {
 function init() {
   seedData();
   registerHandlers();
+  showInterestSentMessage();
   if (shouldForceSignIn()) {
     localStorage.removeItem(keys.session);
   }
