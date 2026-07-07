@@ -49,7 +49,7 @@ const events = [
 ];
 
 const abuseWords = ["spam", "scam", "abuse", "idiot", "hate"];
-const ownerEmails = ["jpinnovation.enquiries@gmail.com"];
+const ownerEmails = [];
 const membershipPrice = "£19/month";
 const postingEnabled = false;
 
