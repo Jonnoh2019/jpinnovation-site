@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JP Innovation Hub | Private Engineering Network</title>
   <meta name="description" content="JP Innovation Hub is a private engineering network for designers, makers, manufacturers and innovators.">
-  <link rel="stylesheet" href="styles.css?v=access-fix-20260707">
+  <link rel="stylesheet" href="styles.css?v=interest-flow-20260707">
 </head>
 <body>
   <header class="hub-header">
@@ -44,7 +44,7 @@
         <div>
           <span class="badge">Premium membership</span>
           <h3>&pound;19 per month founding member price</h3>
-          <p>Register your interest now. Payments are not taken in this prototype; the live version will connect to a secure payment checkout before access is approved.</p>
+          <p>Register your interest now. JP Innovation will review each request, then confirm approval and payment details personally before access is provided.</p>
         </div>
         <a class="primary-button" href="#apply">Register Interest</a>
       </div>
@@ -63,7 +63,12 @@
         <p class="eyebrow">Register Interest</p>
         <h2>Tell us about your skills, equipment and engineering background.</h2>
       </div>
-      <form class="apply-form card" id="applyForm">
+      <form class="apply-form card" id="applyForm" action="https://formsubmit.co/enquiries-jpinnovation@gmail.com" method="POST">
+        <input type="hidden" name="_subject" value="New JP Innovation Hub membership interest">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_next" value="http://www.jpinnovation.co.uk/hub/index.html?interest=sent#apply">
+        <input type="text" name="_honey" tabindex="-1" autocomplete="off" class="honeypot" aria-hidden="true">
         <label>Full name<input name="fullName" required></label>
         <label>Business name<input name="business"></label>
         <label>Email<input name="email" type="email" required></label>
@@ -75,34 +80,10 @@
         <label class="wide">Website/portfolio link<input name="portfolio" type="url"></label>
         <label class="check wide"><input name="events" type="checkbox"> Interested in hosting events</label>
         <label class="check wide"><input name="partner" type="checkbox"> Interested in becoming a verified partner</label>
-        <label class="wide">Message<textarea name="message" rows="5"></textarea></label>
-        <button class="primary-button wide" type="submit">Continue to Membership Interest</button>
+        <label class="wide">Message<textarea name="message" rows="5" placeholder="Tell us why you would like to join and what you could bring to the network."></textarea></label>
+        <button class="primary-button wide" type="submit">Send Register Interest</button>
         <p class="form-status" id="applyStatus" role="status"></p>
       </form>
-    </section>
-
-    <section class="auth-panel" id="paymentPanel" hidden>
-      <div class="auth-card payment-card">
-        <button class="close-auth" type="button" data-close-payment aria-label="Close">x</button>
-        <p class="eyebrow">Membership Interest</p>
-        <h2>JP Innovation Hub Premium</h2>
-        <div class="price-row">
-          <strong>&pound;19</strong>
-          <span>per month</span>
-        </div>
-        <p class="muted">This is a prototype payment window. No payment will be taken. The live version would connect here to Stripe Checkout or a secure payment provider.</p>
-        <form id="paymentInterestForm" class="auth-form">
-          <label>Name on card<input name="cardName" placeholder="Demo only" required></label>
-          <label>Email<input name="email" type="email" required></label>
-          <label>Card number<input name="card" inputmode="numeric" placeholder="4242 4242 4242 4242" required></label>
-          <div class="split-fields">
-            <label>Expiry<input name="expiry" placeholder="MM/YY" required></label>
-            <label>CVC<input name="cvc" inputmode="numeric" placeholder="123" required></label>
-          </div>
-          <button class="primary-button" type="submit">Register Interest at &pound;19/month</button>
-          <p class="form-status" id="paymentStatus"></p>
-        </form>
-      </div>
     </section>
 
     <section class="auth-panel" id="authPanel" hidden>
@@ -110,7 +91,7 @@
         <button class="close-auth" type="button" data-close-auth aria-label="Close">x</button>
         <div class="auth-tabs">
           <button class="active" type="button" data-auth-tab="login">Sign In</button>
-          <button type="button" data-auth-tab="register">Register</button>
+          <button type="button" data-auth-tab="register">Request Access</button>
         </div>
         <form id="loginForm" class="auth-form">
           <h2>Member sign in</h2>
@@ -121,13 +102,9 @@
           <p class="form-status" id="loginStatus"></p>
         </form>
         <form id="registerForm" class="auth-form" hidden>
-          <h2>Create member access</h2>
-          <p class="auth-help">Register your details and JP Innovation will review access.</p>
-          <label>Name<input name="name" required></label>
-          <label>Business<input name="business"></label>
-          <label>Email<input name="email" type="email" required></label>
-          <label>Password<input name="password" type="password" minlength="6" required></label>
-          <button class="primary-button" type="submit">Register</button>
+          <h2>Request member access</h2>
+          <p class="auth-help">Membership is approved manually. Register your interest and JP Innovation will contact you about approval and payment.</p>
+          <a class="primary-button" href="#apply" data-close-auth>Register Interest</a>
           <p class="form-status" id="registerStatus"></p>
         </form>
       </div>
@@ -338,6 +315,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=access-fix-20260707c"></script>
+  <script src="app.js?v=interest-flow-20260707"></script>
 </body>
 </html>
