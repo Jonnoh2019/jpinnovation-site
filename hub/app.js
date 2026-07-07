@@ -57,8 +57,8 @@ function $(selector) {
   return document.querySelector(selector);
 }
 
-function $all(selector) {
-  return Array.from(document.querySelectorAll(selector));
+function $all(selector, root = document) {
+  return Array.from(root.querySelectorAll(selector));
 }
 
 function currentUser() {
