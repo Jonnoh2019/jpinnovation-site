@@ -367,6 +367,33 @@ function registerHandlers() {
   $("[data-close-payment]").addEventListener("click", closePaymentWindow);
   $all("[data-auth-tab]").forEach((button) => button.addEventListener("click", () => setAuthTab(button.dataset.authTab)));
 
+  document.addEventListener("click", (event) => {
+    const authButton = event.target.closest("[data-open-auth]");
+    if (authButton) {
+      event.preventDefault();
+      showAuth(authButton.dataset.openAuth || "login");
+      return;
+    }
+
+    if (event.target.closest("[data-close-auth]")) {
+      event.preventDefault();
+      closeAuth();
+      return;
+    }
+
+    if (event.target.closest("[data-close-payment]")) {
+      event.preventDefault();
+      closePaymentWindow();
+      return;
+    }
+
+    const authTab = event.target.closest("[data-auth-tab]");
+    if (authTab) {
+      event.preventDefault();
+      setAuthTab(authTab.dataset.authTab || "login");
+    }
+  });
+
   $("#applyForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const apps = store.get(keys.applications, []);
