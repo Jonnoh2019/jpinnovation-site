@@ -416,6 +416,13 @@ input[type="file"]:disabled {
   font-size: 13px;
   font-weight: 900;
 }
+.member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
 .view { display: none; }
 .view.active { display: block; }
 
