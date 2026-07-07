@@ -90,6 +90,34 @@ function formData(form) {
   return data;
 }
 
+function buildInterestEmail(data) {
+  const lines = [
+    "Hello JP Innovation,",
+    "",
+    "I would like to register my interest in the JP Innovation Hub.",
+    "",
+    `Full name: ${data.fullName || ""}`,
+    `Business name: ${data.business || ""}`,
+    `Email: ${data.email || ""}`,
+    `Phone: ${data.phone || ""}`,
+    `Location: ${data.location || ""}`,
+    `Main skill set: ${data.skill || ""}`,
+    `Years of experience: ${data.experience || ""}`,
+    `Equipment/machines available: ${data.equipment || ""}`,
+    `Website/portfolio: ${data.portfolio || ""}`,
+    `Interested in hosting events: ${data.events ? "Yes" : "No"}`,
+    `Interested in becoming a verified partner: ${data.partner ? "Yes" : "No"}`,
+    "",
+    "Message:",
+    data.message || "",
+    "",
+    "Please let me know the next step for approval and payment.",
+    "",
+    "Thanks"
+  ];
+  return lines.join("\n");
+}
+
 function moderate(text) {
   const lower = String(text || "").toLowerCase();
   return abuseWords.some((word) => lower.includes(word)) ? "flagged" : "approved";
@@ -370,14 +398,6 @@ function hydrateProfile() {
   store.set(keys.profile, profile);
 }
 
-function showInterestSentMessage() {
-  const params = new URLSearchParams(window.location.search);
-  const status = $("#applyStatus");
-  if (params.get("interest") === "sent" && status) {
-    status.textContent = "Thanks. Your interest has been sent to JP Innovation. You will receive a reply after review.";
-  }
-}
-
 function registerHandlers() {
   $all("[data-open-auth]").forEach((button) => button.addEventListener("click", () => showAuth(button.dataset.openAuth)));
   $("[data-close-auth]").addEventListener("click", closeAuth);
@@ -405,10 +425,15 @@ function registerHandlers() {
   });
 
   $("#applyForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = formData(event.currentTarget);
     const apps = store.get(keys.applications, []);
-    apps.push({ id: uid("app"), ...formData(event.currentTarget), submitted: new Date().toISOString() });
+    apps.push({ id: uid("app"), ...data, submitted: new Date().toISOString() });
     store.set(keys.applications, apps);
-    $("#applyStatus").textContent = "Sending your interest to JP Innovation...";
+    const subject = "JP Innovation Hub membership interest";
+    const body = buildInterestEmail(data);
+    window.location.href = `mailto:enquiries-jpinnovation@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    $("#applyStatus").textContent = "Your email app should now open with the details ready to send.";
   });
 
   $("#registerForm").addEventListener("submit", (event) => {
@@ -521,7 +546,6 @@ function registerHandlers() {
 function init() {
   seedData();
   registerHandlers();
-  showInterestSentMessage();
   if (shouldForceSignIn()) {
     localStorage.removeItem(keys.session);
   }
