@@ -18,24 +18,19 @@ function buildInterestEmail(data) {
   const lines = [
     "Hello JP Innovation,",
     "",
-    "I would like to register my interest in the JP Innovation Hub.",
+    "I would like to register my interest in the JP Innovation Hub launch.",
     "",
     `Full name: ${data.fullName || ""}`,
-    `Business name: ${data.business || ""}`,
     `Email: ${data.email || ""}`,
-    `Phone: ${data.phone || ""}`,
     `Location: ${data.location || ""}`,
-    `Main skill set: ${data.skill || ""}`,
-    `Years of experience: ${data.experience || ""}`,
-    `Equipment/machines available: ${data.equipment || ""}`,
-    `Website/portfolio: ${data.portfolio || ""}`,
-    `Interested in hosting events: ${data.events ? "Yes" : "No"}`,
-    `Interested in becoming a verified partner: ${data.partner ? "Yes" : "No"}`,
+    `Interested as: ${data.interestType || ""}`,
+    "",
+    "Introductory offer requested: 10% off my first approved JP Innovation engineering quote.",
     "",
     "Message:",
     data.message || "",
     "",
-    "Please let me know the next step for approval and payment.",
+    "Please keep me updated as the Hub develops and let me know when early access becomes available.",
     "",
     "Thanks"
   ];
@@ -50,7 +45,7 @@ function registerInterestHandler() {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const data = formData(form);
-    const subject = "JP Innovation Hub membership interest";
+    const subject = "JP Innovation Hub launch interest";
     const body = buildInterestEmail(data);
     window.location.href = `mailto:enquiries-jpinnovation@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     if (status) {
