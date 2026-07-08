@@ -65,6 +65,13 @@ button { cursor: pointer; }
   font-weight: 800;
 }
 .public-nav a:hover { background: rgba(255,255,255,.08); }
+.public-nav .nav-signin {
+  border-color: rgba(47,141,255,.48);
+  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
+  color: var(--ink);
+  box-shadow: 0 14px 28px rgba(0,111,230,.22);
+}
+.public-nav .nav-signin:hover { background: linear-gradient(135deg, #005bc7, #087aff); }
 
 .hero,
 .section {
