@@ -1590,6 +1590,19 @@ input:focus, textarea:focus, select:focus {
   padding: 8px 12px;
   font-size: 13px;
 }
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.delete-item-button {
+  border-color: rgba(255,107,107,.24);
+  color: #ffd3d3;
+}
+.delete-item-button:hover {
+  background: rgba(255,107,107,.11);
+}
 .trial-data-actions {
   display: flex;
   flex-wrap: wrap;
