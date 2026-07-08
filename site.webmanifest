@@ -1,0 +1,17 @@
+{
+  "name": "JP Innovation",
+  "short_name": "JP Innovation",
+  "description": "JP Innovation engineering, Client Portal and Innovation Hub.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050709",
+  "theme_color": "#050709",
+  "icons": [
+    {
+      "src": "/assets/jp-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
