@@ -74,26 +74,29 @@ ul { margin-top: 0; }
 }
 .public-nav a,
 .ghost-button {
-  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid rgba(255,255,255,.22);
   border-radius: var(--radius);
-  background: transparent;
+  background: rgba(255,255,255,.025);
   color: var(--silver);
-  padding: 10px 12px;
-  font-weight: 850;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
 }
 .public-nav a:hover,
-.ghost-button:hover { background: rgba(255,255,255,.08); }
-.public-nav .header-hub-button {
-  min-height: 44px;
-  padding: 12px 18px;
+.ghost-button:hover {
+  border-color: rgba(47,141,255,.62);
+  background: rgba(47,141,255,.09);
+}
+.public-nav .section-switch-button.active {
+  border-color: transparent;
   background: linear-gradient(135deg, var(--blue-deep), var(--blue));
   color: #f5f8fc;
-  font-size: 14px;
-  box-shadow: 0 16px 36px rgba(0,111,230,.25);
-}
-.public-nav .header-hub-button:hover {
-  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
-  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(0,111,230,.28);
 }
 
 .portal-hero,
@@ -1673,9 +1676,12 @@ input:focus, textarea:focus, select:focus {
 @media (max-width: 860px) {
   .portal-header {
     position: static;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(120px, 1fr) auto;
+    gap: 10px;
+    padding: 12px 16px;
   }
-  .public-nav { justify-content: flex-start; flex-wrap: wrap; }
+  .brand img { width: min(150px, 38vw); }
+  .public-nav { justify-content: flex-end; flex-wrap: nowrap; gap: 5px; }
   .portal-hero,
   .split-section { grid-template-columns: 1fr; }
   .portal-hero { min-height: auto; padding-top: 34px; }
@@ -1746,7 +1752,7 @@ input:focus, textarea:focus, select:focus {
   .portal-hero,
   .section { padding-left: 16px; padding-right: 16px; }
   .public-nav a,
-  .ghost-button { padding: 9px 10px; font-size: 13px; }
+  .ghost-button { min-height: 38px; padding: 7px 8px; font-size: 11px; }
   .hero-actions .primary-button,
   .hero-actions .secondary-button,
   .actions .primary-button,
