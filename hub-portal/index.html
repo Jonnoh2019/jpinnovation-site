@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JP Innovation Hub Portal</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=online-trial-20260708">
+</head>
+<body>
+  <div id="publicShell" class="public-shell">
+    <header class="portal-header">
+      <a class="brand" href="../index.html" aria-label="JP Innovation home">
+        <img src="../assets/jp-innovation-logo.png" alt="JP Innovation">
+      </a>
+      <nav class="public-nav" aria-label="Hub navigation">
+        <a href="#features">Features</a>
+        <a href="#apply">Apply</a>
+        <button class="ghost-button" data-open-auth="signin">Sign in</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="portal-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Private trial member area</p>
+          <h1>JP Innovation Hub</h1>
+          <p class="lead">A working trial portal for JP Innovation to test member projects, private quote requests, approved profiles, resources and admin workflows before the full secure launch.</p>
+          <div class="hero-actions">
+            <a class="primary-button" href="#apply">Apply to join</a>
+            <a class="secondary-button" href="#apply">Request access</a>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Membership summary">
+          <span>Founder trial</span>
+          <strong>Access by approval</strong>
+          <p>Visitors can register interest. Approved trial accounts can sign in while JP Innovation sets up the Hub properly.</p>
+          <ul>
+            <li>Public access requests only.</li>
+            <li>Trial data is browser-based until backend launch.</li>
+            <li>Real payment/login systems connect later.</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section id="features" class="section">
+        <div class="section-heading">
+          <p class="eyebrow">What members get</p>
+          <h2>Built around practical engineering work</h2>
+          <p>Each area is designed to support real collaboration without turning the Hub into a public social feed.</p>
+        </div>
+        <div class="feature-grid">
+          <article><span>Boards</span><h3>Engineering discussions</h3><p>CAD, machining, fabrication, automotive, electronics, suppliers, jobs and collaboration.</p></article>
+          <article><span>Projects</span><h3>Member project posts</h3><p>Share progress, ask for advice, collect feedback and build a record of completed work.</p></article>
+          <article><span>Quotes</span><h3>Private quote requests</h3><p>Customers receive a shortlist. Providers cannot see each other's prices.</p></article>
+          <article><span>Directory</span><h3>Find local capability</h3><p>Search by skill, location, equipment and verification level.</p></article>
+          <article><span>Events</span><h3>Meetups and workshops</h3><p>Plan site visits, small engineering sessions and supplier demonstrations.</p></article>
+          <article><span>Vetting</span><h3>Verified partner path</h3><p>Move from member to verified professional, verified business or JP Trusted Partner.</p></article>
+        </div>
+      </section>
+
+      <section id="apply" class="section split-section">
+        <div class="section-heading">
+          <p class="eyebrow">Apply first</p>
+          <h2>Tell us what you do</h2>
+          <p>Register interest here. JP Innovation can approve trial accounts manually while the full secure member system is being prepared.</p>
+        </div>
+        <form id="applyForm" class="card apply-form">
+          <label>Full name <input name="fullName" autocomplete="name" required></label>
+          <label>Business name <input name="business" autocomplete="organization"></label>
+          <label>Email <input name="email" type="email" autocomplete="email" required></label>
+          <label>Phone <input name="phone" type="tel" autocomplete="tel"></label>
+          <label>Location <input name="location" autocomplete="address-level2"></label>
+          <label>Main skill set <input name="skill" placeholder="CAD, CNC, fabrication, electronics"></label>
+          <label>Years of experience <input name="experience" inputmode="numeric"></label>
+          <label>Equipment/machines available <input name="equipment"></label>
+          <label>Membership interest <select name="membershipType">
+            <option>Professional member</option>
+            <option>Verified supplier</option>
+            <option>Project/customer access</option>
+            <option>Event or workshop host</option>
+          </select></label>
+          <label>Availability <select name="availability">
+            <option>Evenings/weekends</option>
+            <option>Weekdays</option>
+            <option>Project dependent</option>
+            <option>Not offering services yet</option>
+          </select></label>
+          <label class="wide">Website/portfolio link <input name="portfolio" type="url"></label>
+          <label class="wide">LinkedIn or social proof <input name="social" type="url"></label>
+          <label class="check wide"><input name="wantsCommunity" type="checkbox" checked> Interested in engineering discussions</label>
+          <label class="check wide"><input name="wantsQuotes" type="checkbox" checked> Interested in Quote Hub opportunities</label>
+          <label class="check wide"><input name="wantsDirectory" type="checkbox"> Interested in being listed in the member directory</label>
+          <label class="check wide"><input name="events" type="checkbox"> Interested in hosting events</label>
+          <label class="check wide"><input name="partner" type="checkbox"> Interested in becoming a verified partner</label>
+          <label class="wide">What can you offer the Hub? <textarea name="offer" rows="3" placeholder="Skills, equipment, advice, services, contacts..."></textarea></label>
+          <label class="wide">What support are you looking for? <textarea name="support" rows="3" placeholder="CAD help, suppliers, quotes, feedback, manufacturing support..."></textarea></label>
+          <label class="wide">Message <textarea name="message" rows="4"></textarea></label>
+          <button class="primary-button wide" type="submit">Submit access request</button>
+          <p id="applyStatus" class="form-status wide" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <div id="authDialog" class="auth-dialog" aria-hidden="true">
+    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="close-button" id="closeAuth" aria-label="Close sign in">x</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth-tab="signin">Sign in</button>
+        <button class="auth-tab" data-auth-tab="register">Access info</button>
+      </div>
+      <h2 id="authTitle">Member sign in</h2>
+      <form id="signinForm" class="auth-form">
+        <label>Email <input name="email" type="email" required autocomplete="email"></label>
+        <label>Password <input name="password" type="password" required autocomplete="current-password"></label>
+        <button class="primary-button" type="submit">Sign in</button>
+      </form>
+      <form id="registerForm" class="auth-form hidden">
+        <p class="muted">Public registration is not open. Use this page to request access; approved trial accounts are created by JP Innovation.</p>
+        <a class="primary-button" href="#apply">Request access</a>
+      </form>
+      <p id="authStatus" class="form-status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <a class="app-brand" href="#dashboard">
+        <img src="../assets/jp-innovation-logo.png" alt="JP Innovation">
+        <span>Member Portal</span>
+      </a>
+      <nav class="app-nav" aria-label="Member navigation">
+        <button class="nav-link active" data-view="dashboard">Dashboard</button>
+        <button class="nav-link" data-view="onboarding">Profile Setup</button>
+        <button class="nav-link" data-view="boards">Engineering Boards</button>
+        <button class="nav-link" data-view="projects">Projects</button>
+        <button class="nav-link" data-view="quotes">Quote Requests</button>
+        <button class="nav-link" data-view="directory">Member Directory</button>
+        <button class="nav-link" data-view="resources">Resources & Tools</button>
+        <button class="nav-link" data-view="events">Events</button>
+        <button class="nav-link" data-view="messages">Messages</button>
+        <button class="nav-link" data-view="rewards">Rewards</button>
+        <button class="nav-link" data-view="profile">My Profile</button>
+        <button class="nav-link" data-view="settings">Settings</button>
+        <button id="adminNav" class="nav-link hidden" data-view="admin">Admin Review</button>
+      </nav>
+      <button id="logoutButton" class="secondary-button logout-button">Log out</button>
+    </aside>
+
+    <main class="workspace">
+      <header class="workspace-header">
+        <div>
+          <p class="eyebrow">Logged-in member area</p>
+          <h1 id="viewTitle">Dashboard</h1>
+        </div>
+        <div class="member-chip">
+          <span id="memberInitials">JP</span>
+          <div>
+            <strong id="memberName">Member</strong>
+            <small id="memberRole">Member</small>
+          </div>
+        </div>
+      </header>
+
+      <section id="viewMount" class="view-mount"></section>
+    </main>
+
+    <aside class="right-rail">
+      <div class="rail-card">
+        <span class="badge">Alerts</span>
+        <h3>Hub status</h3>
+        <p id="railStatus">Prototype mode. Data is saved in this browser only.</p>
+      </div>
+      <div class="rail-card">
+        <span class="badge">Upcoming</span>
+        <h3>Engineering events</h3>
+        <ul id="railEvents" class="compact-list"></ul>
+      </div>
+      <div class="rail-card">
+        <span class="badge">Rules</span>
+        <h3>Private quotes</h3>
+        <p>Quotes are private. Providers cannot see other provider prices. JP Innovation can take first refusal before releasing work to the verified network.</p>
+      </div>
+    </aside>
+  </div>
+
+  <script src="app.js?v=online-trial-20260708"></script>
+</body>
+</html>
