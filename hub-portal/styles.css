@@ -322,18 +322,19 @@ input:focus, textarea:focus, select:focus {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 10px;
+  gap: 7px;
+  padding: 9px 8px;
+  overflow: hidden;
   border-right: 1px solid var(--line);
   background: #070d14;
 }
 .app-brand {
   display: grid;
-  gap: 6px;
-  padding: 4px 6px 8px;
+  gap: 3px;
+  padding: 2px 6px 6px;
   border-bottom: 1px solid var(--line);
 }
-.app-brand img { width: 180px; }
+.app-brand img { width: 155px; }
 .app-brand span {
   color: var(--soft);
   font-size: 12px;
@@ -341,17 +342,22 @@ input:focus, textarea:focus, select:focus {
 }
 .app-nav {
   display: grid;
-  gap: 4px;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, .35) transparent;
 }
 .nav-link {
   --nav-accent: var(--blue-soft);
   width: 100%;
-  min-height: 31px;
+  min-height: 28px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: transparent;
   color: var(--soft);
-  padding: 6px 9px;
+  padding: 4px 8px;
   text-align: left;
   font-size: 13px;
   font-weight: 850;
@@ -376,15 +382,15 @@ input:focus, textarea:focus, select:focus {
 .site-return-button {
   margin-top: auto;
   width: 100%;
-  min-height: 36px;
-  padding: 8px 10px;
+  min-height: 32px;
+  padding: 6px 8px;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
 }
 .logout-button {
   width: 100%;
-  min-height: 36px;
-  padding: 8px 10px;
+  min-height: 32px;
+  padding: 6px 8px;
 }
 .workspace {
   min-width: 0;
@@ -1689,12 +1695,15 @@ input:focus, textarea:focus, select:focus {
   .sidebar {
     position: static;
     height: auto;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }
   .app-brand img { width: 220px; }
   .app-nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    padding-right: 0;
   }
   .workspace { padding: 18px; }
   .workspace-header {
