@@ -105,6 +105,7 @@
       background: rgba(255,255,255,.1);
       outline: none;
     }
+    .mobile-portal-link,
     .mobile-hub-link { display: none; }
     .header-actions {
       display: flex;
@@ -731,6 +732,7 @@
       .brand img { width: min(260px, 72vw); }
       .header-actions { gap: 8px; }
       .header-actions .button { display: none; }
+      .mobile-portal-link,
       .mobile-hub-link { display: block; }
       .menu-toggle {
         display: inline-grid;
@@ -856,13 +858,14 @@
       <nav class="nav" id="siteNav" aria-label="Main navigation">
         <a href="#services">Services</a>
         <a href="#projects">Projects</a>
-        <a href="#customer-account">Client Portal</a>
         <a href="#pricing">Pricing</a>
+        <a class="mobile-portal-link" href="hub-portal/index.html?entry=client&signin=1">Client Portal</a>
         <a class="mobile-hub-link" href="hub/index.html">Innovation Hub</a>
         <a href="#process">Process</a>
         <a href="#contact">Contact</a>
       </nav>
       <div class="header-actions">
+        <a class="button secondary" href="hub-portal/index.html?entry=client&signin=1">Client Portal</a>
         <a class="button" href="hub/index.html">Innovation Hub</a>
         <button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="siteNav" aria-expanded="false">
           <span></span>
