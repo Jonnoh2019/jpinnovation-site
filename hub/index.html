@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JP Innovation Hub | Coming Soon Engineering Platform</title>
   <meta name="description" content="JP Innovation Hub is a premium engineering platform currently under development by JP Innovation Ltd.">
-  <link rel="stylesheet" href="styles.css?v=hub-top-signin-20260708">
+  <link rel="stylesheet" href="styles.css?v=hub-inline-signin-20260708">
 </head>
 <body>
   <header class="hub-header">
@@ -13,9 +13,8 @@
       <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation Ltd">
     </a>
     <nav class="public-nav" aria-label="Hub navigation">
-      <a href="../index.html">JP Innovation Site</a>
-      <a href="#features">Paid membership features</a>
-      <a class="nav-signin" href="../hub-portal/index.html?entry=hub&signin=1">Sign in</a>
+      <a href="../index.html">Homepage</a>
+      <a href="#features">Innovation Hub features</a>
     </nav>
   </header>
 
@@ -25,6 +24,10 @@
         <p class="eyebrow">JP Innovation Hub</p>
         <h1>Professional engineering connections, projects and private quotes.</h1>
         <p class="lead">A focused paid membership area for engineers, makers, suppliers and manufacturers. It is in addition to the free Client Portal, which remains the customer area for quotes, projects and messages.</p>
+        <div class="actions hero-actions">
+          <a class="primary-button" href="#apply">Register interest</a>
+          <button class="secondary-button" data-open-hub-auth type="button">Innovation Hub sign in</button>
+        </div>
         <div class="price-strip">
           <strong>Coming soon</strong>
           <span>Register for launch updates or sign in if JP Innovation has already approved your trial access.</span>
@@ -72,7 +75,6 @@
       </a>
       <div class="actions launch-actions">
         <a class="primary-button" href="#apply">Register interest</a>
-        <a class="secondary-button" href="../hub-portal/index.html?entry=hub&signin=1">Innovation Hub sign in</a>
       </div>
       <div class="launch-progress" aria-label="Hub launch progress">
         <article class="active"><span>01</span><strong>Private testing</strong><small>Current stage</small></article>
@@ -268,6 +270,21 @@
     </section>
   </main>
 
-  <script src="app.js?v=hub-interest-offer-20260708"></script>
+  <div id="hubAuthDialog" class="auth-dialog" aria-hidden="true">
+    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="hubAuthTitle">
+      <button class="close-button" id="closeHubAuth" aria-label="Close sign in">x</button>
+      <p class="eyebrow">Innovation Hub access</p>
+      <h2 id="hubAuthTitle">Innovation Hub sign in</h2>
+      <p class="muted">Use your approved paid member login. Free Client Portal accounts stay separate and will be asked to upgrade before Hub features open.</p>
+      <form id="hubSigninForm" class="auth-form" autocomplete="on">
+        <label for="hubSigninEmail">Email <input id="hubSigninEmail" name="email" type="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label for="hubSigninPassword">Password <input id="hubSigninPassword" name="password" type="password" required autocomplete="current-password"></label>
+        <button class="primary-button" type="submit">Sign in</button>
+      </form>
+      <p id="hubAuthStatus" class="form-status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <script src="app.js?v=hub-inline-signin-20260708"></script>
 </body>
 </html>
