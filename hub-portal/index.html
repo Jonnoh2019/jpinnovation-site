@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JP Innovation Client Portal & Innovation Hub</title>
+  <title>JP Innovation Client Portal</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,21 +25,21 @@
     <main>
       <section class="portal-hero">
         <div class="hero-copy">
-          <p class="eyebrow">Client Portal access</p>
-          <h1>Client Portal</h1>
-          <p class="lead">Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area.</p>
+          <p class="eyebrow" id="entryEyebrow">Client Portal access</p>
+          <h1 id="entryTitle">Client Portal</h1>
+          <p class="lead" id="entryLead">Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area.</p>
           <div class="hero-actions">
-            <button class="primary-button" data-open-auth="signin" type="button">Sign in</button>
-            <a class="secondary-button" href="../index.html#customer-account">Request Client Portal access</a>
+            <button class="primary-button" id="entrySignInButton" data-open-auth="signin" type="button">Sign in to Client Portal</button>
+            <a class="secondary-button" id="entryRequestLink" href="../index.html#customer-account">Request Client Portal access</a>
           </div>
         </div>
         <aside class="hero-panel" aria-label="Membership summary">
-          <span>Account access</span>
-          <strong>Private account access</strong>
-          <p>Client Portal accounts are free and separate from the paid Innovation Hub. Approved accounts can sign in while the secure backend is being completed.</p>
+          <span id="entryPanelLabel">Account access</span>
+          <strong id="entryPanelTitle">Private account access</strong>
+          <p id="entryPanelCopy">Client Portal accounts are free and separate from the paid Innovation Hub. Approved accounts can sign in while the secure backend is being completed.</p>
           <ul>
-            <li>Trial data is browser-based until backend launch.</li>
-            <li>Paid Innovation Hub registration stays on the Hub landing page.</li>
+            <li id="entryPanelPointOne">Trial data is browser-based until backend launch.</li>
+            <li id="entryPanelPointTwo">Paid Innovation Hub registration stays on the Hub landing page.</li>
           </ul>
         </aside>
       </section>
@@ -53,7 +53,7 @@
         <button class="auth-tab active" data-auth-tab="signin">Sign in</button>
         <button class="auth-tab" data-auth-tab="register">Access info</button>
       </div>
-      <h2 id="authTitle">Client Portal / Innovation Hub sign in</h2>
+      <h2 id="authTitle">Client Portal sign in</h2>
       <form id="signinForm" class="auth-form" autocomplete="on">
         <label for="signinEmail">Email <input id="signinEmail" name="email" type="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
         <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
@@ -65,6 +65,17 @@
         <a class="primary-button" href="../index.html#customer-account">Request Client Portal access</a>
       </form>
       <p id="authStatus" class="form-status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div id="upgradeDialog" class="auth-dialog" aria-hidden="true">
+    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle">
+      <button class="close-button" id="closeUpgrade" aria-label="Close upgrade message">x</button>
+      <p class="eyebrow">Innovation Hub upgrade</p>
+      <h2 id="upgradeTitle">Upgrade needed for paid Hub features</h2>
+      <p class="muted">This login is for the free Client Portal. The Innovation Hub is the paid member area, so Hub tools stay locked until JP Innovation upgrades the account.</p>
+      <a class="primary-button" href="../hub/index.html#apply">View paid membership</a>
+      <a class="secondary-button" href="index.html?entry=client&signin=1">Open Client Portal</a>
     </div>
   </div>
 
