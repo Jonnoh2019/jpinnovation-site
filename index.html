@@ -328,6 +328,59 @@
       line-height: 1.5;
     }
 
+    .vision-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .vision-card,
+    .account-panel,
+    .about-panel,
+    .testimonial {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--panel-strong), var(--panel));
+      box-shadow: 0 18px 48px rgba(0,0,0,.18);
+    }
+    .vision-card {
+      min-height: 230px;
+      padding: 24px;
+    }
+    .vision-card .tag,
+    .account-highlight span {
+      display: inline-flex;
+      width: fit-content;
+      margin-bottom: 16px;
+      border: 1px solid rgba(47,141,255,.28);
+      border-radius: 999px;
+      color: var(--blue-soft);
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .vision-card p { color: var(--soft); }
+    .vision-card ul,
+    .account-benefits {
+      display: grid;
+      gap: 10px;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .vision-card li,
+    .account-benefits li {
+      padding: 10px 12px;
+      border: 1px solid rgba(47,141,255,.18);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.035);
+      color: #dce6f2;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -375,6 +428,102 @@
     }
     .project-body { padding: 22px; }
     .project-body p { color: var(--soft); margin-bottom: 0; }
+
+    .testimonials {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 30px;
+    }
+    .testimonial {
+      min-height: 190px;
+      padding: 22px;
+    }
+    .testimonial p {
+      color: #d5dfeb;
+      margin-bottom: 18px;
+    }
+    .testimonial strong {
+      color: var(--blue-soft);
+      font-size: 13px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .about-panel {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 1px;
+      margin-top: 28px;
+      overflow: hidden;
+      background: var(--line);
+    }
+    .about-panel > div {
+      padding: 28px;
+      background: rgba(9,14,20,.92);
+    }
+    .about-panel p {
+      color: var(--soft);
+      margin-bottom: 0;
+    }
+
+    .account-panel {
+      display: grid;
+      grid-template-columns: .86fr 1.14fr;
+      gap: 1px;
+      margin-top: 28px;
+      overflow: hidden;
+      background: var(--line);
+    }
+    .account-highlight,
+    .account-detail {
+      padding: 28px;
+      background: rgba(9,14,20,.92);
+    }
+    .account-highlight h3 {
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .account-highlight p,
+    .account-detail p {
+      color: var(--soft);
+      margin-bottom: 0;
+    }
+    .account-flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .flow-step {
+      min-height: 130px;
+      padding: 16px;
+      border: 1px solid rgba(47,141,255,.2);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.035);
+    }
+    .flow-step span {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(47,141,255,.28);
+      border-radius: var(--radius);
+      color: var(--blue-soft);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .flow-step h3 {
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+    .flow-step p {
+      color: var(--soft);
+      font-size: 14px;
+      margin-bottom: 0;
+    }
 
     .pricing {
       display: grid;
@@ -544,6 +693,8 @@
       }
       .hero-grid,
       .intro-panel,
+      .about-panel,
+      .account-panel,
       .contact-grid {
         grid-template-columns: 1fr;
       }
@@ -556,10 +707,15 @@
         min-height: 430px;
       }
       .cards,
-      .pricing {
+      .pricing,
+      .vision-grid,
+      .testimonials {
         grid-template-columns: repeat(2, 1fr);
       }
       .process {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .account-flow {
         grid-template-columns: repeat(2, 1fr);
       }
     }
@@ -652,7 +808,12 @@
       .cards,
       .pricing,
       .process,
+      .vision-grid,
+      .testimonials,
       .contact-form {
+        grid-template-columns: 1fr;
+      }
+      .account-flow {
         grid-template-columns: 1fr;
       }
       .price { min-height: auto; }
@@ -678,18 +839,19 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="#top" aria-label="JP Innovation home">
-        <img src="assets/jp-innovation-logo.png" alt="JP Innovation Ltd">
+        <img src="assets/jp-innovation-logo-clear.svg" alt="JP Innovation Ltd">
       </a>
       <nav class="nav" id="siteNav" aria-label="Main navigation">
         <a href="#services">Services</a>
         <a href="#projects">Projects</a>
+        <a href="#customer-account">Free Account</a>
         <a href="#pricing">Pricing</a>
-        <a class="mobile-hub-link" href="hub/index.html">Hub</a>
+        <a class="mobile-hub-link" href="hub/index.html">Hub Preview</a>
         <a href="#process">Process</a>
         <a href="#contact">Contact</a>
       </nav>
       <div class="header-actions">
-        <a class="button" href="hub/index.html">JP Innovation Hub</a>
+        <a class="button" href="hub/index.html">Hub Coming Soon</a>
         <button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="siteNav" aria-expanded="false">
           <span></span>
         </button>
@@ -707,6 +869,7 @@
           <div class="hero-actions">
             <a class="button" href="#contact">Book a Free Discovery Call</a>
             <a class="button secondary" href="#projects">View Project Examples</a>
+            <a class="button secondary" href="#customer-account">Free Customer Account</a>
           </div>
           <div class="hero-proof" aria-label="Service highlights">
             <div class="proof-item"><b>CAD</b><span>Supplier-ready 3D models and drawings</span></div>
@@ -753,6 +916,36 @@
       </div>
     </section>
 
+    <section class="section" aria-label="JP Innovation website structure">
+      <div class="section-inner">
+        <p class="eyebrow">One Brand, Two Clear Areas</p>
+        <h2>Professional engineering services now, with the Innovation Hub being developed for the future.</h2>
+        <p class="section-copy">JP Innovation remains focused on practical engineering consultancy, CAD, product development and manufacturing support. The Innovation Hub is being prepared separately as a premium professional platform and will only launch when the major features are ready.</p>
+        <div class="vision-grid">
+          <article class="vision-card">
+            <span class="tag">Public Engineering Website</span>
+            <h3>Open to all customers</h3>
+            <p>Use the main website to request engineering work, book a discovery call, review pricing, see project examples and start a quotation.</p>
+            <ul>
+              <li>CAD, design and product development</li>
+              <li>3D printing and prototype support</li>
+              <li>Reverse engineering and manufacturing support</li>
+            </ul>
+          </article>
+          <article class="vision-card">
+            <span class="tag">Innovation Hub</span>
+            <h3>Premium members platform coming soon</h3>
+            <p>The Hub is under private development. It will be introduced when the community tools, collaboration features and Quote Hub are ready to work properly from day one.</p>
+            <ul>
+              <li>No public member access yet</li>
+              <li>Feature previews and roadmap available</li>
+              <li>Register interest before launch</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="services">
       <div class="section-inner">
         <p class="eyebrow">What We Do</p>
@@ -776,18 +969,18 @@
           </article>
           <article class="card">
             <div class="card-marker">04</div>
-            <h3>Prototype & Validation</h3>
-            <p>Engineering-grade prototypes to validate fit, form and function before committing to production.</p>
+            <h3>3D Printing & Prototypes</h3>
+            <p>Prototype parts and test models to check fit, form and early function before committing to production.</p>
           </article>
           <article class="card">
             <div class="card-marker">05</div>
-            <h3>Manufacturing Support</h3>
-            <p>Refinement, supplier liaison and production-focused design support to reduce avoidable build issues.</p>
+            <h3>Reverse Engineering</h3>
+            <p>Measure, model and improve existing parts where drawings are missing, outdated or need production-ready updates.</p>
           </article>
           <article class="card">
             <div class="card-marker">06</div>
-            <h3>Direct Communication</h3>
-            <p>Work directly with the engineer responsible for your project, with clear deliverables and fixed-price quotations.</p>
+            <h3>Manufacturing Support</h3>
+            <p>Refinement, supplier liaison and production-focused design support to reduce avoidable build issues.</p>
           </article>
         </div>
       </div>
@@ -813,6 +1006,94 @@
               <p>A compact linkage concept designed around pivot alignment, spacer clearances and fastener access, helping validate movement and assembly before manufacture.</p>
             </div>
           </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="testimonials">
+      <div class="section-inner">
+        <p class="eyebrow">What Customers Can Expect</p>
+        <h2>Clear, practical support for real engineering work.</h2>
+        <p class="section-copy">Until live testimonials are added, this section sets out the service standards JP Innovation is built around.</p>
+        <div class="testimonials">
+          <article class="testimonial">
+            <p>Clear explanation of design choices, practical options and next steps before money is spent on manufacture.</p>
+            <strong>Practical engineering advice</strong>
+          </article>
+          <article class="testimonial">
+            <p>Responsive CAD and development support for customers who need to keep projects moving without losing technical control.</p>
+            <strong>Fast, focused turnaround</strong>
+          </article>
+          <article class="testimonial">
+            <p>Direct communication, site visits where useful, fixed-price quotations and design decisions shaped around real buildability.</p>
+            <strong>Personal project support</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="section-inner">
+        <p class="eyebrow">About</p>
+        <h2>Engineering design support based in Milton Keynes.</h2>
+        <div class="about-panel">
+          <div>
+            <h3>JP Innovation Ltd</h3>
+            <p>A professional engineering consultancy helping customers develop ideas, parts, prototypes and manufacturing routes from early concept through to practical output.</p>
+          </div>
+          <div>
+            <p>Customers work directly with the person responsible for the engineering work, keeping communication simple and decisions grounded in function, material, cost, fit and manufacture. Site visits can be arranged where they add value to measurement, scoping or project understanding.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="customer-account">
+      <div class="section-inner">
+        <p class="eyebrow">Free Customer Account</p>
+        <h2>Save time on repeat engineering work and receive 10% off JP Innovation services.</h2>
+        <p class="section-copy">Customer accounts are free and separate from the Innovation Hub. They are designed for customers who want a simpler way to manage quotations, projects and repeat orders.</p>
+        <div class="account-flow" aria-label="Free customer account process">
+          <article class="flow-step">
+            <span>01</span>
+            <h3>Register interest</h3>
+            <p>Send your details through the enquiry form and ask for a free customer account.</p>
+          </article>
+          <article class="flow-step">
+            <span>02</span>
+            <h3>Request a quote</h3>
+            <p>Your project requirements, files and previous discussions can be kept together.</p>
+          </article>
+          <article class="flow-step">
+            <span>03</span>
+            <h3>Track progress</h3>
+            <p>Future account tools will make it easier to see active projects and next steps.</p>
+          </article>
+          <article class="flow-step">
+            <span>04</span>
+            <h3>Reorder faster</h3>
+            <p>Repeat work, revisions and follow-on tasks can be scoped more quickly.</p>
+          </article>
+        </div>
+        <div class="account-panel">
+          <div class="account-highlight">
+            <span>Customer benefit</span>
+            <h3>10% off services</h3>
+            <p>Free customer accounts will unlock a 10% discount on JP Innovation engineering services, alongside faster repeat ordering and clearer project records.</p>
+          </div>
+          <div class="account-detail">
+            <ul class="account-benefits">
+              <li>Save previous quotations for easy reference</li>
+              <li>View project history and past deliverables</li>
+              <li>Track current project status and next steps</li>
+              <li>Speed up repeat ordering and small revisions</li>
+              <li>Receive updates on competitions and new features</li>
+            </ul>
+            <div class="hero-actions">
+              <a class="button" href="#contact">Request a Free Customer Account</a>
+              <a class="button secondary" href="#pricing">View Pricing</a>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -885,7 +1166,7 @@
 
     <section class="section" id="contact">
       <div class="section-inner contact-grid">
-        <form class="contact-form" action="mailto:jpinnovation.enquiries@gmail.com" method="post" enctype="text/plain">
+        <form class="contact-form" action="mailto:enquiries-jpinnovation@gmail.com" method="post" enctype="text/plain">
           <div class="form-intro">
             <p class="eyebrow">Start Your Project</p>
             <h2>Book a free discovery call.</h2>
@@ -922,7 +1203,7 @@
             <textarea id="message" name="Message" required></textarea>
           </div>
           <button class="button field full" type="submit">Send Project Enquiry</button>
-          <p class="form-note">This form opens your email app and sends your enquiry to jpinnovation.enquiries@gmail.com.</p>
+          <p class="form-note">This form opens your email app and sends your enquiry to enquiries-jpinnovation@gmail.com.</p>
         </form>
       </div>
     </section>
