@@ -58,26 +58,28 @@ button { cursor: pointer; }
   gap: 10px;
 }
 .public-nav a {
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  color: #dce6f2;
-  padding: 10px 12px;
-  font-weight: 800;
-}
-.public-nav a:hover { background: rgba(255,255,255,.08); }
-.public-nav .header-portal-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
-  padding: 12px 18px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.025);
+  color: #dce6f2;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.public-nav a:hover {
+  border-color: rgba(47,141,255,.62);
+  background: rgba(47,141,255,.09);
+}
+.public-nav .section-switch-button.active {
   border-color: transparent;
   background: linear-gradient(135deg, var(--blue-deep), var(--blue));
   color: #f5f8fc;
-  font-size: 14px;
-  font-weight: 900;
-  box-shadow: 0 16px 36px rgba(0,111,230,.25);
-}
-.public-nav .header-portal-button:hover {
-  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
-  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(0,111,230,.28);
 }
 .hero,
 .section {
@@ -887,14 +889,14 @@ input:focus, textarea:focus, select:focus {
 @media (max-width: 820px) {
   html { scroll-padding-top: 120px; }
   .hub-header {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: minmax(120px, 1fr) auto;
+    gap: 10px;
     min-height: auto;
     padding: 12px 16px;
   }
-  .brand img { width: min(250px, 72vw); }
-  .public-nav { justify-content: flex-start; flex-wrap: wrap; }
-  .public-nav a { padding: 7px 9px; font-size: 13px; }
+  .brand img { width: min(150px, 38vw); }
+  .public-nav { justify-content: flex-end; flex-wrap: nowrap; gap: 5px; }
+  .public-nav a { min-height: 38px; padding: 7px 8px; font-size: 11px; }
   .hero,
   .section {
     padding: 30px 16px;
@@ -960,7 +962,6 @@ input:focus, textarea:focus, select:focus {
   }
   .lead { font-size: 15px; }
   .public-nav { display: flex; }
-  .public-nav .feature-link { display: none; }
   .feature-mini-grid { grid-template-columns: 1fr; }
   .price-strip {
     grid-template-columns: 1fr;
