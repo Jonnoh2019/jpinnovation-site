@@ -682,10 +682,10 @@ function configureEntryPage() {
       : "Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area."
   );
   const signInButton = $("#entrySignInButton");
-  if (signInButton) signInButton.textContent = isHubEntry ? "Sign in to Innovation Hub" : "Sign in to Client Portal";
+  if (signInButton) signInButton.textContent = "Sign in";
   const requestLink = $("#entryRequestLink");
   if (requestLink) {
-    requestLink.textContent = isHubEntry ? "View paid membership" : "Request Client Portal access";
+    requestLink.textContent = isHubEntry ? "View paid membership" : "Register for access";
     requestLink.href = isHubEntry ? "../hub/index.html#apply" : "../index.html#contact";
   }
   setText("#entryPanelLabel", isHubEntry ? "Paid member access" : "Account access");
