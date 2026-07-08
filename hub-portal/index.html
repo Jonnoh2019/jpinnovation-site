@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=member-hub-compact-menu-20260708">
+  <link rel="stylesheet" href="styles.css?v=compact-portal-headings-20260708">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -25,81 +25,23 @@
     <main>
       <section class="portal-hero">
         <div class="hero-copy">
-          <p class="eyebrow">Client Portal & Innovation Hub access</p>
-          <h1>Client Portal & Innovation Hub</h1>
-          <p class="lead">Use the Client Portal for free quote requests, project updates and messages. Innovation Hub members also unlock the professional engineering community, tools and opportunities.</p>
+          <p class="eyebrow">Client Portal access</p>
+          <h1>Client Portal</h1>
+          <p class="lead">Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area.</p>
           <div class="hero-actions">
-            <button class="primary-button" data-open-auth="signin" type="button">Client Portal / Innovation Hub sign in</button>
-            <a class="secondary-button" href="../hub/index.html#apply">Register interest</a>
+            <button class="primary-button" data-open-auth="signin" type="button">Sign in</button>
+            <a class="secondary-button" href="../index.html#customer-account">Request Client Portal access</a>
           </div>
         </div>
         <aside class="hero-panel" aria-label="Membership summary">
           <span>Account access</span>
-          <strong>Access by approval</strong>
-          <p>Approved trial accounts can sign in while JP Innovation completes the secure Client Portal and Innovation Hub platform.</p>
+          <strong>Private account access</strong>
+          <p>Client Portal accounts are free and separate from the paid Innovation Hub. Approved accounts can sign in while the secure backend is being completed.</p>
           <ul>
             <li>Trial data is browser-based until backend launch.</li>
-            <li>Innovation Hub registration stays on the Hub landing page.</li>
+            <li>Paid Innovation Hub registration stays on the Hub landing page.</li>
           </ul>
         </aside>
-      </section>
-
-      <section id="features" class="section">
-        <div class="section-heading">
-          <p class="eyebrow">What members get</p>
-          <h2>Built around practical engineering work</h2>
-          <p>Each area is designed to support real collaboration without turning the Hub into a public social feed.</p>
-        </div>
-        <div class="feature-grid">
-          <article><span>Boards</span><h3>Engineering discussions</h3><p>CAD, machining, fabrication, automotive, electronics, suppliers, jobs and collaboration.</p></article>
-          <article><span>Projects</span><h3>Member project posts</h3><p>Share progress, ask for advice, collect feedback and build a record of completed work.</p></article>
-          <article><span>Quotes</span><h3>Private quote requests</h3><p>Customers receive a shortlist. Providers cannot see each other's prices.</p></article>
-          <article><span>Directory</span><h3>Find local capability</h3><p>Search by skill, location, equipment and verification level.</p></article>
-          <article><span>Events</span><h3>Meetups and workshops</h3><p>Plan site visits, small engineering sessions and supplier demonstrations.</p></article>
-          <article><span>Vetting</span><h3>Verified partner path</h3><p>Move from member to verified professional, verified business or JP Trusted Partner.</p></article>
-        </div>
-      </section>
-
-      <section id="apply" class="section split-section">
-        <div class="section-heading">
-          <p class="eyebrow">Apply first</p>
-          <h2>Tell us what you do</h2>
-          <p>Register interest here. JP Innovation can approve trial accounts manually while the full secure member system is being prepared.</p>
-        </div>
-        <form id="applyForm" class="card apply-form">
-          <label>Full name <input name="fullName" autocomplete="name" required></label>
-          <label>Business name <input name="business" autocomplete="organization"></label>
-          <label>Email <input name="email" type="email" autocomplete="email" required></label>
-          <label>Phone <input name="phone" type="tel" autocomplete="tel"></label>
-          <label>Location <input name="location" autocomplete="address-level2"></label>
-          <label>Main skill set <input name="skill" placeholder="CAD, CNC, fabrication, electronics"></label>
-          <label>Years of experience <input name="experience" inputmode="numeric"></label>
-          <label>Equipment/machines available <input name="equipment"></label>
-          <label>Membership interest <select name="membershipType">
-            <option>Professional member</option>
-            <option>Verified supplier</option>
-            <option>Project/customer access</option>
-            <option>Event or workshop host</option>
-          </select></label>
-          <label>Availability <select name="availability">
-            <option>Evenings/weekends</option>
-            <option>Weekdays</option>
-            <option>Project dependent</option>
-            <option>Not offering services yet</option>
-          </select></label>
-          <label class="wide">Website/portfolio link <input name="portfolio" type="url"></label>
-          <label class="wide">LinkedIn or social proof <input name="social" type="url"></label>
-          <label class="check wide"><input name="wantsCommunity" type="checkbox" checked> Interested in engineering discussions</label>
-          <label class="check wide"><input name="wantsQuotes" type="checkbox" checked> Interested in Quote Hub opportunities</label>
-          <label class="check wide"><input name="wantsDirectory" type="checkbox"> Interested in being listed in the member directory</label>
-          <label class="check wide"><input name="events" type="checkbox"> Interested in hosting events</label>
-          <label class="check wide"><input name="partner" type="checkbox"> Interested in becoming a verified partner</label>
-          <label class="wide">What can you offer the Hub? <textarea name="offer" rows="3" placeholder="Skills, equipment, advice, services, contacts..."></textarea></label>
-          <label class="wide">What support are you looking for? <textarea name="support" rows="3" placeholder="CAD help, suppliers, quotes, feedback, manufacturing support..."></textarea></label>
-          <label class="wide">Message <textarea name="message" rows="4"></textarea></label>
-          <button class="primary-button wide" type="submit">Submit access request</button>
-          <p id="applyStatus" class="form-status wide" aria-live="polite"></p>
-        </form>
       </section>
     </main>
   </div>
@@ -119,8 +61,8 @@
         <p class="muted">Your browser or password manager can save and autofill your own login on this device. JP Innovation does not add a shared saved password here.</p>
       </form>
       <form id="registerForm" class="auth-form hidden">
-        <p class="muted">Public registration is not open. Use this page to request access; approved trial accounts are created by JP Innovation.</p>
-        <a class="primary-button" href="#apply">Request access</a>
+        <p class="muted">Public registration is not open. Use the main site to request Client Portal access; approved trial accounts are created by JP Innovation.</p>
+        <a class="primary-button" href="../index.html#customer-account">Request Client Portal access</a>
       </form>
       <p id="authStatus" class="form-status" aria-live="polite"></p>
     </div>
