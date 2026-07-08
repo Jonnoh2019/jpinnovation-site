@@ -65,6 +65,20 @@ button { cursor: pointer; }
   font-weight: 800;
 }
 .public-nav a:hover { background: rgba(255,255,255,.08); }
+.public-nav .header-portal-button {
+  min-height: 44px;
+  padding: 12px 18px;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
+  color: #f5f8fc;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 16px 36px rgba(0,111,230,.25);
+}
+.public-nav .header-portal-button:hover {
+  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
+  transform: translateY(-1px);
+}
 .hero,
 .section {
   max-width: 1180px;
@@ -945,7 +959,8 @@ input:focus, textarea:focus, select:focus {
     line-height: 1.16;
   }
   .lead { font-size: 15px; }
-  .public-nav { display: none; }
+  .public-nav { display: flex; }
+  .public-nav .feature-link { display: none; }
   .feature-mini-grid { grid-template-columns: 1fr; }
   .price-strip {
     grid-template-columns: 1fr;
