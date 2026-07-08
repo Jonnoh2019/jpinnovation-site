@@ -686,7 +686,7 @@ function configureEntryPage() {
   const requestLink = $("#entryRequestLink");
   if (requestLink) {
     requestLink.textContent = isHubEntry ? "View paid membership" : "Request Client Portal access";
-    requestLink.href = isHubEntry ? "../hub/index.html#apply" : "../index.html#customer-account";
+    requestLink.href = isHubEntry ? "../hub/index.html#apply" : "../index.html#contact";
   }
   setText("#entryPanelLabel", isHubEntry ? "Paid member access" : "Account access");
   setText("#entryPanelTitle", isHubEntry ? "Paid features require upgrade" : "Private account access");
