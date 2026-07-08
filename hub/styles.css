@@ -444,6 +444,105 @@ h3 { margin-bottom: 8px; line-height: 1.2; }
   gap: 12px;
   margin-top: 22px;
 }
+
+.launch-section {
+  background: linear-gradient(135deg, rgba(0,111,230,.12), rgba(255,255,255,.025));
+}
+.launch-heading-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: end;
+}
+.launch-heading-row h2 { margin-bottom: 0; }
+.founding-price {
+  min-width: 230px;
+  padding: 14px 16px;
+  border: 1px solid rgba(47,141,255,.3);
+  border-radius: var(--radius);
+  background: rgba(0,0,0,.2);
+}
+.founding-price span,
+.founding-price small {
+  display: block;
+  color: var(--soft);
+  font-size: 12px;
+}
+.founding-price strong {
+  display: block;
+  margin: 3px 0;
+  font-size: 24px;
+}
+.launch-progress,
+.founding-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.launch-progress article,
+.founding-benefits article {
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.035);
+}
+.launch-progress article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 9px;
+}
+.launch-progress article span {
+  grid-row: 1 / 3;
+  color: var(--blue-soft);
+  font-weight: 900;
+}
+.launch-progress article small,
+.founding-benefits span {
+  color: var(--soft);
+  font-size: 12px;
+}
+.launch-progress article.active {
+  border-color: rgba(47,141,255,.5);
+  background: rgba(0,111,230,.15);
+}
+.founding-benefits article {
+  display: grid;
+  gap: 4px;
+}
+.founding-benefits strong { font-size: 14px; }
+
+.faq-section {
+  background: rgba(255,255,255,.018);
+}
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+.faq-grid details {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.04);
+  padding: 14px 16px;
+}
+.faq-grid summary {
+  cursor: pointer;
+  color: var(--silver);
+  font-weight: 850;
+}
+.faq-grid p {
+  margin: 10px 0 0;
+  color: var(--soft);
+  font-size: 13px;
+}
+.privacy-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
 .feature-group {
   padding: 18px;
 }
@@ -748,6 +847,11 @@ input:focus, textarea:focus, select:focus {
   .feature-mini-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .launch-heading-row { grid-template-columns: 1fr; }
+  .founding-price { min-width: 0; }
+  .launch-progress,
+  .founding-benefits,
+  .faq-grid { grid-template-columns: 1fr; }
   .feature-group-header p,
   .feature-mini p { display: none; }
   .feature-mini { min-height: 92px; }
