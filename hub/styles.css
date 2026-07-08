@@ -473,6 +473,29 @@ h3 { margin-bottom: 8px; line-height: 1.2; }
   margin: 3px 0;
   font-size: 24px;
 }
+.interest-offer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 13px 15px;
+  border: 1px solid rgba(47,141,255,.48);
+  border-radius: var(--radius);
+  background: rgba(0,111,230,.16);
+}
+.interest-offer span {
+  grid-row: 1 / 3;
+  color: var(--blue-soft);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.interest-offer strong { font-size: 14px; }
+.interest-offer small {
+  color: var(--soft);
+  font-size: 11px;
+}
 .launch-progress,
 .founding-benefits {
   display: grid;
@@ -849,6 +872,8 @@ input:focus, textarea:focus, select:focus {
   }
   .launch-heading-row { grid-template-columns: 1fr; }
   .founding-price { min-width: 0; }
+  .interest-offer { grid-template-columns: 1fr; }
+  .interest-offer span { grid-row: auto; }
   .launch-progress,
   .founding-benefits,
   .faq-grid { grid-template-columns: 1fr; }
