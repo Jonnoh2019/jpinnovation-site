@@ -925,31 +925,6 @@ function renderDashboard(user) {
       ${metric("Open quotes", openQuotes)}
       ${metric(user.role === "admin" ? "Pending applicants" : "Unread messages", user.role === "admin" ? pendingApplications : unread)}
     </div>
-    <section class="section-card dashboard-actions section-blue">
-      <div class="list-title"><div><h2>What do you need today?</h2><p>Small, focused routes into the Hub so members do not have to hunt around.</p></div></div>
-      <div class="action-grid">
-        <button class="action-card dashboard-link" data-view-link="boards" type="button">
-          <span class="action-icon">01</span>
-          <strong>Get engineering feedback</strong>
-          <small>Post a question, drawing concern or manufacturing issue.</small>
-        </button>
-        <button class="action-card dashboard-link" data-view-link="projects" type="button">
-          <span class="action-icon">02</span>
-          <strong>Review member projects</strong>
-          <small>Track builds, parts, updates and useful replies.</small>
-        </button>
-        <button class="action-card dashboard-link" data-view-link="quotes" type="button">
-          <span class="action-icon">03</span>
-          <strong>Prepare a private quote</strong>
-          <small>Keep supplier pricing blind and customer-focused.</small>
-        </button>
-        <button class="action-card dashboard-link" data-view-link="directory" type="button">
-          <span class="action-icon">04</span>
-          <strong>Find a verified skill</strong>
-          <small>Search by location, capability, equipment or profile level.</small>
-        </button>
-      </div>
-    </section>
     ${user.role === "admin" ? `
       <section class="section-card launch-overview admin-command">
         <div class="list-title">
@@ -1009,27 +984,6 @@ function renderDashboard(user) {
       <div id="hubSearchResults" class="search-results">
         <p class="muted">Start typing to find useful help across the Hub.</p>
       </div>
-    </section>
-    <section class="section-card preview-row dashboard-preview-row">
-      <article>
-        <span class="badge">Latest post</span>
-        <h3>${escapeHtml(state.posts[0]?.title || "No posts yet")}</h3>
-        <p>${escapeHtml(state.posts[0]?.description || "Start the first discussion.")}</p>
-        <button class="secondary-button dashboard-link" data-view-link="boards" type="button">Open boards</button>
-      </article>
-      <article>
-        ${state.projects[0]?.image ? `<img class="preview-image" src="${escapeHtml(state.projects[0].image)}" alt="">` : ""}
-        <span class="badge">Project</span>
-        <h3>${escapeHtml(state.projects[0]?.title || "No projects yet")}</h3>
-        <p>${escapeHtml(state.projects[0]?.description || "Share a member project.")}</p>
-        <button class="secondary-button dashboard-link" data-view-link="projects" type="button">Open projects</button>
-      </article>
-      <article>
-        <span class="badge">Rewards leader</span>
-        <h3>${escapeHtml(leaders[0]?.name || "No points yet")}</h3>
-        <p>${leaders[0] ? `${leaders[0].helpfulPoints} helpful points this month.` : "Helpful feedback earns monthly prize points."}</p>
-        <button class="secondary-button dashboard-link" data-view-link="rewards" type="button">Open rewards</button>
-      </article>
     </section>
   `;
 }
@@ -2644,7 +2598,7 @@ function boot() {
   });
   $("#logoutButton").addEventListener("click", signOut);
   $all(".nav-link").forEach((button) => button.addEventListener("click", () => renderView(button.dataset.view)));
-  $("#applyForm").addEventListener("submit", (event) => {
+  $("#applyForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     const status = $("#applyStatus");
