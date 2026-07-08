@@ -747,8 +747,8 @@ function setLoggedInView() {
   });
   $(".app-brand span").textContent = isClient ? "Client Portal" : "Innovation Hub";
   $(".workspace-header .eyebrow").textContent = isClient ? "Client Portal" : "Innovation Hub";
-  renderRail();
-  $(".right-rail").classList.toggle("hidden", isClient);
+  renderNotifications();
+  $(".notification-centre").classList.toggle("hidden", isClient);
   if (isClient && !clientViews.has(currentView)) currentView = "dashboard";
   if (user.role !== "admin" && !user.onboardingComplete) {
     currentView = "onboarding";
@@ -907,8 +907,42 @@ function moderationFlag(text) {
   return banned.some((word) => lower.includes(word));
 }
 
-function renderRail() {
-  $("#railEvents").innerHTML = state.events.slice(0, 3).map((event) => `<li><strong>${escapeHtml(event.date)}</strong><br>${escapeHtml(event.title)}</li>`).join("");
+function renderNotifications() {
+  const upcoming = state.events.slice(0, 2);
+  const items = [
+    {
+      title: "Hub trial update",
+      detail: "Private trial mode is active. Your test data remains saved in this browser.",
+      isNew: true
+    },
+    ...upcoming.map((event) => ({
+      title: event.title,
+      detail: `${event.date} - Upcoming engineering event`,
+      isNew: true
+    })),
+    {
+      title: "Private quote reminder",
+      detail: "Provider prices stay private and are never shown to competing providers.",
+      isNew: false
+    }
+  ];
+  const unread = items.filter((item) => item.isNew).length;
+  $("#notificationCount").textContent = unread > 9 ? "9+" : String(unread);
+  $("#notificationCount").classList.toggle("hidden", unread === 0);
+  $("#notificationList").innerHTML = items.map((item) => `
+    <article class="notification-item ${item.isNew ? "new" : ""}">
+      <strong>${escapeHtml(item.title)}</strong>
+      <span>${escapeHtml(item.detail)}</span>
+    </article>
+  `).join("");
+}
+
+function setNotificationsOpen(open) {
+  const centre = $(".notification-centre");
+  const bell = $("#notificationBell");
+  if (!centre || !bell) return;
+  centre.classList.toggle("open", open);
+  bell.setAttribute("aria-expanded", String(open));
 }
 
 function renderView(view) {
@@ -2801,6 +2835,19 @@ function boot() {
     }
   });
   $("#logoutButton").addEventListener("click", signOut);
+  $("#notificationBell")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setNotificationsOpen(!$(".notification-centre").classList.contains("open"));
+  });
+  $("#closeNotifications")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setNotificationsOpen(false);
+  });
+  $("#notificationPopover")?.addEventListener("click", (event) => event.stopPropagation());
+  document.addEventListener("click", () => setNotificationsOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setNotificationsOpen(false);
+  });
   $all(".nav-link").forEach((button) => button.addEventListener("click", () => renderView(button.dataset.view)));
   $("#applyForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
