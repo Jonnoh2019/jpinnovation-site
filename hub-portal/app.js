@@ -697,7 +697,7 @@ function configureEntryPage() {
       : "Client Portal accounts are free and separate from the paid Innovation Hub. Approved accounts can sign in while the secure backend is being completed."
   );
   setText("#entryPanelPointOne", isHubEntry ? "One login can be upgraded from Client Portal to Innovation Hub." : "Trial data is browser-based until backend launch.");
-  setText("#entryPanelPointTwo", isHubEntry ? "Client Portal remains available for quotes, projects and messages." : "Paid Innovation Hub registration stays on the Hub landing page.");
+  setText("#entryPanelPointTwo", isHubEntry ? "Client Portal remains available for quotes, projects and messages." : "Paid Innovation Hub registration stays on the Innovation Hub page.");
 }
 
 function isClientBlockedFromHub(user) {
@@ -2765,6 +2765,10 @@ function syncMember(user) {
 }
 
 function boot() {
+  if (entryMode === "hub" && !currentUser()) {
+    window.location.replace(`../hub/index.html${signInRequested ? "?signin=1" : ""}`);
+    return;
+  }
   configureEntryPage();
   $all("[data-open-auth]").forEach((button) => button.addEventListener("click", () => openAuth(button.dataset.openAuth)));
   $("#closeAuth").addEventListener("click", closeAuth);
