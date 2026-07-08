@@ -125,6 +125,7 @@ function saveState() {
 
 function normaliseState() {
   ensureAdminAccount();
+  ensureStarterExamples();
   state.rewardMonth ||= "July 2026";
   state.rewardPrize ||= "GBP 50 workshop voucher";
   state.rewardPrize = String(state.rewardPrize).replace(/\u00A3/g, "GBP ").replace(/[^\x20-\x7E]+/g, "").replace(/GBP\s*GBP/g, "GBP").trim();
@@ -164,7 +165,20 @@ function normaliseState() {
       response.created ||= "Today";
     });
   });
+  state.resources.forEach((resource) => {
+    resource.id ||= uid("resource");
+    resource.example = resource.example !== false;
+  });
+  state.events.forEach((event) => {
+    event.id ||= uid("event");
+    event.example = event.example !== false;
+  });
+  state.messages.forEach((message) => {
+    message.id ||= uid("msg");
+    message.example = message.example !== false;
+  });
   state.posts.forEach((post) => {
+    post.example = post.example !== false;
     post.responses ||= [
       {
         id: uid("reply"),
@@ -177,7 +191,11 @@ function normaliseState() {
       }
     ];
   });
+  state.projects.forEach((project) => {
+    project.example = project.example !== false;
+  });
   state.members.forEach((member) => {
+    member.example = member.example !== false;
     member.helpfulPoints ||= Math.max(0, Math.round((member.points || 0) / 12));
     member.directoryVisible = member.directoryVisible !== false;
     member.preferredWork ||= "";
@@ -196,6 +214,114 @@ function normaliseState() {
     user.capacity ||= "";
   });
   saveState();
+}
+
+function ensureStarterExamples() {
+  if (state.examplePackVersion >= 2) return;
+  state.posts ||= [];
+  state.projects ||= [];
+  state.quotes ||= [];
+  state.resources ||= defaultResources();
+  state.events ||= [];
+  state.messages ||= [];
+  state.applications ||= [];
+  const hasQuote = (service) => state.quotes.some((quote) => quote.service === service);
+  if (!hasQuote("Sheet metal enclosure prototype")) {
+    state.quotes.push({
+      id: uid("quote"),
+      service: "Sheet metal enclosure prototype",
+      location: "Bedford",
+      budget: "GBP 500-GBP 900",
+      deadline: "3-4 weeks",
+      description: "Prototype folded enclosure for an electronics controller, including hinge, vent and fixing details.",
+      jpFirst: false,
+      status: "open",
+      created: "Example",
+      material: "Powder coated mild steel",
+      quantity: "3 prototypes",
+      outcome: "Prototype for testing",
+      tolerance: "Standard fabrication tolerance",
+      files: "DXF outline and photo reference placeholder",
+      visibility: "Private",
+      author: "Example Customer",
+      authorEmail: "customer@example",
+      responses: [
+        {
+          provider: "Walker Fabrication",
+          providerEmail: "dean@local",
+          price: "GBP 760",
+          leadTime: "15 working days",
+          assumptions: "Customer supplies final hole schedule before manufacture.",
+          availability: "Can start next week",
+          notes: "Includes cutting, folding, basic weld clean-up and powder coat allowance.",
+          status: "submitted",
+          created: "Example"
+        }
+      ],
+      example: true
+    });
+  }
+  if (!state.applications.some((application) => application.email === "founder.example@email.com")) {
+    state.applications.push({
+      id: uid("app"),
+      fullName: "Founder Example",
+      business: "MK Prototype Design",
+      email: "founder.example@email.com",
+      phone: "07700 900111",
+      location: "Milton Keynes",
+      skill: "Product design, 3D printing and supplier sourcing",
+      experience: "8",
+      equipment: "Fusion 360, FDM printer, inspection tools",
+      membershipType: "Professional member",
+      availability: "Evenings/weekends",
+      portfolio: "",
+      social: "",
+      wantsCommunity: true,
+      wantsQuotes: true,
+      wantsDirectory: false,
+      events: true,
+      partner: false,
+      offer: "Can help with design reviews, 3D print advice and early supplier checks.",
+      support: "Looking for fabrication contacts and occasional machining quotes.",
+      message: "Example access request for admin review testing.",
+      status: "pending",
+      created: "Example",
+      notes: "",
+      generatedPassword: "",
+      example: true
+    });
+  }
+  if (!state.applications.some((application) => application.email === "supplier.example@email.com")) {
+    state.applications.push({
+      id: uid("app"),
+      fullName: "Supplier Example",
+      business: "Precision Parts MK",
+      email: "supplier.example@email.com",
+      phone: "07700 900222",
+      location: "Northampton",
+      skill: "CNC machining and small batch components",
+      experience: "12",
+      equipment: "3-axis CNC mill, manual lathe, inspection equipment",
+      membershipType: "Verified supplier",
+      availability: "Project dependent",
+      portfolio: "",
+      social: "",
+      wantsCommunity: true,
+      wantsQuotes: true,
+      wantsDirectory: true,
+      events: false,
+      partner: true,
+      offer: "Small batch machining, prototype plates and design-for-manufacture feedback.",
+      support: "Looking for well-scoped local engineering quote opportunities.",
+      message: "Second example application for testing the admin review queue.",
+      status: "pending",
+      created: "Example",
+      notes: "",
+      generatedPassword: "",
+      example: true
+    });
+  }
+  state.examplePackVersion = 2;
 }
 
 function ensureAdminAccount() {
@@ -1244,6 +1370,15 @@ function renderResources() {
       </div>
     </section>
     <section class="section-card section-green">
+      <div class="list-title"><div><h2>Add resource</h2><p>Create your own checklist, guide, template or useful note for members.</p></div></div>
+      <form id="resourceForm" class="form-grid two">
+        <label>Type <select name="type">${["Checklist", "Template", "Guide", "Tool note", "Supplier note"].map(option).join("")}</select></label>
+        <label>Title <input name="title" required></label>
+        <label class="wide">Detail <textarea name="detail" rows="3" required></textarea></label>
+        <button class="primary-button wide" type="submit">Add resource</button>
+      </form>
+    </section>
+    <section class="section-card section-green">
       <div class="list-title"><div><h2>Templates and checklists</h2><p>Resources that can later become downloadable member files.</p></div></div>
       <div class="resource-grid">
         ${(state.resources || []).map((resource) => `
@@ -1251,7 +1386,10 @@ function renderResources() {
             <span class="badge">${escapeHtml(resource.type)}</span>
             <h3>${escapeHtml(resource.title)}</h3>
             <p>${escapeHtml(resource.detail)}</p>
-            <button class="secondary-button" type="button">Preview</button>
+            <div class="card-actions">
+              <button class="secondary-button" type="button">Preview</button>
+              <button class="secondary-button delete-item-button" data-delete-type="resource" data-id="${escapeHtml(resource.id)}" type="button">Delete</button>
+            </div>
           </article>
         `).join("")}
       </div>
@@ -1264,12 +1402,22 @@ function renderEvents() {
     <section class="section-card section-rose">
       <h2>Engineering events</h2>
       <p class="muted">Events can later connect to bookings, attendance and member hosting approval.</p>
+      <form id="eventForm" class="form-grid two">
+        <label>Event title <input name="title" required></label>
+        <label>Type <select name="type">${["Meetup", "Workshop", "Site visit", "Online session", "Supplier demo"].map(option).join("")}</select></label>
+        <label>Date <input name="date" required placeholder="18 July, August, TBC..."></label>
+        <label>Location <input name="location" required placeholder="Milton Keynes, Online, TBC..."></label>
+        <button class="primary-button wide" type="submit">Add event</button>
+      </form>
       <div class="cards-grid">${state.events.map((event) => `
         <article class="event-card">
           <span class="badge">${escapeHtml(event.type)}</span>
           <h3>${escapeHtml(event.title)}</h3>
           <p>${escapeHtml(event.date)} - ${escapeHtml(event.location)}</p>
-          <button class="secondary-button" type="button">Register interest</button>
+          <div class="card-actions">
+            <button class="secondary-button" type="button">Register interest</button>
+            <button class="secondary-button delete-item-button" data-delete-type="event" data-id="${escapeHtml(event.id)}" type="button">Delete</button>
+          </div>
         </article>`).join("")}
       </div>
     </section>
@@ -1281,12 +1429,20 @@ function renderMessages() {
     <section class="section-card section-blue">
       <h2>Messages</h2>
       <p class="muted">Prototype inbox for member-to-member contact.</p>
+      <form id="messageForm" class="form-grid two">
+        <label>From <input name="from" required placeholder="Member or business name"></label>
+        <label>Subject <input name="subject" required></label>
+        <label class="wide">Message <textarea name="body" rows="3" required></textarea></label>
+        <label class="check wide"><input name="unread" type="checkbox" checked> Mark as unread</label>
+        <button class="primary-button wide" type="submit">Add message</button>
+      </form>
       <div class="feed-list">${state.messages.map((message) => `
         <article class="feed-item">
           <span class="badge">${message.unread ? "Unread" : "Read"}</span>
           <h3>${escapeHtml(message.subject)}</h3>
           <p><strong>${escapeHtml(message.from)}</strong></p>
           <p>${escapeHtml(message.body)}</p>
+          <button class="secondary-button delete-item-button" data-delete-type="message" data-id="${escapeHtml(message.id)}" type="button">Delete</button>
         </article>`).join("")}
       </div>
     </section>
@@ -1604,11 +1760,14 @@ function postCard(post) {
         <button class="secondary-button" type="submit">Post reply</button>
       </form>
       <button class="secondary-button report-button" data-id="${post.id}" type="button">Report post</button>
+      ${isOwner ? `<button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button>` : ""}
     </article>
   `;
 }
 
 function projectCard(project) {
+  const user = currentUser();
+  const canDelete = user?.role === "admin" || user?.email === project.authorEmail;
   return `
     <article class="feed-item">
       ${project.image ? `<img class="post-image" src="${escapeHtml(project.image)}" alt="">` : ""}
@@ -1623,7 +1782,10 @@ function projectCard(project) {
         <span class="pill">${(project.discussion || []).length || project.comments} comments</span>
         <span class="pill">${project.points} pts</span>
       </div>
-      <button class="secondary-button project-open-button" data-project-id="${escapeHtml(project.id)}" type="button">Open project</button>
+      <div class="card-actions">
+        <button class="secondary-button project-open-button" data-project-id="${escapeHtml(project.id)}" type="button">Open project</button>
+        ${canDelete ? `<button class="secondary-button delete-item-button" data-delete-type="project" data-id="${escapeHtml(project.id)}" type="button">Delete</button>` : ""}
+      </div>
     </article>
   `;
 }
@@ -1702,6 +1864,7 @@ function quoteCard(quote) {
           <button class="secondary-button quote-action" data-quote-action="open" data-id="${escapeHtml(quote.id)}" type="button">Open</button>
           <button class="secondary-button quote-action" data-quote-action="shortlisted" data-id="${escapeHtml(quote.id)}" type="button">Shortlist</button>
           <button class="secondary-button quote-action" data-quote-action="closed" data-id="${escapeHtml(quote.id)}" type="button">Close</button>
+          <button class="secondary-button delete-item-button" data-delete-type="quote" data-id="${escapeHtml(quote.id)}" type="button">Delete</button>
         </div>
       ` : ""}
     </article>
@@ -1928,7 +2091,54 @@ function bindViewHandlers(view) {
     bindQuoteJumps();
   }
   if (view === "directory") bindDirectory();
-  if (view === "resources") bindResourceTools();
+  if (view === "resources") {
+    bindResourceTools();
+    $("#resourceForm")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formObject(event.currentTarget);
+      state.resources.unshift({
+        id: uid("resource"),
+        type: data.type,
+        title: data.title.trim(),
+        detail: data.detail.trim(),
+        example: false
+      });
+      saveState();
+      renderView("resources");
+    });
+  }
+  if (view === "events") {
+    $("#eventForm")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formObject(event.currentTarget);
+      state.events.unshift({
+        id: uid("event"),
+        title: data.title.trim(),
+        date: data.date.trim(),
+        location: data.location.trim(),
+        type: data.type,
+        example: false
+      });
+      saveState();
+      renderView("events");
+    });
+  }
+  if (view === "messages") {
+    $("#messageForm")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formObject(event.currentTarget);
+      state.messages.unshift({
+        id: uid("msg"),
+        from: data.from.trim(),
+        subject: data.subject.trim(),
+        body: data.body.trim(),
+        unread: data.unread === true,
+        example: false
+      });
+      saveState();
+      renderView("messages");
+    });
+  }
   if (view === "settings") bindTrialDataTools();
   if (view === "admin") {
     const createForm = $("#adminCreateMemberForm");
@@ -1974,6 +2184,7 @@ function bindViewHandlers(view) {
       renderView("settings");
     });
   }
+  bindDeleteButtons();
 }
 
 function bindAdminActions() {
@@ -2256,11 +2467,37 @@ function bindBoardFilters() {
     bindReports();
     bindHelpfulButtons();
     bindReplyForms();
+    bindDeleteButtons();
   };
   [search, category, mode].forEach((input) => input.addEventListener("input", render));
   category.addEventListener("change", render);
   mode.addEventListener("change", render);
   render();
+}
+
+function bindDeleteButtons() {
+  $all(".delete-item-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      deleteItem(button.dataset.deleteType, button.dataset.id);
+      saveState();
+      renderView(currentView);
+    });
+  });
+}
+
+function deleteItem(type, id) {
+  const removeFrom = (key) => {
+    state[key] = (state[key] || []).filter((item) => item.id !== id);
+  };
+  if (type === "post") removeFrom("posts");
+  if (type === "project") {
+    removeFrom("projects");
+    state.activeProjectId = state.projects[0]?.id || "";
+  }
+  if (type === "quote") removeFrom("quotes");
+  if (type === "resource") removeFrom("resources");
+  if (type === "event") removeFrom("events");
+  if (type === "message") removeFrom("messages");
 }
 
 function bindReports() {
