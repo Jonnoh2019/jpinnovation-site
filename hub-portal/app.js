@@ -617,10 +617,10 @@ function userInitials(user) {
 }
 
 function roleLabel(user) {
-  if (!user) return "Member";
+  if (!user) return "Innovation Hub member";
   if (user.role === "admin") return "JP Admin";
-  if (user.role === "client") return "Free Client";
-  return user.level || "Paid Member";
+  if (user.role === "client") return "Client Portal";
+  return user.level || "Innovation Hub member";
 }
 
 function profileCompletion(user) {
@@ -657,7 +657,7 @@ function setAuthTab(mode) {
   $all(".auth-tab").forEach((button) => button.classList.toggle("active", button.dataset.authTab === mode));
   $("#signinForm").classList.toggle("hidden", isRegister);
   $("#registerForm").classList.toggle("hidden", !isRegister);
-  $("#authTitle").textContent = isRegister ? "Access by approval" : "Client or member sign in";
+  $("#authTitle").textContent = isRegister ? "Access by approval" : "Client Portal / Innovation Hub sign in";
   $("#authStatus").textContent = "";
 }
 
@@ -676,8 +676,8 @@ function setLoggedInView() {
     if (button.id === "adminNav") return;
     button.classList.toggle("hidden", isClient && !clientViews.has(button.dataset.view));
   });
-  $(".app-brand span").textContent = isClient ? "Client Portal" : "Member Hub";
-  $(".workspace-header .eyebrow").textContent = isClient ? "Free Client Account" : "Member Hub";
+  $(".app-brand span").textContent = isClient ? "Client Portal" : "Innovation Hub";
+  $(".workspace-header .eyebrow").textContent = isClient ? "Client Portal" : "Innovation Hub";
   renderRail();
   $(".right-rail").classList.toggle("hidden", isClient);
   if (isClient && !clientViews.has(currentView)) currentView = "dashboard";
@@ -719,7 +719,7 @@ function createMemberAccount(data) {
     onboardingComplete: role === "client",
     verified: role === "member" && data.verified === true,
     approved: true,
-    level: role === "client" ? "Free Client" : (data.verified === true ? "Verified Professional" : "Paid Member"),
+    level: role === "client" ? "Client Portal" : (data.verified === true ? "Verified Professional" : "Innovation Hub member"),
     role,
     points: role === "client" ? 0 : 25,
     helpfulPoints: 0,
@@ -892,22 +892,22 @@ function renderClientDashboard(user) {
   const messages = state.messages.filter((message) => message.ownerEmail === user.email);
   return `
     <section class="section-card section-blue">
-      <p class="eyebrow">Free Client Portal</p>
+      <p class="eyebrow">Client Portal</p>
       <h2>Welcome back, ${escapeHtml(user.name)}.</h2>
-      <p class="muted">Use your free account to request work, follow your private quotes and communicate directly with JP Innovation.</p>
+      <p class="muted">Use your Client Portal account to request work, follow your private quotes and communicate directly with JP Innovation.</p>
       <div class="metrics-grid">
         ${metric("My quote requests", quotes.length)}
         ${metric("Open requests", quotes.filter((quote) => quote.status !== "closed").length)}
         ${metric("Messages", messages.length)}
-        ${metric("Account plan", "Free")}
+        ${metric("Account plan", "Client Portal")}
       </div>
     </section>
     <section class="section-card section-violet">
-      <div class="list-title"><div><h2>Client tools</h2><p>Everything needed to manage work with JP Innovation without joining the paid member community.</p></div></div>
+      <div class="list-title"><div><h2>Client Portal tools</h2><p>Everything needed to manage work with JP Innovation without joining the paid Innovation Hub.</p></div></div>
       <div class="cards-grid">
         <article class="card"><span class="badge">Quotes</span><h3>Request engineering work</h3><p>Send specifications, follow review status and keep each request private.</p><button class="primary-button nav-link-jump" data-target-view="quotes" type="button">Open my quotes</button></article>
         <article class="card"><span class="badge">Contact</span><h3>Message JP Innovation</h3><p>Keep questions, updates and project communication together.</p><button class="secondary-button nav-link-jump" data-target-view="messages" type="button">Open messages</button></article>
-        <article class="card"><span class="badge">Optional upgrade</span><h3>Paid Member Hub</h3><p>Paid members also receive engineering boards, the professional directory, resources, events, rewards and supplier opportunities.</p><p class="muted">Ask JP Innovation to upgrade this same login when you are ready.</p></article>
+        <article class="card"><span class="badge">Optional upgrade</span><h3>Innovation Hub</h3><p>Innovation Hub members also receive engineering boards, the professional directory, resources, events, rewards and supplier opportunities.</p><p class="muted">Ask JP Innovation to upgrade this same login when you are ready.</p></article>
       </div>
     </section>
   `;
@@ -944,7 +944,7 @@ function renderDashboard(user) {
         <h2>Welcome back, ${escapeHtml(user.name.split(" ")[0] || user.name)}</h2>
         <p class="muted">A private working area for engineering questions, project support, verified contacts, quotes and member opportunities.</p>
         <div class="meta-row">
-          <span class="pill good">Private member area</span>
+          <span class="pill good">Private Innovation Hub area</span>
           <span class="pill warn">Pre-launch build</span>
           <span class="pill">${readyItems}/${checklistCount} launch items ready</span>
         </div>
@@ -1310,7 +1310,7 @@ function renderClientQuotes(user) {
   return `
     <section class="section-card quote-hub-hero">
       <div>
-        <p class="eyebrow">Free Client Account</p>
+        <p class="eyebrow">Client Portal</p>
         <h2>My private quote requests</h2>
         <p class="muted">Submit work for JP Innovation to review. Only you and JP Innovation should see your request details and responses in the finished secure system.</p>
       </div>
@@ -1548,7 +1548,7 @@ function renderRewards() {
             <span>${index + 1}</span>
             <div>
               <strong>${escapeHtml(member.name)}</strong>
-              <small>${escapeHtml(member.business || member.skill || "Hub member")}</small>
+              <small>${escapeHtml(member.business || member.skill || "Innovation Hub member")}</small>
             </div>
             <b>${member.helpfulPoints || 0} pts</b>
           </article>
@@ -1600,7 +1600,7 @@ function renderSettings(user) {
       <h2>Settings</h2>
       <p class="muted">This is a live front-end trial. Your test data is saved in this browser until a secure shared database, payment system and email service are connected.</p>
       <div class="cards-grid">
-        <article class="card"><span class="badge">Account plan</span><h3>${isClient ? "Free Client" : "Paid Member"}</h3><p>${isClient ? "Free access for quotes, requests and direct communication with JP Innovation." : "GBP 19/month proposed premium membership. Payment integration is not connected in this trial build."}</p></article>
+        <article class="card"><span class="badge">Account plan</span><h3>${isClient ? "Client Portal" : "Innovation Hub"}</h3><p>${isClient ? "Free access for quotes, requests and direct communication with JP Innovation." : "GBP 19/month proposed Innovation Hub membership. Payment integration is not connected in this trial build."}</p></article>
         <article class="card"><span class="badge">Email</span><h3>Notifications</h3><p>Quote alerts, message alerts and application confirmations will use the live email service once connected.</p></article>
         <article class="card"><span class="badge">Security</span><h3>Password</h3><p>Local demo password only. A real launch needs secure backend authentication.</p></article>
         <article class="card"><span class="badge">Account</span><h3>${escapeHtml(user.email)}</h3><p>Your ${isClient ? "quotes and messages" : "profile, posts and requests"} are saved in this browser for trial review.</p></article>
@@ -1615,7 +1615,7 @@ function renderSettings(user) {
       <p id="dataStatus" class="form-status" aria-live="polite"></p>
     </section>
     <section class="section-card section-silver">
-      <div class="list-title"><div><h2>Preferences</h2><p>Choose what the member should receive once live notifications are connected.</p></div></div>
+      <div class="list-title"><div><h2>Preferences</h2><p>Choose what this account should receive once live notifications are connected.</p></div></div>
       <form id="settingsForm" class="form-grid two">
         <label class="check wide"><input name="quoteAlerts" type="checkbox" ${user.quoteAlerts !== false ? "checked" : ""}> ${isClient ? "Quote and project updates" : "Quote Hub opportunities"}</label>
         <label class="check wide"><input name="messageAlerts" type="checkbox" ${user.messageAlerts !== false ? "checked" : ""}> Message alerts</label>
@@ -1691,18 +1691,18 @@ function renderAdmin(user) {
       </div>
     </section>
     <section class="section-card admin-create-panel">
-      <div class="list-title"><div><h2>Create an account</h2><p>Add a free client for quote/project access or create a paid Hub member.</p></div></div>
+      <div class="list-title"><div><h2>Create an account</h2><p>Add someone to the free Client Portal or create a paid Innovation Hub member.</p></div></div>
       <form id="adminCreateMemberForm" class="form-grid two">
         <label>Full name <input name="name" required autocomplete="off"></label>
         <label>Business <input name="business" autocomplete="off"></label>
         <label>Email <input name="email" type="email" required autocomplete="off"></label>
         <label>Temporary password <input name="password" type="text" minlength="6" required autocomplete="off" placeholder="Give this to the member"></label>
-        <label>Account type <select name="accountType"><option value="client">Free client</option><option value="member">Paid member</option></select></label>
+        <label>Account type <select name="accountType"><option value="client">Client Portal</option><option value="member">Innovation Hub member</option></select></label>
         <label>Location <input name="location" autocomplete="off"></label>
         <label>Main skill <input name="skill" placeholder="CAD, CNC, fabrication"></label>
         <label class="wide">Equipment/capability <input name="equipment"></label>
         <label class="check wide"><input name="verified" type="checkbox"> Mark as verified professional</label>
-        <button class="primary-button wide" type="submit">Create member login</button>
+        <button class="primary-button wide" type="submit">Create account login</button>
         <p id="adminCreateStatus" class="form-status wide" aria-live="polite"></p>
       </form>
     </section>
@@ -1757,7 +1757,7 @@ function renderAdmin(user) {
       </div>
     </section>
     <section class="section-card section-lime">
-      <div class="list-title"><div><h2>Client and member accounts</h2><p>Create free clients, upgrade them to paid members, or move members back to free client access.</p></div></div>
+      <div class="list-title"><div><h2>Client Portal and Innovation Hub accounts</h2><p>Create Client Portal accounts, upgrade them to Innovation Hub members, or move members back to Client Portal access.</p></div></div>
       <div class="feed-list">
         ${state.users.map((member) => `
           <article class="feed-item admin-member-row">
@@ -1772,8 +1772,8 @@ function renderAdmin(user) {
               </div>
             </div>
             <div class="admin-actions">
-              ${member.role === "client" ? `<button class="primary-button admin-action" data-admin-action="upgrade" data-email="${escapeHtml(member.email)}" type="button">Upgrade to paid member</button>` : ""}
-              ${member.role === "member" ? `<button class="secondary-button admin-action" data-admin-action="downgrade" data-email="${escapeHtml(member.email)}" type="button">Move to free client</button>` : ""}
+              ${member.role === "client" ? `<button class="primary-button admin-action" data-admin-action="upgrade" data-email="${escapeHtml(member.email)}" type="button">Upgrade to Innovation Hub</button>` : ""}
+              ${member.role === "member" ? `<button class="secondary-button admin-action" data-admin-action="downgrade" data-email="${escapeHtml(member.email)}" type="button">Move to Client Portal</button>` : ""}
               <button class="secondary-button admin-action" data-admin-action="verify" data-email="${escapeHtml(member.email)}" type="button">Verify</button>
               <button class="secondary-button admin-action" data-admin-action="warn" data-email="${escapeHtml(member.email)}" type="button">Warn</button>
               <button class="secondary-button admin-action" data-admin-action="${member.suspended ? "restore" : "suspend"}" data-email="${escapeHtml(member.email)}" type="button">${member.suspended ? "Restore" : "Suspend"}</button>
@@ -2270,13 +2270,13 @@ function bindAdminActions() {
       if (!member) return;
       if (button.dataset.adminAction === "upgrade") {
         member.role = "member";
-        member.level = "Paid Member";
+        member.level = "Innovation Hub member";
         member.onboardingComplete = false;
         member.points ||= 25;
       }
       if (button.dataset.adminAction === "downgrade") {
         member.role = "client";
-        member.level = "Free Client";
+        member.level = "Client Portal";
         member.verified = false;
         member.directoryVisible = false;
         member.onboardingComplete = true;
@@ -2686,7 +2686,7 @@ function syncMember(user) {
     level: user.level,
     points: user.points,
     helpfulPoints: user.helpfulPoints || 0,
-    bio: user.bio || "Hub member.",
+    bio: user.bio || "Innovation Hub member.",
     preferredWork: user.preferredWork || "",
     capacity: user.capacity || "",
     directoryVisible: user.directoryVisible === true
