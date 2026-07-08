@@ -112,10 +112,11 @@
         <button class="auth-tab" data-auth-tab="register">Access info</button>
       </div>
       <h2 id="authTitle">Member sign in</h2>
-      <form id="signinForm" class="auth-form">
-        <label>Email <input name="email" type="email" required autocomplete="email"></label>
-        <label>Password <input name="password" type="password" required autocomplete="current-password"></label>
+      <form id="signinForm" class="auth-form" autocomplete="on">
+        <label for="signinEmail">Email <input id="signinEmail" name="email" type="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
         <button class="primary-button" type="submit">Sign in</button>
+        <p class="muted">Your browser or password manager can save and autofill your own login on this device. JP Innovation does not add a shared saved password here.</p>
       </form>
       <form id="registerForm" class="auth-form hidden">
         <p class="muted">Public registration is not open. Use this page to request access; approved trial accounts are created by JP Innovation.</p>
