@@ -18,6 +18,9 @@ const adminTempPassword = "JPInnovationAdmin2026!";
 const state = loadState();
 normaliseState();
 let currentView = "dashboard";
+const entryParams = new URLSearchParams(window.location.search);
+const entryMode = entryParams.get("entry") === "hub" ? "hub" : "client";
+const signInRequested = entryParams.get("signin") === "1";
 
 const portalSections = [
   { view: "onboarding", title: "Profile Setup", detail: "Complete member basics before using the Hub fully." },
@@ -657,13 +660,79 @@ function setAuthTab(mode) {
   $all(".auth-tab").forEach((button) => button.classList.toggle("active", button.dataset.authTab === mode));
   $("#signinForm").classList.toggle("hidden", isRegister);
   $("#registerForm").classList.toggle("hidden", !isRegister);
-  $("#authTitle").textContent = isRegister ? "Access by approval" : "Client Portal / Innovation Hub sign in";
+  $("#authTitle").textContent = isRegister ? "Access by approval" : (entryMode === "hub" ? "Innovation Hub sign in" : "Client Portal sign in");
   $("#authStatus").textContent = "";
+}
+
+function setText(selector, text) {
+  const element = $(selector);
+  if (element) element.textContent = text;
+}
+
+function configureEntryPage() {
+  const isHubEntry = entryMode === "hub";
+  document.body.dataset.entry = entryMode;
+  document.title = isHubEntry ? "JP Innovation Hub Sign In" : "JP Innovation Client Portal";
+  setText("#entryEyebrow", isHubEntry ? "Innovation Hub member access" : "Client Portal access");
+  setText("#entryTitle", isHubEntry ? "Innovation Hub" : "Client Portal");
+  setText(
+    "#entryLead",
+    isHubEntry
+      ? "Sign in to access paid member features. Client Portal accounts can use the same login, but Hub features require an upgraded paid account."
+      : "Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area."
+  );
+  const signInButton = $("#entrySignInButton");
+  if (signInButton) signInButton.textContent = isHubEntry ? "Sign in to Innovation Hub" : "Sign in to Client Portal";
+  const requestLink = $("#entryRequestLink");
+  if (requestLink) {
+    requestLink.textContent = isHubEntry ? "View paid membership" : "Request Client Portal access";
+    requestLink.href = isHubEntry ? "../hub/index.html#apply" : "../index.html#customer-account";
+  }
+  setText("#entryPanelLabel", isHubEntry ? "Paid member access" : "Account access");
+  setText("#entryPanelTitle", isHubEntry ? "Paid features require upgrade" : "Private account access");
+  setText(
+    "#entryPanelCopy",
+    isHubEntry
+      ? "The Innovation Hub is for paid members. Free Client Portal users can sign in with the same account but will be asked to upgrade before paid features open."
+      : "Client Portal accounts are free and separate from the paid Innovation Hub. Approved accounts can sign in while the secure backend is being completed."
+  );
+  setText("#entryPanelPointOne", isHubEntry ? "One login can be upgraded from Client Portal to Innovation Hub." : "Trial data is browser-based until backend launch.");
+  setText("#entryPanelPointTwo", isHubEntry ? "Client Portal remains available for quotes, projects and messages." : "Paid Innovation Hub registration stays on the Hub landing page.");
+}
+
+function isClientBlockedFromHub(user) {
+  return entryMode === "hub" && user?.role === "client";
+}
+
+function showUpgradeDialog() {
+  const dialog = $("#upgradeDialog");
+  if (!dialog) {
+    openAuth("signin");
+    $("#authStatus").textContent = "This login is for the Client Portal. Upgrade to access Innovation Hub paid features.";
+    return;
+  }
+  dialog.classList.add("open");
+  dialog.setAttribute("aria-hidden", "false");
+}
+
+function closeUpgradeDialog() {
+  const dialog = $("#upgradeDialog");
+  if (!dialog) return;
+  dialog.classList.remove("open");
+  dialog.setAttribute("aria-hidden", "true");
 }
 
 function setLoggedInView() {
   const user = currentUser();
   const loggedIn = Boolean(user);
+  if (loggedIn && isClientBlockedFromHub(user)) {
+    state.sessionEmail = "";
+    saveState();
+    $("#publicShell").classList.remove("hidden");
+    $("#appShell").classList.add("hidden");
+    showUpgradeDialog();
+    return;
+  }
   $("#publicShell").classList.toggle("hidden", loggedIn);
   $("#appShell").classList.toggle("hidden", !loggedIn);
   if (!loggedIn) return;
@@ -2696,10 +2765,15 @@ function syncMember(user) {
 }
 
 function boot() {
+  configureEntryPage();
   $all("[data-open-auth]").forEach((button) => button.addEventListener("click", () => openAuth(button.dataset.openAuth)));
   $("#closeAuth").addEventListener("click", closeAuth);
   $("#authDialog").addEventListener("click", (event) => {
     if (event.target === $("#authDialog")) closeAuth();
+  });
+  $("#closeUpgrade")?.addEventListener("click", closeUpgradeDialog);
+  $("#upgradeDialog")?.addEventListener("click", (event) => {
+    if (event.target === $("#upgradeDialog")) closeUpgradeDialog();
   });
   $all(".auth-tab").forEach((button) => button.addEventListener("click", () => setAuthTab(button.dataset.authTab)));
   $("#registerForm").addEventListener("submit", (event) => {
@@ -2745,6 +2819,7 @@ function boot() {
     }
   });
   setLoggedInView();
+  if (!currentUser() && signInRequested && !$("#upgradeDialog")?.classList.contains("open")) openAuth("signin");
 }
 
 boot();
