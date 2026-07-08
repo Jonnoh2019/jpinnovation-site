@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JP Innovation Hub Portal</title>
+  <title>JP Innovation Member Hub</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=examples-logo-20260708">
+  <link rel="stylesheet" href="styles.css?v=member-hub-condensed-20260708">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -16,9 +16,8 @@
       <a class="brand" href="../index.html" aria-label="JP Innovation home">
         <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation">
       </a>
-      <nav class="public-nav" aria-label="Hub navigation">
-        <a href="#features">Features</a>
-        <a href="#apply">Apply</a>
+      <nav class="public-nav" aria-label="Member Hub navigation">
+        <a href="../hub/index.html">Hub landing page</a>
         <button class="ghost-button" data-open-auth="signin">Sign in</button>
       </nav>
     </header>
@@ -26,22 +25,21 @@
     <main>
       <section class="portal-hero">
         <div class="hero-copy">
-          <p class="eyebrow">Private trial member area</p>
-          <h1>JP Innovation Hub</h1>
-          <p class="lead">A working trial portal for JP Innovation to test member projects, private quote requests, approved profiles, resources and admin workflows before the full secure launch.</p>
+          <p class="eyebrow">Approved member access</p>
+          <h1>JP Innovation Member Hub</h1>
+          <p class="lead">Sign in to the private working area for engineering projects, discussions, quotes, resources and approved member connections.</p>
           <div class="hero-actions">
-            <a class="primary-button" href="#apply">Apply to join</a>
-            <a class="secondary-button" href="#apply">Request access</a>
+            <button class="primary-button" data-open-auth="signin" type="button">Member sign in</button>
+            <a class="secondary-button" href="../hub/index.html#apply">Register interest</a>
           </div>
         </div>
         <aside class="hero-panel" aria-label="Membership summary">
-          <span>Founder trial</span>
+          <span>Member access</span>
           <strong>Access by approval</strong>
-          <p>Visitors can register interest. Approved trial accounts can sign in while JP Innovation sets up the Hub properly.</p>
+          <p>Approved trial accounts can sign in while JP Innovation completes the secure member platform.</p>
           <ul>
-            <li>Public access requests only.</li>
             <li>Trial data is browser-based until backend launch.</li>
-            <li>Real payment/login systems connect later.</li>
+            <li>Public registration stays on the Hub landing page.</li>
           </ul>
         </aside>
       </section>
@@ -131,7 +129,7 @@
     <aside class="sidebar">
       <a class="app-brand" href="#dashboard">
         <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation">
-        <span>Member Portal</span>
+        <span>Member Hub</span>
       </a>
       <nav class="app-nav" aria-label="Member navigation">
         <button class="nav-link active" data-view="dashboard">Dashboard</button>
@@ -154,7 +152,7 @@
     <main class="workspace">
       <header class="workspace-header">
         <div>
-          <p class="eyebrow">Logged-in member area</p>
+          <p class="eyebrow">Member Hub</p>
           <h1 id="viewTitle">Dashboard</h1>
         </div>
         <div class="member-chip">
@@ -188,6 +186,6 @@
     </aside>
   </div>
 
-  <script src="app.js?v=examples-logo-20260708"></script>
+  <script src="app.js?v=member-hub-condensed-20260708"></script>
 </body>
 </html>
