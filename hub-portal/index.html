@@ -113,6 +113,12 @@
         <label>Password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
         <button class="primary-button" type="submit">Create Client Portal account</button>
       </form>
+      <form id="resetPasswordForm" class="auth-form hidden">
+        <p class="muted">Enter a new password for your JP Innovation account.</p>
+        <label>New password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Confirm new password <input name="confirmPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+        <button class="primary-button" type="submit">Save new password</button>
+      </form>
       <p id="authStatus" class="form-status" aria-live="polite"></p>
     </div>
   </div>
