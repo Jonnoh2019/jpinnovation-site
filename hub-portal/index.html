@@ -96,18 +96,22 @@
       <button class="close-button" id="closeAuth" aria-label="Close sign in">x</button>
       <div class="auth-tabs">
         <button class="auth-tab active" data-auth-tab="signin">Sign in</button>
-        <button class="auth-tab" data-auth-tab="register">Access info</button>
+        <button class="auth-tab" data-auth-tab="register">Register</button>
       </div>
       <h2 id="authTitle">Client Portal sign in</h2>
       <form id="signinForm" class="auth-form" autocomplete="on">
         <label for="signinEmail">Email <input id="signinEmail" name="email" type="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
         <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
         <button class="primary-button" type="submit">Sign in</button>
+        <button id="forgotPasswordButton" class="secondary-button" type="button">Reset password</button>
         <p class="muted">Your browser or password manager can save and autofill your own login on this device. JP Innovation does not add a shared saved password here.</p>
       </form>
       <form id="registerForm" class="auth-form hidden">
-        <p class="muted">Public registration is not open. Use the main site to request Client Portal access; approved trial accounts are created by JP Innovation.</p>
-        <a class="primary-button" href="../index.html#contact">Request Client Portal access</a>
+        <p class="muted">Create a free Client Portal account. JP Innovation can upgrade the same login to paid Innovation Hub membership later.</p>
+        <label>Full name <input name="fullName" required autocomplete="name"></label>
+        <label>Email <input name="email" type="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
+        <label>Password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <button class="primary-button" type="submit">Create Client Portal account</button>
       </form>
       <p id="authStatus" class="form-status" aria-live="polite"></p>
     </div>
@@ -195,6 +199,7 @@
     </main>
   </div>
 
-  <script src="app.js?v=engineering-boards-20260709"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js?v=secure-accounts-20260709"></script>
 </body>
 </html>
