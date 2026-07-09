@@ -752,8 +752,8 @@ function configureEntryPage() {
   if (signInButton) signInButton.textContent = "Sign in";
   const requestLink = $("#entryRequestLink");
   if (requestLink) {
-    requestLink.textContent = isHubEntry ? "View paid membership" : "Register for access";
-    requestLink.href = isHubEntry ? "../hub/index.html#apply" : "../index.html#contact";
+    requestLink.textContent = "Register for access";
+    requestLink.dataset.openAuth = "register";
   }
   setText("#entryPanelLabel", isHubEntry ? "Paid member access" : "Account access");
   setText("#entryPanelTitle", isHubEntry ? "Paid features require upgrade" : "Private account access");
