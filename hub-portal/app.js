@@ -17,7 +17,6 @@ const boardCategories = [
 
 const adminEmail = "jpinnovation.enquiries@gmail.com";
 const previousAdminEmail = "enquiries-jpinnovation@gmail.com";
-const adminTempPassword = "JPInnovationAdmin2026!";
 
 const state = loadState();
 normaliseState();
@@ -351,7 +350,6 @@ function ensureAdminAccount() {
       name: "Jon Hotard",
       business: "JP Innovation Ltd",
       email: adminEmail,
-      password: adminTempPassword,
       skill: "Engineering design, CAD and product development",
       location: "Milton Keynes",
       equipment: "JP Innovation network",
@@ -378,7 +376,7 @@ function ensureAdminAccount() {
     admin.verified = true;
     admin.approved = true;
     admin.suspended = false;
-    admin.password = adminTempPassword;
+    delete admin.password;
     admin.points ||= 250;
     admin.helpfulPoints ||= 12;
     if (state.sessionEmail === oldEmail) state.sessionEmail = adminEmail;
