@@ -952,6 +952,16 @@ function setNotificationsOpen(open) {
   bell.setAttribute("aria-expanded", String(open));
 }
 
+function setMobileDashboardMenuOpen(open) {
+  const shell = $("#appShell");
+  const button = $("#mobileMenuButton");
+  if (!shell || !button) return;
+  shell.classList.toggle("mobile-menu-open", open);
+  document.body.classList.toggle("mobile-dashboard-menu-open", open);
+  button.setAttribute("aria-expanded", String(open));
+  button.setAttribute("aria-label", open ? "Close dashboard menu" : "Open dashboard menu");
+}
+
 function renderView(view) {
   const user = currentUser();
   if (!user) return;
@@ -2841,7 +2851,14 @@ function boot() {
       $("#authStatus").textContent = error.message;
     }
   });
-  $("#logoutButton").addEventListener("click", signOut);
+  $("#logoutButton").addEventListener("click", () => {
+    setMobileDashboardMenuOpen(false);
+    signOut();
+  });
+  $("#mobileMenuButton")?.addEventListener("click", () => {
+    setMobileDashboardMenuOpen(!$("#appShell").classList.contains("mobile-menu-open"));
+  });
+  $("#mobileMenuBackdrop")?.addEventListener("click", () => setMobileDashboardMenuOpen(false));
   $("#notificationBell")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setNotificationsOpen(!$(".notification-centre").classList.contains("open"));
@@ -2853,9 +2870,15 @@ function boot() {
   $("#notificationPopover")?.addEventListener("click", (event) => event.stopPropagation());
   document.addEventListener("click", () => setNotificationsOpen(false));
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") setNotificationsOpen(false);
+    if (event.key === "Escape") {
+      setNotificationsOpen(false);
+      setMobileDashboardMenuOpen(false);
+    }
   });
-  $all(".nav-link").forEach((button) => button.addEventListener("click", () => renderView(button.dataset.view)));
+  $all(".nav-link").forEach((button) => button.addEventListener("click", () => {
+    renderView(button.dataset.view);
+    setMobileDashboardMenuOpen(false);
+  }));
   $("#applyForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const form = event.currentTarget;
