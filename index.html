@@ -868,6 +868,31 @@
       .price { min-height: auto; }
     }
 
+    @media (max-width: 620px) {
+      .hero-proof {
+        grid-template-columns: 1fr;
+        gap: 1px;
+      }
+      .proof-item {
+        min-height: auto;
+        display: grid;
+        grid-template-columns: minmax(86px, 105px) 1fr;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+      }
+      .proof-item b {
+        margin-bottom: 0;
+        font-size: 18px;
+        line-height: 1.1;
+      }
+      .proof-item span {
+        display: block;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+    }
+
     @media (max-width: 480px) {
       .brand img { width: min(230px, 70vw); }
       h1 { font-size: 26px; line-height: 1.12; }
@@ -878,13 +903,11 @@
         min-height: 220px;
       }
       .hero-proof { margin-top: 20px; }
-      .proof-item { padding: 14px; }
       .hero-media {
         height: 280px;
         min-height: 0;
       }
       .hero-media img { min-height: 0; }
-      .proof-item span { display: none; }
     }
   </style>
 </head>
