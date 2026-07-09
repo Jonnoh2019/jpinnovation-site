@@ -15,7 +15,8 @@ function formData(form) {
 }
 
 const portalStoreKey = "jpHubPortal.v1";
-const adminEmail = "enquiries-jpinnovation@gmail.com";
+const adminEmail = "jpinnovation.enquiries@gmail.com";
+const previousAdminEmail = "enquiries-jpinnovation@gmail.com";
 const adminTempPassword = "JPInnovationAdmin2026!";
 
 function loadPortalState() {
@@ -34,7 +35,17 @@ function loadPortalState() {
 }
 
 function ensureHubAdmin(state) {
-  if (state.users.some((user) => user.email === adminEmail)) return;
+  const existing = state.users.find((user) => user.email === adminEmail || user.email === previousAdminEmail);
+  if (existing) {
+    existing.email = adminEmail;
+    existing.password = adminTempPassword;
+    existing.approved = true;
+    existing.suspended = false;
+    existing.verified = true;
+    existing.role = "admin";
+    if (state.sessionEmail === previousAdminEmail) state.sessionEmail = adminEmail;
+    return;
+  }
   state.users.unshift({
     id: "hub-admin",
     name: "Jon Hotard",
@@ -117,7 +128,7 @@ function registerInterestHandler() {
     const data = formData(form);
     const subject = "JP Innovation Hub launch interest";
     const body = buildInterestEmail(data);
-    window.location.href = `mailto:enquiries-jpinnovation@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:jpinnovation.enquiries@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     if (status) {
       status.textContent = "Your email app should now open with the details ready to send.";
     }
