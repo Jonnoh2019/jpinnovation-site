@@ -331,15 +331,28 @@
       padding: 28px;
       background: rgba(9,14,20,.92);
     }
+    .intro-panel > div:first-child {
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      min-height: 100%;
+      text-align: center;
+    }
     .intro-panel h2 {
       max-width: 430px;
-      margin-bottom: 0;
-      font-size: clamp(22px, 2.1vw, 28px);
+      margin-bottom: 12px;
+      font-size: clamp(21px, 1.9vw, 27px);
       line-height: 1.18;
     }
     .intro-panel p {
       color: var(--soft);
       margin-bottom: 0;
+    }
+    .intro-summary {
+      max-width: 430px;
+      color: var(--soft);
+      font-size: 15px;
+      line-height: 1.55;
     }
     .why-list {
       display: grid;
@@ -868,31 +881,6 @@
       .price { min-height: auto; }
     }
 
-    @media (max-width: 620px) {
-      .hero-proof {
-        grid-template-columns: 1fr;
-        gap: 1px;
-      }
-      .proof-item {
-        min-height: auto;
-        display: grid;
-        grid-template-columns: minmax(86px, 105px) 1fr;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 14px;
-      }
-      .proof-item b {
-        margin-bottom: 0;
-        font-size: 18px;
-        line-height: 1.1;
-      }
-      .proof-item span {
-        display: block;
-        font-size: 12px;
-        line-height: 1.35;
-      }
-    }
-
     @media (max-width: 480px) {
       .brand img { width: min(230px, 70vw); }
       h1 { font-size: 26px; line-height: 1.12; }
@@ -903,11 +891,13 @@
         min-height: 220px;
       }
       .hero-proof { margin-top: 20px; }
+      .proof-item { padding: 14px; }
       .hero-media {
         height: 280px;
         min-height: 0;
       }
       .hero-media img { min-height: 0; }
+      .proof-item span { display: none; }
     }
   </style>
 </head>
@@ -970,6 +960,7 @@
         <div>
           <p class="eyebrow">Why JP Innovation</p>
           <h2>Engineering support that keeps your project moving.</h2>
+          <p class="intro-summary">Direct, practical engineering input to help you make decisions, solve problems and move confidently towards manufacture.</p>
         </div>
         <div>
           <div class="why-list">
