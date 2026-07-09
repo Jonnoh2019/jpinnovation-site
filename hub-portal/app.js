@@ -69,18 +69,28 @@ function formObject(form) {
   $all("input[type='checkbox']", form).forEach((input) => {
     data[input.name] = input.checked;
   });
+  if ("email" in data) data.email = cleanEmailValue(data.email);
   return data;
 }
 
 function cleanEmailValue(value = "") {
   return String(value)
+    .normalize("NFKC")
     .replace(/\s+/g, "")
     .replace(/^[,;]+|[,;]+$/g, "")
     .toLowerCase();
 }
 
+function validateEmail(value = "") {
+  const email = cleanEmailValue(value);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Please enter a valid email address, for example jpinnovation.enquiries@gmail.com");
+  }
+  return email;
+}
+
 function setupEmailFieldCleaning(root = document) {
-  $all("input[type='email']", root).forEach((input) => {
+  $all("input[name='email']", root).forEach((input) => {
     const clean = () => {
       const cleaned = cleanEmailValue(input.value);
       if (input.value !== cleaned) input.value = cleaned;
@@ -844,7 +854,7 @@ function setLoggedInView() {
 
 async function registerUser(data) {
   if (!portalBackend) throw new Error("Secure registration is temporarily unavailable.");
-  const email = String(data.email || "").trim().toLowerCase();
+  const email = validateEmail(data.email);
   const password = String(data.password || "");
   const fullName = String(data.fullName || "").trim();
   if (password.length < 8) throw new Error("Use a password of at least 8 characters.");
@@ -946,7 +956,7 @@ function temporaryPasswordFor(application) {
 }
 
 async function signIn(data) {
-  const email = data.email.trim().toLowerCase();
+  const email = validateEmail(data.email);
   if (!portalBackend) throw new Error("Secure login is temporarily unavailable.");
   const { error } = await portalBackend.auth.signInWithPassword({ email, password: data.password });
   if (error) throw new Error("Email or password is not recognised.");
@@ -3021,9 +3031,11 @@ async function boot() {
     await signOut();
   });
   $("#forgotPasswordButton")?.addEventListener("click", async () => {
-    const email = $("#signinEmail").value.trim().toLowerCase();
-    if (!email) {
-      $("#authStatus").textContent = "Enter your email address first.";
+    let email = "";
+    try {
+      email = validateEmail($("#signinEmail").value);
+    } catch (error) {
+      $("#authStatus").textContent = error.message;
       return;
     }
     const { error } = await portalBackend.auth.resetPasswordForEmail(email, {
