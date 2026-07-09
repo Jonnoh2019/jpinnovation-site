@@ -12,7 +12,8 @@ const boardCategories = [
   "Jobs & Collaboration"
 ];
 
-const adminEmail = "enquiries-jpinnovation@gmail.com";
+const adminEmail = "jpinnovation.enquiries@gmail.com";
+const previousAdminEmail = "enquiries-jpinnovation@gmail.com";
 const adminTempPassword = "JPInnovationAdmin2026!";
 
 const state = loadState();
@@ -333,7 +334,7 @@ function ensureStarterExamples() {
 function ensureAdminAccount() {
   state.users ||= [];
   state.members ||= [];
-  let admin = state.users.find((user) => user.email === adminEmail);
+  let admin = state.users.find((user) => user.email === adminEmail || user.email === previousAdminEmail);
   if (!admin) {
     admin = {
       id: uid("user"),
@@ -358,6 +359,8 @@ function ensureAdminAccount() {
     };
     state.users.unshift(admin);
   } else {
+    const oldEmail = admin.email;
+    admin.email = adminEmail;
     admin.name = "Jon Hotard";
     admin.business = admin.business || "JP Innovation Ltd";
     admin.role = "admin";
@@ -365,9 +368,13 @@ function ensureAdminAccount() {
     admin.verified = true;
     admin.approved = true;
     admin.suspended = false;
-    admin.password ||= adminTempPassword;
+    admin.password = adminTempPassword;
     admin.points ||= 250;
     admin.helpfulPoints ||= 12;
+    if (state.sessionEmail === oldEmail) state.sessionEmail = adminEmail;
+    state.members.forEach((member) => {
+      if (member.email === oldEmail) member.email = adminEmail;
+    });
   }
   syncMember(admin);
 }
@@ -2858,7 +2865,7 @@ function boot() {
       const application = createApplication(data);
       const subject = "JP Innovation Hub membership interest";
       const body = buildInterestEmail(data);
-      const mailto = `mailto:enquiries-jpinnovation@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      const mailto = `mailto:jpinnovation.enquiries@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       status.innerHTML = `Access request saved for review. <a href="${mailto}">Send an email copy</a>`;
       form.reset();
       form.querySelector("input[name='wantsCommunity']").checked = true;
