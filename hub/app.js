@@ -88,6 +88,8 @@ async function trackPageView() {
 const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
 const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
 const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey);
+const publicSiteOrigin = "https://www.jpinnovation.co.uk";
+const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
 
 function setHubAuthTab(mode = "signin") {
   const isRegister = mode === "register";
@@ -151,7 +153,7 @@ async function registerHubAccount(data) {
     email,
     password: data.password,
     options: {
-      emailRedirectTo: `${window.location.origin}/hub-portal/index.html?entry=client&signin=1`,
+      emailRedirectTo: `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1`,
       data: {
         full_name: String(data.fullName || "").trim(),
         account_type: "client"
@@ -230,7 +232,7 @@ function hubAuthHandler() {
       const email = validateEmail($("#hubSigninEmail")?.value || "");
       if (!hubBackend) throw new Error("Secure password reset is temporarily unavailable. Please try again.");
       const { error } = await hubBackend.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/hub-portal/index.html?entry=client&signin=1`
+        redirectTo: passwordResetRedirectUrl
       });
       if (status) status.textContent = error ? error.message : "Password reset email sent. Check your inbox.";
     } catch (error) {
