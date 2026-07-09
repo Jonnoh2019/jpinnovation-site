@@ -147,6 +147,12 @@ function normaliseState() {
   state.launchChecklist ||= defaultLaunchChecklist();
   state.activeProjectId ||= state.projects[0]?.id || "";
   state.projects.forEach((project) => {
+    if (project.image === "../assets/hub-mini-restoration.png") {
+      project.image = "../assets/case-study-fixture-bracket.png";
+    }
+    if (project.image === "../assets/hub-key-locker.png") {
+      project.image = "../assets/cad-machined-bracket.png";
+    }
     project.updates ||= [
       { id: uid("update"), title: "Project opened", body: "Initial project record created for member feedback and support.", created: project.status || "Planning" }
     ];
@@ -417,7 +423,7 @@ function seedState() {
         status: "In Progress",
         author: "MK Restorations",
         authorEmail: "restoration@local",
-        image: "../assets/hub-mini-restoration.png",
+        image: "../assets/case-study-fixture-bracket.png",
         likes: 18,
         comments: 6,
         points: 42,
@@ -444,7 +450,7 @@ function seedState() {
         status: "Planning",
         author: "Secure Workshop Systems",
         authorEmail: "secure@local",
-        image: "../assets/hub-key-locker.png",
+        image: "../assets/cad-machined-bracket.png",
         likes: 11,
         comments: 4,
         points: 31,
@@ -1074,7 +1080,7 @@ function renderDashboard(user) {
         </div>
       </div>
       <div class="dashboard-image-card">
-        <img src="../assets/hub-key-locker.png" alt="">
+        <img src="../assets/cad-machined-bracket.png" alt="">
         <div>
           <span class="badge">Featured workflow</span>
           <strong>From idea to quoted project</strong>
@@ -1114,7 +1120,7 @@ function renderDashboard(user) {
       <div class="list-title"><div><h2>Current engineering activity</h2><p>A quick read of what is moving inside the Hub.</p></div></div>
       <div class="momentum-grid">
         <article>
-          <img src="${escapeHtml(activeProject?.image || "../assets/hub-mini-restoration.png")}" alt="">
+          <img src="${escapeHtml(activeProject?.image || "../assets/case-study-fixture-bracket.png")}" alt="">
           <div>
             <span class="badge">Active project</span>
             <h3>${escapeHtml(activeProject?.title || "No active project")}</h3>
