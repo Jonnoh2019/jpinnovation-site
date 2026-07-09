@@ -19,6 +19,7 @@ const adminTempPassword = "JPInnovationAdmin2026!";
 const state = loadState();
 normaliseState();
 let currentView = "dashboard";
+let activeBoardPostId = "";
 const entryParams = new URLSearchParams(window.location.search);
 const entryMode = entryParams.get("entry") === "hub" ? "hub" : "client";
 const signInRequested = entryParams.get("signin") === "1";
@@ -1208,6 +1209,15 @@ function renderOnboarding(user) {
 }
 
 function renderBoards() {
+  const activePost = state.posts.find((post) => post.id === activeBoardPostId);
+  if (activePost) {
+    return `
+      <section class="section-card section-cyan board-thread-detail">
+        <button class="secondary-button board-back-button" type="button">Back to Engineering Boards</button>
+        ${postCard(activePost)}
+      </section>
+    `;
+  }
   const categoryOptions = ["All", ...boardCategories].map(option).join("");
   return `
     <section class="section-card section-cyan">
@@ -1223,7 +1233,7 @@ function renderBoards() {
     </section>
     <section class="section-card section-cyan">
       <div class="list-title"><div><h2>Boards</h2><p>Choose where your question or update belongs.</p></div></div>
-      <div class="board-grid">${boardCategories.map((category) => `<article class="board-card"><span class="badge">${escapeHtml(category)}</span><h3>${escapeHtml(category)}</h3><p>${boardDescription(category)}</p></article>`).join("")}</div>
+      <div class="board-grid">${boardCategories.map((category) => `<button class="board-card board-category-button" data-board-category="${escapeHtml(category)}" type="button"><span class="badge">${escapeHtml(category)}</span><h3>${escapeHtml(category)}</h3><p>${boardDescription(category)}</p></button>`).join("")}</div>
     </section>
     <section class="section-card section-cyan">
       <div class="list-title"><div><h2>Discussion threads</h2><p>Search, filter and reply to member questions.</p></div></div>
@@ -1956,6 +1966,27 @@ function postCard(post) {
   `;
 }
 
+function postSummaryCard(post) {
+  const replies = post.responses || [];
+  const helpfulCount = countHelpfulReplies(post);
+  return `
+    <article class="feed-item thread-card thread-summary">
+      <div class="thread-topline">
+        <span class="badge">${escapeHtml(post.category)}</span>
+        ${helpfulCount ? `<span class="pill good">${helpfulCount} helpful</span>` : `<span class="pill warn">Needs help</span>`}
+      </div>
+      <h3>${escapeHtml(post.title)}</h3>
+      <p>${escapeHtml(post.description)}</p>
+      <div class="meta-row">
+        <span class="pill">${escapeHtml(post.author)}</span>
+        <span class="pill">${escapeHtml(post.created || "Today")}</span>
+        <span class="pill">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>
+      </div>
+      <button class="primary-button open-board-post" data-post-id="${escapeHtml(post.id)}" type="button">Open discussion</button>
+    </article>
+  `;
+}
+
 function projectCard(project) {
   const user = currentUser();
   const canDelete = user?.role === "admin" || user?.email === project.authorEmail;
@@ -2167,12 +2198,12 @@ function bindViewHandlers(view) {
     });
   }
   if (view === "boards") {
-    $("#postForm").addEventListener("submit", (event) => {
+    $("#postForm")?.addEventListener("submit", (event) => {
       event.preventDefault();
       const user = currentUser();
       const data = formObject(event.currentTarget);
       const flagged = moderationFlag(`${data.title} ${data.description}`);
-      state.posts.unshift({
+      const newPost = {
         id: uid("post"),
         title: data.title,
         category: data.category,
@@ -2183,7 +2214,9 @@ function bindViewHandlers(view) {
         reports: 0,
         flagged,
         responses: []
-      });
+      };
+      state.posts.unshift(newPost);
+      activeBoardPostId = newPost.id;
       if (flagged) state.flagged.unshift({ title: data.title, description: data.description, reason: "Automatic moderation keyword flag" });
       saveState();
       renderView("boards");
@@ -2192,6 +2225,12 @@ function bindViewHandlers(view) {
     bindHelpfulButtons();
     bindReplyForms();
     bindBoardFilters();
+    bindOpenBoardPosts();
+    bindBoardCategoryButtons();
+    $(".board-back-button")?.addEventListener("click", () => {
+      activeBoardPostId = "";
+      renderView("boards");
+    });
   }
   if (view === "dashboard") {
     bindDashboardLinks();
@@ -2669,16 +2708,35 @@ function bindBoardFilters() {
   const render = () => {
     const term = search.value.trim().toLowerCase();
     const filtered = state.posts.filter((post) => boardMatches(post, term, category.value, mode.value));
-    results.innerHTML = filtered.length ? filtered.map(postCard).join("") : `<p class="muted">No threads match those filters.</p>`;
-    bindReports();
-    bindHelpfulButtons();
-    bindReplyForms();
-    bindDeleteButtons();
+    results.innerHTML = filtered.length ? filtered.map(postSummaryCard).join("") : `<p class="muted">No threads match those filters.</p>`;
+    bindOpenBoardPosts();
   };
   [search, category, mode].forEach((input) => input.addEventListener("input", render));
   category.addEventListener("change", render);
   mode.addEventListener("change", render);
   render();
+}
+
+function bindOpenBoardPosts() {
+  $all(".open-board-post").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeBoardPostId = button.dataset.postId;
+      renderView("boards");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+}
+
+function bindBoardCategoryButtons() {
+  $all(".board-category-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const category = $("#boardCategory");
+      if (!category) return;
+      category.value = button.dataset.boardCategory;
+      category.dispatchEvent(new Event("change"));
+      $("#boardResults")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
 }
 
 function bindDeleteButtons() {
@@ -2695,7 +2753,10 @@ function deleteItem(type, id) {
   const removeFrom = (key) => {
     state[key] = (state[key] || []).filter((item) => item.id !== id);
   };
-  if (type === "post") removeFrom("posts");
+  if (type === "post") {
+    removeFrom("posts");
+    if (activeBoardPostId === id) activeBoardPostId = "";
+  }
   if (type === "project") {
     removeFrom("projects");
     state.activeProjectId = state.projects[0]?.id || "";
