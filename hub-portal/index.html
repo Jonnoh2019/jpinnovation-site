@@ -100,7 +100,7 @@
       </div>
       <h2 id="authTitle">Client Portal sign in</h2>
       <form id="signinForm" class="auth-form" autocomplete="on">
-        <label for="signinEmail">Email <input id="signinEmail" name="email" type="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label for="signinEmail">Email <input id="signinEmail" name="email" type="text" inputmode="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
         <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
         <button class="primary-button" type="submit">Sign in</button>
         <button id="forgotPasswordButton" class="secondary-button" type="button">Reset password</button>
@@ -109,7 +109,7 @@
       <form id="registerForm" class="auth-form hidden">
         <p class="muted">Create a free Client Portal account. JP Innovation can upgrade the same login to paid Innovation Hub membership later.</p>
         <label>Full name <input name="fullName" required autocomplete="name"></label>
-        <label>Email <input name="email" type="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
+        <label>Email <input name="email" type="text" inputmode="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
         <label>Password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
         <button class="primary-button" type="submit">Create Client Portal account</button>
       </form>
