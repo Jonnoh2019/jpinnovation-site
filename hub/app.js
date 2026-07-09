@@ -11,18 +11,28 @@ function formData(form) {
   $all("input[type='checkbox']", form).forEach((input) => {
     data[input.name] = input.checked;
   });
+  if ("email" in data) data.email = cleanEmailValue(data.email);
   return data;
 }
 
 function cleanEmailValue(value = "") {
   return String(value)
+    .normalize("NFKC")
     .replace(/\s+/g, "")
     .replace(/^[,;]+|[,;]+$/g, "")
     .toLowerCase();
 }
 
+function validateEmail(value = "") {
+  const email = cleanEmailValue(value);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Please enter a valid email address, for example jpinnovation.enquiries@gmail.com");
+  }
+  return email;
+}
+
 function setupEmailFieldCleaning(root = document) {
-  $all("input[type='email']", root).forEach((input) => {
+  $all("input[name='email']", root).forEach((input) => {
     const clean = () => {
       const cleaned = cleanEmailValue(input.value);
       if (input.value !== cleaned) input.value = cleaned;
@@ -72,7 +82,7 @@ function closeHubAuth() {
 
 async function signInToHub(data) {
   if (!hubBackend) throw new Error("Secure sign in is temporarily unavailable. Please try again.");
-  const email = String(data.email || "").trim().toLowerCase();
+  const email = validateEmail(data.email);
   const { data: result, error } = await hubBackend.auth.signInWithPassword({
     email,
     password: data.password
@@ -94,7 +104,7 @@ async function signInToHub(data) {
 
 async function registerHubAccount(data) {
   if (!hubBackend) throw new Error("Secure registration is temporarily unavailable. Please try again.");
-  const email = String(data.email || "").trim().toLowerCase();
+  const email = validateEmail(data.email);
   const { error } = await hubBackend.auth.signUp({
     email,
     password: data.password,
