@@ -716,33 +716,45 @@ async function syncSecureSession() {
     .select("user_id,email,full_name,business,account_type,membership_status")
     .eq("user_id", authUser.id)
     .single();
-  if (profileError) throw profileError;
-  const email = String(profile.email || authUser.email || "").toLowerCase();
+  if (profileError && profileError.code !== "PGRST116") throw profileError;
+  const fallbackEmail = String(authUser.email || "").toLowerCase();
+  const profileData = profile || {
+    user_id: authUser.id,
+    email: fallbackEmail,
+    full_name: authUser.user_metadata?.full_name || (fallbackEmail === adminEmail ? "Jon Hotard" : ""),
+    business: fallbackEmail === adminEmail ? "JP Innovation Ltd" : "",
+    account_type: fallbackEmail === adminEmail ? "admin" : "client",
+    membership_status: fallbackEmail === adminEmail ? "active" : "free"
+  };
+  if (!profile && fallbackEmail) {
+    portalBackend.from("profiles").upsert(profileData, { onConflict: "user_id" }).then(() => {}).catch(() => {});
+  }
+  const email = String(profileData.email || authUser.email || "").toLowerCase();
   let user = state.users.find((item) => item.email === email);
   if (!user) {
     user = {
-      id: profile.user_id,
+      id: profileData.user_id,
       email,
-      name: profile.full_name || email.split("@")[0],
-      business: profile.business || "",
-      role: profile.account_type || "client",
-      level: profile.account_type === "member" ? "Innovation Hub member" : "Client Portal",
+      name: profileData.full_name || email.split("@")[0],
+      business: profileData.business || "",
+      role: profileData.account_type || "client",
+      level: profileData.account_type === "member" ? "Innovation Hub member" : "Client Portal",
       approved: true,
       suspended: false,
-      verified: profile.account_type === "admin",
-      onboardingComplete: profile.account_type === "client",
+      verified: profileData.account_type === "admin",
+      onboardingComplete: ["admin", "client"].includes(profileData.account_type),
       points: 0,
       helpfulPoints: 0
     };
     state.users.push(user);
   }
   Object.assign(user, {
-    id: profile.user_id,
+    id: profileData.user_id,
     email,
-    name: profile.full_name || user.name,
-    business: profile.business || user.business || "",
-    role: profile.account_type || "client",
-    membershipStatus: profile.membership_status || "free",
+    name: profileData.full_name || user.name,
+    business: profileData.business || user.business || "",
+    role: profileData.account_type || "client",
+    membershipStatus: profileData.membership_status || "free",
     approved: true,
     suspended: false
   });
