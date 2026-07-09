@@ -1,4 +1,7 @@
 const storeKey = "jpHubPortal.v1";
+const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
+const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
+const portalBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey);
 
 const boardCategories = [
   "General Engineering Chat",
@@ -629,6 +632,58 @@ function currentUser() {
   return state.users.find((user) => user.email === state.sessionEmail) || null;
 }
 
+async function syncSecureSession() {
+  if (!portalBackend) throw new Error("Secure login is temporarily unavailable. Please refresh and try again.");
+  const { data: sessionData, error: sessionError } = await portalBackend.auth.getSession();
+  if (sessionError) throw sessionError;
+  const authUser = sessionData.session?.user;
+  if (!authUser) {
+    state.sessionEmail = "";
+    saveState();
+    return null;
+  }
+  const { data: profile, error: profileError } = await portalBackend
+    .from("profiles")
+    .select("user_id,email,full_name,business,account_type,membership_status")
+    .eq("user_id", authUser.id)
+    .single();
+  if (profileError) throw profileError;
+  const email = String(profile.email || authUser.email || "").toLowerCase();
+  let user = state.users.find((item) => item.email === email);
+  if (!user) {
+    user = {
+      id: profile.user_id,
+      email,
+      name: profile.full_name || email.split("@")[0],
+      business: profile.business || "",
+      role: profile.account_type || "client",
+      level: profile.account_type === "member" ? "Innovation Hub member" : "Client Portal",
+      approved: true,
+      suspended: false,
+      verified: profile.account_type === "admin",
+      onboardingComplete: profile.account_type === "client",
+      points: 0,
+      helpfulPoints: 0
+    };
+    state.users.push(user);
+  }
+  Object.assign(user, {
+    id: profile.user_id,
+    email,
+    name: profile.full_name || user.name,
+    business: profile.business || user.business || "",
+    role: profile.account_type || "client",
+    membershipStatus: profile.membership_status || "free",
+    approved: true,
+    suspended: false
+  });
+  delete user.password;
+  state.sessionEmail = email;
+  syncMember(user);
+  saveState();
+  return user;
+}
+
 function userInitials(user) {
   return (user?.name || "JP").split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase()).join("") || "JP";
 }
@@ -770,8 +825,23 @@ function setLoggedInView() {
   renderView(currentView);
 }
 
-function registerUser(data) {
-  throw new Error("Member accounts are created by JP Innovation after approval.");
+async function registerUser(data) {
+  if (!portalBackend) throw new Error("Secure registration is temporarily unavailable.");
+  const email = String(data.email || "").trim().toLowerCase();
+  const password = String(data.password || "");
+  const fullName = String(data.fullName || "").trim();
+  if (password.length < 8) throw new Error("Use a password of at least 8 characters.");
+  const { data: result, error } = await portalBackend.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName },
+      emailRedirectTo: `${window.location.origin}/hub-portal/index.html?entry=client`
+    }
+  });
+  if (error) throw error;
+  if (result.session) await syncSecureSession();
+  return result;
 }
 
 function createMemberAccount(data) {
@@ -858,18 +928,16 @@ function temporaryPasswordFor(application) {
   return `Hub${source.slice(0, 6) || "Member"}2026!`;
 }
 
-function signIn(data) {
+async function signIn(data) {
   const email = data.email.trim().toLowerCase();
-  const user = state.users.find((item) => item.email === email && item.password === data.password);
-  if (!user) throw new Error("Email or password is not recognised.");
-  if (user.approved === false) throw new Error("This account is waiting for JP Innovation approval.");
-  if (user.suspended) throw new Error("This account is currently suspended.");
-  state.sessionEmail = email;
-  saveState();
-  return user;
+  if (!portalBackend) throw new Error("Secure login is temporarily unavailable.");
+  const { error } = await portalBackend.auth.signInWithPassword({ email, password: data.password });
+  if (error) throw new Error("Email or password is not recognised.");
+  return syncSecureSession();
 }
 
-function signOut() {
+async function signOut() {
+  if (portalBackend) await portalBackend.auth.signOut();
   state.sessionEmail = "";
   saveState();
   currentView = "dashboard";
@@ -2882,7 +2950,14 @@ function syncMember(user) {
   else state.members.push(data);
 }
 
-function boot() {
+async function boot() {
+  try {
+    await syncSecureSession();
+  } catch (error) {
+    state.sessionEmail = "";
+    saveState();
+    console.error("Secure session could not be loaded.", error);
+  }
   if (entryMode === "hub" && !currentUser()) {
     window.location.replace(`../hub/index.html${signInRequested ? "?signin=1" : ""}`);
     return;
@@ -2898,29 +2973,45 @@ function boot() {
     if (event.target === $("#upgradeDialog")) closeUpgradeDialog();
   });
   $all(".auth-tab").forEach((button) => button.addEventListener("click", () => setAuthTab(button.dataset.authTab)));
-  $("#registerForm").addEventListener("submit", (event) => {
+  $("#registerForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     try {
-      registerUser(formObject(event.currentTarget));
+      const result = await registerUser(formObject(event.currentTarget));
+      if (result.session) {
+        closeAuth();
+        setLoggedInView();
+      } else {
+        $("#authStatus").textContent = "Account created. Check your email to verify it, then sign in.";
+        event.currentTarget.reset();
+      }
+    } catch (error) {
+      $("#authStatus").textContent = error.message;
+    }
+  });
+  $("#signinForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      await signIn(formObject(event.currentTarget));
       closeAuth();
       setLoggedInView();
     } catch (error) {
       $("#authStatus").textContent = error.message;
     }
   });
-  $("#signinForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    try {
-      signIn(formObject(event.currentTarget));
-      closeAuth();
-      setLoggedInView();
-    } catch (error) {
-      $("#authStatus").textContent = error.message;
-    }
-  });
-  $("#logoutButton").addEventListener("click", () => {
+  $("#logoutButton").addEventListener("click", async () => {
     setMobileDashboardMenuOpen(false);
-    signOut();
+    await signOut();
+  });
+  $("#forgotPasswordButton")?.addEventListener("click", async () => {
+    const email = $("#signinEmail").value.trim().toLowerCase();
+    if (!email) {
+      $("#authStatus").textContent = "Enter your email address first.";
+      return;
+    }
+    const { error } = await portalBackend.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/hub-portal/index.html?entry=client&signin=1`
+    });
+    $("#authStatus").textContent = error ? error.message : "Password reset email sent. Check your inbox.";
   });
   $("#mobileMenuButton")?.addEventListener("click", () => {
     setMobileDashboardMenuOpen(!$("#appShell").classList.contains("mobile-menu-open"));
