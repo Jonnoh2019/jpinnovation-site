@@ -224,6 +224,19 @@ function hubAuthHandler() {
       if (status) status.textContent = error.message;
     }
   });
+  $("#hubForgotPasswordButton")?.addEventListener("click", async () => {
+    if (status) status.textContent = "";
+    try {
+      const email = validateEmail($("#hubSigninEmail")?.value || "");
+      if (!hubBackend) throw new Error("Secure password reset is temporarily unavailable. Please try again.");
+      const { error } = await hubBackend.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/hub-portal/index.html?entry=client&signin=1`
+      });
+      if (status) status.textContent = error ? error.message : "Password reset email sent. Check your inbox.";
+    } catch (error) {
+      if (status) status.textContent = error.message;
+    }
+  });
   registerForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (status) status.textContent = "Creating your account...";
