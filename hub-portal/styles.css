@@ -684,7 +684,7 @@ input:focus, textarea:focus, select:focus {
   background:
     linear-gradient(90deg, rgba(5,7,10,.9), rgba(5,7,10,.52)),
     linear-gradient(135deg, rgba(0,111,230,.2), rgba(32,199,216,.06)),
-    url("../assets/hub-key-locker.png") center / cover,
+    url("../assets/cad-machined-bracket.png") center / cover,
     rgba(255,255,255,.04);
 }
 .dashboard-visual-hero h2 {
@@ -2033,7 +2033,7 @@ input:focus, textarea:focus, select:focus {
     font-size: 12px;
   }
   .dashboard-image-card {
-    min-height: 122px;
+    display: none;
   }
   .dashboard-image-card > div {
     padding: 11px;
@@ -2063,6 +2063,15 @@ input:focus, textarea:focus, select:focus {
   .action-grid {
     gap: 7px;
   }
+  .launch-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-command .list-title p,
+  .launch-strip small,
+  .compact-home .list-title p,
+  .section-link span {
+    display: none;
+  }
   .admin-summary-grid article,
   .launch-strip article {
     padding: 9px;
@@ -2090,7 +2099,8 @@ input:focus, textarea:focus, select:focus {
     font-size: 20px;
   }
   .section-link {
-    min-height: 0;
+    min-height: 42px;
+    align-content: center;
     padding: 9px 10px;
   }
   .section-link-grid {
@@ -2098,9 +2108,6 @@ input:focus, textarea:focus, select:focus {
   }
   .section-link strong {
     font-size: 13px;
-  }
-  .section-link span {
-    font-size: 11px;
   }
   .primary-button,
   .secondary-button {
