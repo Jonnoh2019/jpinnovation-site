@@ -14,85 +14,76 @@ function formData(form) {
   return data;
 }
 
-const portalStoreKey = "jpHubPortal.v1";
-const adminEmail = "jpinnovation.enquiries@gmail.com";
-const previousAdminEmail = "enquiries-jpinnovation@gmail.com";
-const adminTempPassword = "JPInnovationAdmin2026!";
+const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
+const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
+const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey);
 
-function loadPortalState() {
-  try {
-    const saved = localStorage.getItem(portalStoreKey);
-    const state = saved ? JSON.parse(saved) : { users: [], sessionEmail: "" };
-    state.users ||= [];
-    state.sessionEmail ||= "";
-    ensureHubAdmin(state);
-    return state;
-  } catch {
-    const state = { users: [], sessionEmail: "" };
-    ensureHubAdmin(state);
-    return state;
-  }
-}
-
-function ensureHubAdmin(state) {
-  const existing = state.users.find((user) => user.email === adminEmail || user.email === previousAdminEmail);
-  if (existing) {
-    existing.email = adminEmail;
-    existing.password = adminTempPassword;
-    existing.approved = true;
-    existing.suspended = false;
-    existing.verified = true;
-    existing.role = "admin";
-    if (state.sessionEmail === previousAdminEmail) state.sessionEmail = adminEmail;
-    return;
-  }
-  state.users.unshift({
-    id: "hub-admin",
-    name: "Jon Hotard",
-    business: "JP Innovation Ltd",
-    email: adminEmail,
-    password: adminTempPassword,
-    approved: true,
-    suspended: false,
-    verified: true,
-    level: "JP Trusted Partner",
-    role: "admin"
+function setHubAuthTab(mode = "signin") {
+  const isRegister = mode === "register";
+  $all("[data-hub-auth-tab]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.hubAuthTab === mode);
   });
+  $("#hubSigninForm")?.classList.toggle("hidden", isRegister);
+  $("#hubRegisterForm")?.classList.toggle("hidden", !isRegister);
+  if ($("#hubAuthTitle")) {
+    $("#hubAuthTitle").textContent = isRegister ? "Register for access" : "Innovation Hub sign in";
+  }
+  if ($("#hubAuthStatus")) $("#hubAuthStatus").textContent = "";
 }
 
-function savePortalState(state) {
-  localStorage.setItem(portalStoreKey, JSON.stringify(state));
-}
-
-function openHubAuth() {
+function openHubAuth(mode = "signin") {
   const dialog = $("#hubAuthDialog");
-  const status = $("#hubAuthStatus");
   if (!dialog) return;
   dialog.classList.add("open");
   dialog.setAttribute("aria-hidden", "false");
-  if (status) status.textContent = "";
+  setHubAuthTab(mode);
 }
 
 function closeHubAuth() {
   const dialog = $("#hubAuthDialog");
-  const status = $("#hubAuthStatus");
   if (!dialog) return;
   dialog.classList.remove("open");
   dialog.setAttribute("aria-hidden", "true");
-  if (status) status.textContent = "";
+  if ($("#hubAuthStatus")) $("#hubAuthStatus").textContent = "";
 }
 
-function signInToHub(data) {
-  const state = loadPortalState();
-  const email = (data.email || "").trim().toLowerCase();
-  const user = state.users.find((item) => item.email === email && item.password === data.password);
-  if (!user) throw new Error("Email or password is not recognised.");
-  if (user.approved === false) throw new Error("This account is waiting for JP Innovation approval.");
-  if (user.suspended) throw new Error("This account is currently suspended.");
-  if (user.role === "client") throw new Error("This login is for the free Client Portal. Ask JP Innovation to upgrade it before Hub features open.");
-  state.sessionEmail = email;
-  savePortalState(state);
-  window.location.href = "../hub-portal/index.html";
+async function signInToHub(data) {
+  if (!hubBackend) throw new Error("Secure sign in is temporarily unavailable. Please try again.");
+  const email = String(data.email || "").trim().toLowerCase();
+  const { data: result, error } = await hubBackend.auth.signInWithPassword({
+    email,
+    password: data.password
+  });
+  if (error) throw error;
+
+  const { data: profile, error: profileError } = await hubBackend
+    .from("profiles")
+    .select("account_type")
+    .eq("user_id", result.user.id)
+    .single();
+  if (profileError) throw profileError;
+  if ((profile.account_type || "client") === "client") {
+    await hubBackend.auth.signOut();
+    throw new Error("Your Client Portal account is active. Innovation Hub access unlocks after JP Innovation upgrades it to paid membership.");
+  }
+  window.location.href = "../hub-portal/index.html?entry=hub";
+}
+
+async function registerHubAccount(data) {
+  if (!hubBackend) throw new Error("Secure registration is temporarily unavailable. Please try again.");
+  const email = String(data.email || "").trim().toLowerCase();
+  const { error } = await hubBackend.auth.signUp({
+    email,
+    password: data.password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/hub-portal/index.html?entry=client&signin=1`,
+      data: {
+        full_name: String(data.fullName || "").trim(),
+        account_type: "client"
+      }
+    }
+  });
+  if (error) throw error;
 }
 
 function buildInterestEmail(data) {
@@ -122,40 +113,56 @@ function registerInterestHandler() {
   const form = $("#applyForm");
   const status = $("#applyStatus");
   if (!form) return;
-
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const data = formData(form);
     const subject = "JP Innovation Hub launch interest";
     const body = buildInterestEmail(data);
     window.location.href = `mailto:jpinnovation.enquiries@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    if (status) {
-      status.textContent = "Your email app should now open with the details ready to send.";
-    }
+    if (status) status.textContent = "Your email app should now open with the details ready to send.";
   });
 }
 
 function hubAuthHandler() {
-  const form = $("#hubSigninForm");
+  const signinForm = $("#hubSigninForm");
+  const registerForm = $("#hubRegisterForm");
   const status = $("#hubAuthStatus");
   const params = new URLSearchParams(window.location.search);
 
   $all("[data-open-hub-auth]").forEach((button) => {
-    button.addEventListener("click", openHubAuth);
+    button.addEventListener("click", () => openHubAuth(button.dataset.openHubAuth || "signin"));
+  });
+  $all("[data-hub-auth-tab]").forEach((button) => {
+    button.addEventListener("click", () => setHubAuthTab(button.dataset.hubAuthTab));
   });
   $("#closeHubAuth")?.addEventListener("click", closeHubAuth);
   $("#hubAuthDialog")?.addEventListener("click", (event) => {
     if (event.target === $("#hubAuthDialog")) closeHubAuth();
   });
-  form?.addEventListener("submit", (event) => {
+  signinForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (status) status.textContent = "Signing in...";
     try {
-      signInToHub(formData(form));
+      await signInToHub(formData(signinForm));
     } catch (error) {
       if (status) status.textContent = error.message;
     }
   });
-  if (params.get("signin") === "1") openHubAuth();
+  registerForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (status) status.textContent = "Creating your account...";
+    try {
+      await registerHubAccount(formData(registerForm));
+      registerForm.reset();
+      if (status) {
+        status.textContent = "Account created. Check your email to verify it, then sign in. Hub access unlocks after a paid membership upgrade.";
+      }
+    } catch (error) {
+      if (status) status.textContent = error.message;
+    }
+  });
+  if (params.get("register") === "1") openHubAuth("register");
+  else if (params.get("signin") === "1") openHubAuth("signin");
 }
 
 registerInterestHandler();
