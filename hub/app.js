@@ -14,6 +14,25 @@ function formData(form) {
   return data;
 }
 
+function cleanEmailValue(value = "") {
+  return String(value)
+    .replace(/\s+/g, "")
+    .replace(/^[,;]+|[,;]+$/g, "")
+    .toLowerCase();
+}
+
+function setupEmailFieldCleaning(root = document) {
+  $all("input[type='email']", root).forEach((input) => {
+    const clean = () => {
+      const cleaned = cleanEmailValue(input.value);
+      if (input.value !== cleaned) input.value = cleaned;
+    };
+    input.addEventListener("blur", clean);
+    input.addEventListener("change", clean);
+    input.addEventListener("paste", () => window.setTimeout(clean, 0));
+  });
+}
+
 const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
 const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
 const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey);
@@ -132,6 +151,7 @@ function hubAuthHandler() {
   const registerForm = $("#hubRegisterForm");
   const status = $("#hubAuthStatus");
   const params = new URLSearchParams(window.location.search);
+  setupEmailFieldCleaning();
 
   $all("[data-open-hub-auth]").forEach((button) => {
     button.addEventListener("click", () => openHubAuth(button.dataset.openHubAuth || "signin"));
