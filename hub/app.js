@@ -43,6 +43,48 @@ function setupEmailFieldCleaning(root = document) {
   });
 }
 
+function analyticsVisitorId() {
+  try {
+    const key = "jpInnovationVisitorId";
+    let id = window.localStorage.getItem(key);
+    if (!id) {
+      id = (window.crypto?.randomUUID && window.crypto.randomUUID()) || `visitor-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      window.localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return "visitor-storage-unavailable";
+  }
+}
+
+function analyticsDeviceType() {
+  const width = window.innerWidth || 0;
+  if (width <= 640) return "mobile";
+  if (width <= 1024) return "tablet";
+  return "desktop";
+}
+
+function analyticsPath() {
+  const path = window.location.pathname || "/";
+  return path.endsWith("/index.html") ? path.replace(/index\.html$/, "") : path;
+}
+
+async function trackPageView() {
+  if (!hubBackend) return;
+  try {
+    await hubBackend.from("page_views").insert({
+      visitor_id: analyticsVisitorId(),
+      page_path: analyticsPath(),
+      page_title: document.title || "",
+      referrer: document.referrer ? document.referrer.slice(0, 500) : "",
+      device_type: analyticsDeviceType(),
+      viewport_width: window.innerWidth || null
+    });
+  } catch {
+    // Analytics should never interrupt the public Hub page if the database table is not ready.
+  }
+}
+
 const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
 const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
 const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey);
@@ -201,3 +243,4 @@ function hubAuthHandler() {
 
 registerInterestHandler();
 hubAuthHandler();
+trackPageView();
