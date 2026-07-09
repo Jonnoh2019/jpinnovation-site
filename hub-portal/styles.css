@@ -420,6 +420,46 @@ input:focus, textarea:focus, select:focus {
 .workspace-header h1 {
   font-size: clamp(26px, 2.8vw, 38px);
 }
+.workspace-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mobile-dashboard-menu,
+.mobile-menu-backdrop { display: none; }
+.mobile-dashboard-menu {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid rgba(47,141,255,.38);
+  border-radius: var(--radius);
+  background: rgba(0,111,230,.14);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+.mobile-dashboard-menu span,
+.mobile-dashboard-menu span::before,
+.mobile-dashboard-menu span::after {
+  display: block;
+  width: 17px;
+  height: 2px;
+  background: currentColor;
+  content: "";
+}
+.mobile-dashboard-menu span {
+  position: relative;
+}
+.mobile-dashboard-menu span::before {
+  position: absolute;
+  top: -6px;
+}
+.mobile-dashboard-menu span::after {
+  position: absolute;
+  top: 6px;
+}
 .workspace-header-actions {
   position: relative;
   display: flex;
@@ -1792,22 +1832,44 @@ input:focus, textarea:focus, select:focus {
   .momentum-grid img { min-height: 210px; }
   .app-shell { display: block; }
   .sidebar {
-    position: static;
-    height: auto;
-    overflow: visible;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 100;
+    width: min(330px, 88vw);
+    height: 100dvh;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
+    box-shadow: 24px 0 70px rgba(0,0,0,.55);
+    transform: translateX(-105%);
+    transition: transform .2s ease;
   }
-  .app-brand img { width: 220px; }
+  .app-shell.mobile-menu-open .sidebar { transform: translateX(0); }
+  .app-brand img { width: 190px; }
   .app-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     overflow: visible;
-    padding-right: 0;
+    padding-right: 2px;
   }
+  .mobile-dashboard-menu { display: inline-flex; }
+  .mobile-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgba(0,0,0,.62);
+  }
+  .app-shell.mobile-menu-open .mobile-menu-backdrop { display: block; }
+  body.mobile-dashboard-menu-open { overflow: hidden; }
   .workspace { padding: 18px; }
   .workspace-header {
     align-items: stretch;
     flex-direction: column;
+  }
+  .workspace-heading {
+    align-items: flex-start;
   }
   .workspace-header-actions {
     width: 100%;
