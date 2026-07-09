@@ -72,6 +72,25 @@ function formObject(form) {
   return data;
 }
 
+function cleanEmailValue(value = "") {
+  return String(value)
+    .replace(/\s+/g, "")
+    .replace(/^[,;]+|[,;]+$/g, "")
+    .toLowerCase();
+}
+
+function setupEmailFieldCleaning(root = document) {
+  $all("input[type='email']", root).forEach((input) => {
+    const clean = () => {
+      const cleaned = cleanEmailValue(input.value);
+      if (input.value !== cleaned) input.value = cleaned;
+    };
+    input.addEventListener("blur", clean);
+    input.addEventListener("change", clean);
+    input.addEventListener("paste", () => window.setTimeout(clean, 0));
+  });
+}
+
 function countHelpfulReplies(post) {
   return (post.responses || []).filter((reply) => reply.helpful).length;
 }
@@ -2961,6 +2980,7 @@ async function boot() {
     return;
   }
   configureEntryPage();
+  setupEmailFieldCleaning();
   $all("[data-open-auth]").forEach((button) => button.addEventListener("click", () => openAuth(button.dataset.openAuth)));
   $("#closeAuth").addEventListener("click", closeAuth);
   $("#authDialog").addEventListener("click", (event) => {
