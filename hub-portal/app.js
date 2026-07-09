@@ -101,6 +101,48 @@ function setupEmailFieldCleaning(root = document) {
   });
 }
 
+function analyticsVisitorId() {
+  try {
+    const key = "jpInnovationVisitorId";
+    let id = window.localStorage.getItem(key);
+    if (!id) {
+      id = (window.crypto?.randomUUID && window.crypto.randomUUID()) || `visitor-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      window.localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return "visitor-storage-unavailable";
+  }
+}
+
+function analyticsDeviceType() {
+  const width = window.innerWidth || 0;
+  if (width <= 640) return "mobile";
+  if (width <= 1024) return "tablet";
+  return "desktop";
+}
+
+function analyticsPath() {
+  const path = window.location.pathname || "/";
+  return path.endsWith("/index.html") ? path.replace(/index\.html$/, "") : path;
+}
+
+async function trackPageView() {
+  if (!portalBackend) return;
+  try {
+    await portalBackend.from("page_views").insert({
+      visitor_id: analyticsVisitorId(),
+      page_path: analyticsPath(),
+      page_title: document.title || "",
+      referrer: document.referrer ? document.referrer.slice(0, 500) : "",
+      device_type: analyticsDeviceType(),
+      viewport_width: window.innerWidth || null
+    });
+  } catch {
+    // Analytics should never interrupt the portal if the database table is not ready.
+  }
+}
+
 function countHelpfulReplies(post) {
   return (post.responses || []).filter((reply) => reply.helpful).length;
 }
@@ -1257,6 +1299,80 @@ function metric(label, value) {
   return `<article class="metric-card"><span class="badge">${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`;
 }
 
+function analyticsMetric(label, value, detail = "") {
+  return `<article class="metric-card"><span class="badge">${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</article>`;
+}
+
+function renderAnalyticsRows(rows = []) {
+  return rows.map((row) => `
+    <article class="feed-item">
+      <div>
+        <span class="badge">${escapeHtml(row.day || "Today")}</span>
+        <h3>${escapeHtml(row.views || 0)} page views</h3>
+        <p>${escapeHtml(row.visitors || 0)} visitors - Top page: ${escapeHtml(row.topPage || "Not enough data yet")}</p>
+      </div>
+    </article>
+  `).join("");
+}
+
+async function loadSiteAnalytics() {
+  const mount = $("#analyticsPanel");
+  if (!mount) return;
+  if (!portalBackend) {
+    mount.innerHTML = `<p class="muted">Analytics will appear here once the secure backend is available.</p>`;
+    return;
+  }
+  mount.innerHTML = `<p class="muted">Loading private site analytics...</p>`;
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - 13);
+    since.setHours(0, 0, 0, 0);
+    const { data, error } = await portalBackend
+      .from("page_views")
+      .select("created_at,visitor_id,page_path,device_type")
+      .gte("created_at", since.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    if (error) throw error;
+    const rows = data || [];
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const todayRows = rows.filter((row) => String(row.created_at || "").slice(0, 10) === todayKey);
+    const uniqueToday = new Set(todayRows.map((row) => row.visitor_id)).size;
+    const mobileToday = todayRows.filter((row) => row.device_type === "mobile").length;
+    const dayMap = new Map();
+    rows.forEach((row) => {
+      const day = String(row.created_at || "").slice(0, 10);
+      if (!day) return;
+      if (!dayMap.has(day)) dayMap.set(day, { day, views: 0, visitors: new Set(), pages: new Map() });
+      const entry = dayMap.get(day);
+      entry.views += 1;
+      entry.visitors.add(row.visitor_id || "unknown");
+      const page = row.page_path || "/";
+      entry.pages.set(page, (entry.pages.get(page) || 0) + 1);
+    });
+    const dailyRows = Array.from(dayMap.values()).sort((a, b) => b.day.localeCompare(a.day)).slice(0, 14).map((entry) => {
+      const topPage = Array.from(entry.pages.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+      return { day: entry.day, views: entry.views, visitors: entry.visitors.size, topPage };
+    });
+    mount.innerHTML = `
+      <div class="metrics-grid">
+        ${analyticsMetric("Today", todayRows.length, "page views")}
+        ${analyticsMetric("Visitors today", uniqueToday, "anonymous devices")}
+        ${analyticsMetric("Mobile views", mobileToday, "today")}
+        ${analyticsMetric("Last 14 days", rows.length, "page views")}
+      </div>
+      <div class="feed-list analytics-feed">
+        ${dailyRows.length ? renderAnalyticsRows(dailyRows) : `<p class="muted">No page views have been recorded yet.</p>`}
+      </div>
+    `;
+  } catch (error) {
+    mount.innerHTML = `
+      <p class="muted">Analytics are ready in the website code, but the Supabase page_views table still needs adding.</p>
+      <p class="form-status">${escapeHtml(error.message || "Database table not available yet.")}</p>
+    `;
+  }
+}
+
 function renderOnboarding(user) {
   const completion = profileCompletion(user);
   return `
@@ -1875,6 +1991,12 @@ function renderAdmin(user) {
         ${metric("Suspended", state.users.filter((item) => item.suspended).length)}
       </div>
     </section>
+    <section class="section-card section-blue">
+      <div class="list-title"><div><h2>Private website analytics</h2><p>Only JP Innovation admins can see this. It records anonymous page views, daily visitors and device type.</p></div></div>
+      <div id="analyticsPanel">
+        <p class="muted">Loading private site analytics...</p>
+      </div>
+    </section>
     <section class="section-card section-violet">
       <div class="list-title"><div><h2>Access applications</h2><p>Review people before creating a member login.</p></div><span class="pill warn">${pendingApplications} pending</span></div>
       <div class="application-list">
@@ -2485,6 +2607,7 @@ function bindViewHandlers(view) {
     bindApplicationActions();
     bindAdminActions();
     bindQuoteActions();
+    loadSiteAnalytics();
   }
   if (view === "profile") {
     $("#profileForm").addEventListener("submit", (event) => {
@@ -2978,6 +3101,7 @@ function syncMember(user) {
 }
 
 async function boot() {
+  trackPageView();
   try {
     await syncSecureSession();
   } catch (error) {
