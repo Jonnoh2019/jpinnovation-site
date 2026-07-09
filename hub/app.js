@@ -20,11 +20,15 @@ const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishabl
 
 function setHubAuthTab(mode = "signin") {
   const isRegister = mode === "register";
+  const signinForm = $("#hubSigninForm");
+  const registerForm = $("#hubRegisterForm");
   $all("[data-hub-auth-tab]").forEach((button) => {
     button.classList.toggle("active", button.dataset.hubAuthTab === mode);
   });
-  $("#hubSigninForm")?.classList.toggle("hidden", isRegister);
-  $("#hubRegisterForm")?.classList.toggle("hidden", !isRegister);
+  signinForm?.classList.toggle("hidden", isRegister);
+  registerForm?.classList.toggle("hidden", !isRegister);
+  if (signinForm) signinForm.hidden = isRegister;
+  if (registerForm) registerForm.hidden = !isRegister;
   if ($("#hubAuthTitle")) {
     $("#hubAuthTitle").textContent = isRegister ? "Register for access" : "Innovation Hub sign in";
   }
