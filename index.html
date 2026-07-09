@@ -1204,7 +1204,47 @@
     <a href="mailto:jpinnovation.enquiries@gmail.com">jpinnovation.enquiries@gmail.com</a>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
+    (() => {
+      const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
+      const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
+      const client = window.supabase?.createClient?.(supabaseUrl, supabasePublishableKey);
+      const visitorId = () => {
+        try {
+          const key = "jpInnovationVisitorId";
+          let id = window.localStorage.getItem(key);
+          if (!id) {
+            id = (window.crypto?.randomUUID && window.crypto.randomUUID()) || `visitor-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            window.localStorage.setItem(key, id);
+          }
+          return id;
+        } catch {
+          return "visitor-storage-unavailable";
+        }
+      };
+      const deviceType = () => {
+        const width = window.innerWidth || 0;
+        if (width <= 640) return "mobile";
+        if (width <= 1024) return "tablet";
+        return "desktop";
+      };
+      const pagePath = () => {
+        const path = window.location.pathname || "/";
+        return path.endsWith("/index.html") ? path.replace(/index\.html$/, "") : path;
+      };
+      if (client) {
+        client.from("page_views").insert({
+          visitor_id: visitorId(),
+          page_path: pagePath(),
+          page_title: document.title || "",
+          referrer: document.referrer ? document.referrer.slice(0, 500) : "",
+          device_type: deviceType(),
+          viewport_width: window.innerWidth || null
+        });
+      }
+    })();
+
     const toggle = document.querySelector(".menu-toggle");
     const nav = document.querySelector("#siteNav");
 
