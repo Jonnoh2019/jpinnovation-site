@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=hub-notification-bell-20260708">
+  <link rel="stylesheet" href="styles.css?v=mobile-dashboard-menu-20260709">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -125,7 +125,7 @@
   </div>
 
   <div id="appShell" class="app-shell hidden">
-    <aside class="sidebar">
+    <aside id="dashboardSidebar" class="sidebar">
       <a class="app-brand" href="../index.html" aria-label="Return to JP Innovation Site">
         <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation">
         <span>Innovation Hub</span>
@@ -148,12 +148,19 @@
       <a class="secondary-button site-return-button" href="../index.html">Back to JP Innovation Site</a>
       <button id="logoutButton" class="secondary-button logout-button">Log out</button>
     </aside>
+    <button id="mobileMenuBackdrop" class="mobile-menu-backdrop" type="button" aria-label="Close dashboard menu"></button>
 
     <main class="workspace">
       <header class="workspace-header">
-        <div>
-          <p class="eyebrow">Innovation Hub</p>
-          <h1 id="viewTitle">Dashboard</h1>
+        <div class="workspace-heading">
+          <button id="mobileMenuButton" class="mobile-dashboard-menu" type="button" aria-label="Open dashboard menu" aria-controls="dashboardSidebar" aria-expanded="false">
+            <span></span>
+            Menu
+          </button>
+          <div>
+            <p class="eyebrow">Innovation Hub</p>
+            <h1 id="viewTitle">Dashboard</h1>
+          </div>
         </div>
         <div class="workspace-header-actions">
           <div class="notification-centre">
@@ -188,6 +195,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=mobile-login-email-fix-20260709"></script>
+  <script src="app.js?v=mobile-dashboard-menu-20260709"></script>
 </body>
 </html>
