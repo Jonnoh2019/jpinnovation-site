@@ -2,6 +2,8 @@ const storeKey = "jpHubPortal.v1";
 const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
 const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
 const portalBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey);
+const publicSiteOrigin = "https://www.jpinnovation.co.uk";
+const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
 
 const boardCategories = [
   "General Engineering Chat",
@@ -807,11 +809,28 @@ function closeAuth() {
 
 function setAuthTab(mode) {
   const isRegister = mode === "register";
-  $all(".auth-tab").forEach((button) => button.classList.toggle("active", button.dataset.authTab === mode));
-  $("#signinForm").classList.toggle("hidden", isRegister);
-  $("#registerForm").classList.toggle("hidden", !isRegister);
-  $("#authTitle").textContent = isRegister ? "Access by approval" : (entryMode === "hub" ? "Innovation Hub sign in" : "Client Portal sign in");
+  const isReset = mode === "reset";
+  $all(".auth-tab").forEach((button) => button.classList.toggle("active", !isReset && button.dataset.authTab === mode));
+  $("#signinForm").classList.toggle("hidden", isRegister || isReset);
+  $("#registerForm").classList.toggle("hidden", !isRegister || isReset);
+  $("#resetPasswordForm")?.classList.toggle("hidden", !isReset);
+  $("#authTitle").textContent = isReset
+    ? "Choose a new password"
+    : isRegister
+      ? "Access by approval"
+      : (entryMode === "hub" ? "Innovation Hub sign in" : "Client Portal sign in");
   $("#authStatus").textContent = "";
+}
+
+function hasPasswordRecoveryLink() {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const searchParams = new URLSearchParams(window.location.search);
+  return hashParams.get("type") === "recovery" || searchParams.get("type") === "recovery" || searchParams.get("reset") === "1";
+}
+
+function openPasswordReset() {
+  openAuth("reset");
+  $("#authStatus").textContent = "Please enter your new password below.";
 }
 
 function setText(selector, text) {
@@ -917,7 +936,7 @@ async function registerUser(data) {
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${window.location.origin}/hub-portal/index.html?entry=client`
+      emailRedirectTo: `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1`
     }
   });
   if (error) throw error;
@@ -3114,6 +3133,11 @@ function syncMember(user) {
 
 async function boot() {
   trackPageView();
+  if (portalBackend) {
+    portalBackend.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") openPasswordReset();
+    });
+  }
   try {
     await syncSecureSession();
   } catch (error) {
@@ -3162,6 +3186,35 @@ async function boot() {
       $("#authStatus").textContent = error.message;
     }
   });
+  $("#resetPasswordForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = formObject(event.currentTarget);
+    const password = String(data.password || "");
+    const confirmPassword = String(data.confirmPassword || "");
+    if (password.length < 8) {
+      $("#authStatus").textContent = "Use a password of at least 8 characters.";
+      return;
+    }
+    if (password !== confirmPassword) {
+      $("#authStatus").textContent = "The two passwords do not match.";
+      return;
+    }
+    if (!portalBackend) {
+      $("#authStatus").textContent = "Secure password reset is temporarily unavailable. Please try again.";
+      return;
+    }
+    $("#authStatus").textContent = "Saving your new password...";
+    const { error } = await portalBackend.auth.updateUser({ password });
+    if (error) {
+      $("#authStatus").textContent = error.message;
+      return;
+    }
+    event.currentTarget.reset();
+    $("#authStatus").textContent = "Password updated. You can now sign in with the new password.";
+    await portalBackend.auth.signOut();
+    setAuthTab("signin");
+    window.history.replaceState({}, document.title, "/hub-portal/index.html?entry=client&signin=1");
+  });
   $("#logoutButton").addEventListener("click", async () => {
     setMobileDashboardMenuOpen(false);
     await signOut();
@@ -3175,7 +3228,7 @@ async function boot() {
       return;
     }
     const { error } = await portalBackend.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/hub-portal/index.html?entry=client&signin=1`
+      redirectTo: passwordResetRedirectUrl
     });
     $("#authStatus").textContent = error ? error.message : "Password reset email sent. Check your inbox.";
   });
@@ -3224,7 +3277,8 @@ async function boot() {
     }
   });
   setLoggedInView();
-  if (!currentUser() && signInRequested && !$("#upgradeDialog")?.classList.contains("open")) openAuth("signin");
+  if (!currentUser() && hasPasswordRecoveryLink()) openPasswordReset();
+  else if (!currentUser() && signInRequested && !$("#upgradeDialog")?.classList.contains("open")) openAuth("signin");
 }
 
 boot();
