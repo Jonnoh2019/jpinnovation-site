@@ -286,13 +286,13 @@
         <button class="auth-tab" data-hub-auth-tab="register">Register</button>
       </div>
       <form id="hubSigninForm" class="auth-form" autocomplete="on">
-        <label for="hubSigninEmail">Email <input id="hubSigninEmail" name="email" type="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label for="hubSigninEmail">Email <input id="hubSigninEmail" name="email" type="text" inputmode="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
         <label for="hubSigninPassword">Password <input id="hubSigninPassword" name="password" type="password" required autocomplete="current-password"></label>
         <button class="primary-button" type="submit">Sign in</button>
       </form>
       <form id="hubRegisterForm" class="auth-form hidden" autocomplete="on">
         <label for="hubRegisterName">Full name <input id="hubRegisterName" name="fullName" type="text" required autocomplete="name"></label>
-        <label for="hubRegisterEmail">Email <input id="hubRegisterEmail" name="email" type="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
+        <label for="hubRegisterEmail">Email <input id="hubRegisterEmail" name="email" type="text" inputmode="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
         <label for="hubRegisterPassword">Password <input id="hubRegisterPassword" name="password" type="password" required minlength="8" autocomplete="new-password"></label>
         <button class="primary-button" type="submit">Create account</button>
       </form>
