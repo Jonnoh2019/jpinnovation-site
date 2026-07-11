@@ -1994,6 +1994,7 @@ input:focus, textarea:focus, select:focus {
   }
   .workspace-heading {
     align-items: flex-start;
+    justify-content: flex-start;
   }
   .workspace-header-actions {
     width: 100%;
@@ -2126,27 +2127,50 @@ input:focus, textarea:focus, select:focus {
     line-height: 1.08;
   }
   .workspace-heading {
-    gap: 8px;
+    display: block;
+    gap: 0;
   }
   .mobile-dashboard-menu {
-    min-height: 38px;
-    padding: 7px 10px;
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 7px 9px;
+    border-radius: 11px;
+    font-size: 12px;
   }
   .workspace-header-actions {
+    display: grid;
+    grid-template-columns: auto auto auto minmax(0, 1fr);
+    align-items: center;
     gap: 8px;
   }
   .header-icon-button,
   .notification-bell {
     width: 40px;
     height: 40px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.055);
+  }
+  .header-icon-button svg,
+  .notification-bell svg {
+    width: 20px;
+    height: 20px;
   }
   .member-chip {
+    min-width: 0;
     padding: 7px;
+    gap: 8px;
   }
   .member-chip span {
     width: 34px;
     height: 34px;
     font-size: 13px;
+  }
+  .member-chip strong {
+    font-size: 14px;
+    line-height: 1.1;
+  }
+  .member-chip small {
+    font-size: 12px;
   }
   .view-mount {
     gap: 10px;
