@@ -110,6 +110,10 @@ button { cursor: pointer; }
   max-width: 760px;
 }
 
+.section-heading .eyebrow {
+  display: none;
+}
+
 .chapter-label {
   display: inline-flex;
   width: fit-content;
