@@ -54,7 +54,7 @@ button { cursor: pointer; }
   backdrop-filter: blur(18px);
 }
 
-.brand img { width: min(290px, 100%); }
+.brand img { width: min(320px, 100%); }
 .public-nav {
   display: flex;
   justify-content: flex-end;
