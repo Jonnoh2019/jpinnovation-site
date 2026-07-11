@@ -622,6 +622,24 @@ input:focus, textarea:focus, select:focus {
   font-size: 13px;
 }
 .notification-item.new { border-color: rgba(47,141,255,.32); }
+.post-edit-panel,
+.inline-edit {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.025);
+}
+.post-edit-panel > summary,
+.inline-edit > summary {
+  padding: 10px 12px;
+  color: var(--silver);
+  font-weight: 800;
+  cursor: pointer;
+}
+.post-edit-panel form,
+.inline-edit form { padding: 0 12px 12px; }
+.inline-edit textarea { width: 100%; }
+.reply-card .inline-edit { width: 100%; }
 .member-chip {
   display: flex;
   align-items: center;
