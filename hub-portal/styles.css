@@ -505,6 +505,7 @@ input:focus, textarea:focus, select:focus {
   gap: 10px;
 }
 .notification-centre { position: relative; }
+.header-icon-button,
 .notification-bell {
   position: relative;
   display: grid;
@@ -516,11 +517,13 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,.045);
   color: var(--silver);
 }
+.header-icon-button:hover,
 .notification-bell:hover,
 .notification-bell[aria-expanded="true"] {
   border-color: rgba(47,141,255,.55);
   background: rgba(0,111,230,.16);
 }
+.header-icon-button svg,
 .notification-bell svg {
   width: 22px;
   height: 22px;
@@ -2097,6 +2100,7 @@ input:focus, textarea:focus, select:focus {
   .workspace-header-actions {
     gap: 8px;
   }
+  .header-icon-button,
   .notification-bell {
     width: 40px;
     height: 40px;
