@@ -1397,7 +1397,7 @@ function renderDashboard(user) {
   const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
   const activeProject = state.projects.find((project) => project.id === state.activeProjectId) || state.projects[0];
   const unresolvedPosts = state.posts.filter((post) => !countHelpfulReplies(post)).length;
-  const nextActions = dashboardNextActions(user, { completion, pendingApplications, unread, unresolvedPosts, openQuotes });
+  const nextActions = dashboardNextActions(user, { completion, unread, unresolvedPosts, openQuotes });
   return `
     ${user.role !== "admin" && completion < 80 ? `
       <section class="section-card setup-reminder">
