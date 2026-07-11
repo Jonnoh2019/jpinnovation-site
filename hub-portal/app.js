@@ -1048,7 +1048,6 @@ function setLoggedInView() {
     if (button.id === "adminNav") return;
     button.classList.toggle("hidden", isClient && !clientViews.has(button.dataset.view));
   });
-  $(".app-brand span").textContent = isClient ? "Client Portal" : "Innovation Hub";
   $(".workspace-header .eyebrow").textContent = isClient ? "Client Portal" : "Innovation Hub";
   renderNotifications();
   renderMessageInbox();
