@@ -3170,14 +3170,16 @@ async function boot() {
   $all(".auth-tab").forEach((button) => button.addEventListener("click", () => setAuthTab(button.dataset.authTab)));
   $("#registerForm").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const registerForm = event.currentTarget;
     try {
-      const result = await registerUser(formObject(event.currentTarget));
+      const result = await registerUser(formObject(registerForm));
       if (result.session) {
         closeAuth();
         setLoggedInView();
       } else {
-        $("#authStatus").textContent = "Account created. Check your email to verify it, then sign in.";
-        event.currentTarget.reset();
+        $("#authStatus").textContent = "Account created. Check your email to verify it, then sign in. Your JP Innovation email will become the admin account after sign-in.";
+        if (typeof registerForm?.reset === "function") registerForm.reset();
+        setAuthTab("signin");
       }
     } catch (error) {
       $("#authStatus").textContent = error.message;
