@@ -850,7 +850,7 @@ function configureEntryPage() {
       : "<span>Client Portal</span><strong>Free customer account area</strong>";
   }
   setText("#entryEyebrow", isHubEntry ? "Innovation Hub member access" : "Client Portal access");
-  setText("#entryTitle", isHubEntry ? "Innovation Hub — paid member area." : "Client Portal — free customer account area.");
+  setText("#entryTitle", isHubEntry ? "Access paid member tools, contacts and private opportunities." : "Manage quotes, project updates and messages.");
   setText(
     "#entryLead",
     isHubEntry
