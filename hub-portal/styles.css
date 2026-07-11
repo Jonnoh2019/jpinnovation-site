@@ -631,6 +631,15 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255,255,255,.045);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+}
+.member-chip:hover,
+.member-chip:focus-visible {
+  border-color: rgba(47,141,255,.58);
+  background: rgba(0,111,230,.14);
+  outline: none;
 }
 .member-chip span {
   display: grid;
