@@ -1965,10 +1965,10 @@ input:focus, textarea:focus, select:focus {
   .app-shell { display: block; }
   .sidebar {
     position: fixed;
-    inset: 0 auto 0 0;
+    inset: var(--hub-mobile-header-offset, 188px) auto 0 0;
     z-index: 100;
     width: min(330px, 88vw);
-    height: 100dvh;
+    height: calc(100dvh - var(--hub-mobile-header-offset, 188px));
     overflow-y: auto;
     border-right: 1px solid var(--line);
     border-bottom: 0;
@@ -1977,7 +1977,7 @@ input:focus, textarea:focus, select:focus {
     transition: transform .2s ease;
   }
   .app-shell.mobile-menu-open .sidebar { transform: translateX(0); }
-  .app-brand img { width: 190px; }
+  .sidebar .app-brand { display: none; }
   .app-nav {
     grid-template-columns: 1fr;
     overflow: visible;
@@ -1986,10 +1986,10 @@ input:focus, textarea:focus, select:focus {
   .mobile-dashboard-menu { display: inline-flex; }
   .mobile-menu-backdrop {
     position: fixed;
-    inset: 0;
+    inset: var(--hub-mobile-header-offset, 188px) 0 0;
     z-index: 90;
     width: 100%;
-    height: 100%;
+    height: calc(100dvh - var(--hub-mobile-header-offset, 188px));
     border: 0;
     background: rgba(0,0,0,.62);
   }
@@ -1997,8 +1997,15 @@ input:focus, textarea:focus, select:focus {
   body.mobile-dashboard-menu-open { overflow: hidden; }
   .workspace { padding: 18px; }
   .workspace-header {
+    position: sticky;
+    top: 0;
+    z-index: 120;
     align-items: stretch;
     flex-direction: column;
+    padding: 10px 0 12px;
+    background: rgba(6,9,13,.96);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    backdrop-filter: blur(14px);
   }
   .workspace-mobile-logo {
     order: 1;
@@ -2137,9 +2144,14 @@ input:focus, textarea:focus, select:focus {
     grid-template-columns: 1fr;
   }
   .workspace { padding: 10px; }
+  .app-shell {
+    --hub-mobile-header-offset: 190px;
+  }
   .workspace-header {
     gap: 8px;
     margin-bottom: 10px;
+    padding-top: 8px;
+    padding-bottom: 10px;
   }
   .workspace-mobile-logo img {
     width: min(100%, 372px);
