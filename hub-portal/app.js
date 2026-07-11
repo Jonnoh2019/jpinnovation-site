@@ -1283,10 +1283,10 @@ function renderMessageInbox() {
 }
 
 function setNotificationsOpen(open) {
-  const centre = $(".notification-centre");
   const bell = $("#notificationBell");
-  if (!centre || !bell) return;
-  centre.classList.toggle("open", open);
+  const popover = $("#notificationPopover");
+  if (!popover || !bell) return;
+  popover.classList.toggle("open", open);
   bell.setAttribute("aria-expanded", String(open));
 }
 
@@ -3593,6 +3593,7 @@ async function boot() {
   $("#mobileMenuBackdrop")?.addEventListener("click", () => setMobileDashboardMenuOpen(false));
   $("#dashboardHomeButton")?.addEventListener("click", () => {
     setNotificationsOpen(false);
+    setMemberProfileMenuOpen(false);
     renderView("dashboard");
     setMobileDashboardMenuOpen(false);
   });
@@ -3618,7 +3619,9 @@ async function boot() {
   });
   $("#notificationBell")?.addEventListener("click", (event) => {
     event.stopPropagation();
-    setNotificationsOpen(!$(".notification-centre").classList.contains("open"));
+    const willOpen = !$("#notificationPopover")?.classList.contains("open");
+    setMemberProfileMenuOpen(false);
+    setNotificationsOpen(willOpen);
   });
   $("#closeNotifications")?.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -3638,6 +3641,7 @@ async function boot() {
   });
   $all(".nav-link").forEach((button) => button.addEventListener("click", () => {
     renderView(button.dataset.view);
+    setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
   }));
   $("#applyForm")?.addEventListener("submit", (event) => {
