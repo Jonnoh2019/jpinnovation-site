@@ -2257,7 +2257,7 @@ input:focus, textarea:focus, select:focus {
   }
   .workspace { padding: 10px; }
   .app-shell {
-    --hub-mobile-header-offset: 190px;
+    --hub-mobile-header-offset: 145px;
   }
   .workspace-header {
     gap: 8px;
