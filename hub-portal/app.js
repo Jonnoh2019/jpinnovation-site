@@ -3397,6 +3397,11 @@ async function boot() {
     renderView("dashboard");
     setMobileDashboardMenuOpen(false);
   });
+  $("#memberProfileButton")?.addEventListener("click", () => {
+    setNotificationsOpen(false);
+    renderView("profile");
+    setMobileDashboardMenuOpen(false);
+  });
   $("#messageInboxButton")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setNotificationsOpen(false);
