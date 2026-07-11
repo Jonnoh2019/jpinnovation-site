@@ -1039,7 +1039,16 @@ async function signIn(data) {
   const email = validateEmail(data.email);
   if (!portalBackend) throw new Error("Secure login is temporarily unavailable.");
   const { error } = await portalBackend.auth.signInWithPassword({ email, password: data.password });
-  if (error) throw new Error("Email or password is not recognised.");
+  if (error) {
+    const message = String(error.message || "");
+    if (/confirm|verified|verification/i.test(message)) {
+      throw new Error("Your account exists but the email is not verified yet. If no email arrived, JP Innovation needs email confirmation switched off in Supabase for now.");
+    }
+    if (/invalid login|invalid credentials|password|not found/i.test(message)) {
+      throw new Error("Email or password is not recognised. If you just registered, try the same password again or use password reset.");
+    }
+    throw new Error(message || "Sign in failed. Please try again.");
+  }
   return syncSecureSession();
 }
 
@@ -3240,6 +3249,27 @@ async function boot() {
       redirectTo: passwordResetRedirectUrl
     });
     $("#authStatus").textContent = error ? error.message : "Password reset email sent. Check your inbox.";
+  });
+  $("#resendVerificationButton")?.addEventListener("click", async () => {
+    let email = "";
+    try {
+      email = validateEmail($("#signinEmail").value);
+    } catch (error) {
+      $("#authStatus").textContent = error.message;
+      return;
+    }
+    if (!portalBackend) {
+      $("#authStatus").textContent = "Secure verification is temporarily unavailable. Please try again.";
+      return;
+    }
+    const { error } = await portalBackend.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1`
+      }
+    });
+    $("#authStatus").textContent = error ? error.message : "Verification email requested. Check inbox and spam, then sign in.";
   });
   $("#mobileMenuButton")?.addEventListener("click", () => {
     setMobileDashboardMenuOpen(!$("#appShell").classList.contains("mobile-menu-open"));
