@@ -880,6 +880,10 @@ function isClientBlockedFromHub(user) {
   return entryMode === "hub" && user?.role === "client";
 }
 
+function isClientPortalContext(user = currentUser()) {
+  return entryMode === "client" || user?.role === "client";
+}
+
 function showUpgradeDialog() {
   const dialog = $("#upgradeDialog");
   if (!dialog) {
@@ -912,11 +916,11 @@ function setLoggedInView() {
   $("#publicShell").classList.toggle("hidden", loggedIn);
   $("#appShell").classList.toggle("hidden", !loggedIn);
   if (!loggedIn) return;
+  const isClient = isClientPortalContext(user);
   $("#memberInitials").textContent = userInitials(user);
   $("#memberName").textContent = user.name;
-  $("#memberRole").textContent = roleLabel(user);
-  $("#adminNav").classList.toggle("hidden", user.role !== "admin");
-  const isClient = user.role === "client";
+  $("#memberRole").textContent = isClient ? "Client Portal" : roleLabel(user);
+  $("#adminNav").classList.toggle("hidden", user.role !== "admin" || isClient);
   $all(".nav-link").forEach((button) => {
     if (button.id === "adminNav") return;
     button.classList.toggle("hidden", isClient && !clientViews.has(button.dataset.view));
@@ -926,7 +930,7 @@ function setLoggedInView() {
   renderNotifications();
   renderMessageInbox();
   if (isClient && !clientViews.has(currentView)) currentView = "dashboard";
-  if (user.role !== "admin" && !user.onboardingComplete) {
+  if (!isClient && user.role !== "admin" && !user.onboardingComplete) {
     currentView = "onboarding";
   }
   renderView(currentView);
@@ -1174,8 +1178,8 @@ function setMobileDashboardMenuOpen(open) {
 function renderView(view) {
   const user = currentUser();
   if (!user) return;
-  if (user.role === "client" && !clientViews.has(view)) view = "dashboard";
-  if (user.role !== "admin" && !user.onboardingComplete && !["onboarding", "profile", "settings"].includes(view)) {
+  if (isClientPortalContext(user) && !clientViews.has(view)) view = "dashboard";
+  if (!isClientPortalContext(user) && user.role !== "admin" && !user.onboardingComplete && !["onboarding", "profile", "settings"].includes(view)) {
     view = "onboarding";
   }
   currentView = view;
@@ -1244,7 +1248,7 @@ function renderClientDashboard(user) {
 }
 
 function renderDashboard(user) {
-  if (user.role === "client") return renderClientDashboard(user);
+  if (isClientPortalContext(user)) return renderClientDashboard(user);
   const unread = state.messages.filter((msg) => msg.unread).length;
   const quotes = state.quotes.length;
   const projects = state.projects.length;
@@ -2085,7 +2089,7 @@ function renderProfile(user) {
 }
 
 function renderSettings(user) {
-  const isClient = user.role === "client";
+  const isClient = isClientPortalContext(user);
   return `
     <section class="section-card section-silver">
       <h2>Settings</h2>
