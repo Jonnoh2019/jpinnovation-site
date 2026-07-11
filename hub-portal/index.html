@@ -109,6 +109,7 @@
         <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
         <button class="primary-button" type="submit">Sign in</button>
         <button id="forgotPasswordButton" class="secondary-button" type="button">Forgot password? Reset it</button>
+        <button id="resendVerificationButton" class="secondary-button" type="button">Resend verification email</button>
         <p class="muted">Your browser or password manager can save and autofill your own login on this device. JP Innovation does not add a shared saved password here.</p>
       </form>
       <form id="registerForm" class="auth-form hidden">
@@ -211,6 +212,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=register-reset-fix-20260711"></script>
+  <script src="app.js?v=auth-debug-resend-20260711"></script>
 </body>
 </html>
