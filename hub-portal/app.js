@@ -27,6 +27,7 @@ let activeBoardPostId = "";
 const entryParams = new URLSearchParams(window.location.search);
 const entryMode = entryParams.get("entry") === "hub" ? "hub" : "client";
 const signInRequested = entryParams.get("signin") === "1";
+const registerRequested = entryParams.get("register") === "1";
 
 const portalSections = [
   { view: "onboarding", title: "Profile Setup", detail: "Complete member basics before using the Hub fully." },
@@ -3278,6 +3279,7 @@ async function boot() {
   });
   setLoggedInView();
   if (!currentUser() && hasPasswordRecoveryLink()) openPasswordReset();
+  else if (!currentUser() && registerRequested) openAuth("register");
   else if (!currentUser() && signInRequested && !$("#upgradeDialog")?.classList.contains("open")) openAuth("signin");
 }
 
