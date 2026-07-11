@@ -1253,6 +1253,11 @@ function renderNotifications() {
   const unread = items.filter((item) => item.isNew).length;
   $("#notificationCount").textContent = unread > 9 ? "9+" : String(unread);
   $("#notificationCount").classList.toggle("hidden", unread === 0);
+  const profileAlertCount = $("#profileAlertCount");
+  if (profileAlertCount) {
+    profileAlertCount.textContent = unread > 9 ? "9+" : String(unread);
+    profileAlertCount.classList.toggle("hidden", unread === 0);
+  }
   $("#notificationList").innerHTML = items.map((item) => `
     <article class="notification-item ${item.isNew ? "new" : ""}">
       <strong>${escapeHtml(item.title)}</strong>
@@ -3581,7 +3586,9 @@ async function boot() {
     $("#authStatus").textContent = error ? error.message : "Verification email requested. Check inbox and spam, then sign in.";
   });
   $("#mobileMenuButton")?.addEventListener("click", () => {
-    setMobileDashboardMenuOpen(!$("#appShell").classList.contains("mobile-menu-open"));
+    const willOpen = !$("#appShell").classList.contains("mobile-menu-open");
+    if (willOpen) setMemberProfileMenuOpen(false);
+    setMobileDashboardMenuOpen(willOpen);
   });
   $("#mobileMenuBackdrop")?.addEventListener("click", () => setMobileDashboardMenuOpen(false));
   $("#dashboardHomeButton")?.addEventListener("click", () => {
@@ -3591,8 +3598,10 @@ async function boot() {
   });
   $("#memberProfileButton")?.addEventListener("click", (event) => {
     event.stopPropagation();
+    const willOpen = !$("#memberProfileMenu")?.classList.contains("open");
     setNotificationsOpen(false);
-    setMemberProfileMenuOpen(!$("#memberProfileMenu")?.classList.contains("open"));
+    if (willOpen) setMobileDashboardMenuOpen(false);
+    setMemberProfileMenuOpen(willOpen);
   });
   $("#memberProfileMenu")?.addEventListener("click", (event) => event.stopPropagation());
   $all("[data-profile-view]").forEach((button) => button.addEventListener("click", () => {
