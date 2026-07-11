@@ -1393,11 +1393,7 @@ function renderDashboard(user) {
   const projects = state.projects.length;
   const posts = state.posts.length;
   const leaders = rewardLeaders();
-  const readyItems = (state.launchChecklist || []).filter((item) => item.status === "ready").length;
-  const checklistCount = (state.launchChecklist || []).length || 1;
   const completion = profileCompletion(user);
-  const pendingApplications = (state.applications || []).filter((application) => application.status === "pending").length;
-  const verifiedMembers = (state.members || []).filter((member) => member.verified).length;
   const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
   const activeProject = state.projects.find((project) => project.id === state.activeProjectId) || state.projects[0];
   const unresolvedPosts = state.posts.filter((post) => !countHelpfulReplies(post)).length;
@@ -1420,8 +1416,8 @@ function renderDashboard(user) {
         <p class="muted">A private working area for engineering questions, project support, verified contacts, quotes and member opportunities.</p>
         <div class="meta-row">
           <span class="pill good">Private Innovation Hub area</span>
-          <span class="pill warn">Pre-launch build</span>
-          <span class="pill">${readyItems}/${checklistCount} launch items ready</span>
+          <span class="pill">${escapeHtml(roleLabel(user))}</span>
+          <span class="pill">Professional member workspace</span>
         </div>
         <div class="hero-button-row">
           <button class="primary-button dashboard-link" data-view-link="boards" type="button">Ask the boards</button>
@@ -1441,7 +1437,7 @@ function renderDashboard(user) {
       ${metric("Posts", posts)}
       ${metric("Projects", projects)}
       ${metric("Open quotes", openQuotes)}
-      ${metric(user.role === "admin" ? "Pending applicants" : "Unread messages", user.role === "admin" ? pendingApplications : unread)}
+      ${metric("Unread messages", unread)}
     </div>
     <section class="section-card dashboard-actions">
       <div class="list-title"><div><h2>Quick actions</h2><p>Jump straight into the work members use most.</p></div></div>
@@ -1449,11 +1445,11 @@ function renderDashboard(user) {
         ${quickAction("Q1", "Create board post", "Ask a technical question or start a focused engineering discussion.", "boards")}
         ${quickAction("Q2", "Add project", "Share a build, product idea or prototype for member input.", "projects")}
         ${quickAction("Q3", "Create quote request", "Prepare a private request for JP review or member quoting.", "quotes")}
-        ${quickAction(user.role === "admin" ? "ADM" : "MSG", user.role === "admin" ? "Review admin queue" : "Open messages", user.role === "admin" ? "Approve access, check launch items and manage accounts." : "Read replies, member contact and project updates.", user.role === "admin" ? "admin" : "messages")}
+        ${quickAction("MSG", "Open messages", "Read replies, member contact and project updates.", "messages")}
       </div>
     </section>
     <section class="section-card launch-focus-panel">
-      <div class="list-title"><div><h2>${user.role === "admin" ? "Needs attention before launch" : "Your next best steps"}</h2><p>${user.role === "admin" ? "The items most likely to block a smooth paid-member launch." : "A simple route through the Hub without hunting through every section."}</p></div></div>
+      <div class="list-title"><div><h2>Your next best steps</h2><p>A simple route through the Hub without hunting through every section.</p></div></div>
       <div class="attention-list">
         ${nextActions.map((item) => `
           <button class="attention-item dashboard-link" data-view-link="${escapeHtml(item.view)}" type="button">
@@ -1464,28 +1460,6 @@ function renderDashboard(user) {
         `).join("")}
       </div>
     </section>
-    ${user.role === "admin" ? `
-      <section class="section-card launch-overview admin-command">
-        <div class="list-title">
-          <div><h2>Launch command centre</h2><p>Keep the live launch controlled: approvals, secure access, payments and moderation still need final checks.</p></div>
-          <button class="secondary-button dashboard-link" data-view-link="admin" type="button">Open admin checklist</button>
-        </div>
-        <div class="admin-summary-grid">
-          <article><span class="badge">Applications</span><strong>${pendingApplications}</strong><small>Waiting for review</small></article>
-          <article><span class="badge">Members</span><strong>${state.members.length}</strong><small>${verifiedMembers} verified profiles</small></article>
-          <article><span class="badge">Quotes</span><strong>${openQuotes}</strong><small>Private requests open</small></article>
-        </div>
-        <div class="launch-strip">
-          ${(state.launchChecklist || []).slice(0, 4).map((item) => `
-            <article>
-              <span class="status-dot ${escapeHtml(item.status)}"></span>
-              <strong>${escapeHtml(item.title)}</strong>
-              <small>${escapeHtml(launchStatusLabel(item.status))}</small>
-            </article>
-          `).join("")}
-        </div>
-      </section>
-    ` : ""}
     <section class="section-card member-momentum section-teal">
       <div class="list-title"><div><h2>Current engineering activity</h2><p>A quick read of what is moving inside the Hub.</p></div></div>
       <div class="momentum-grid">
@@ -1542,19 +1516,6 @@ function quickAction(code, title, detail, view) {
 }
 
 function dashboardNextActions(user, counts) {
-  if (user.role === "admin") {
-    return [
-      counts.pendingApplications
-        ? { label: `${counts.pendingApplications} pending`, tone: "warn", title: "Review access applications", detail: "Approve the right people before opening the member area wider.", view: "admin" }
-        : { label: "Access", tone: "good", title: "No pending applications", detail: "Create test clients or members from Admin Review when needed.", view: "admin" },
-      counts.openQuotes
-        ? { label: `${counts.openQuotes} open`, tone: "", title: "Check quote requests", detail: "Keep JP review, open quote and shortlist stages moving.", view: "quotes" }
-        : { label: "Quotes", tone: "warn", title: "Create a sample quote flow", detail: "A clean quote journey will help the Hub feel real at launch.", view: "quotes" },
-      counts.unresolvedPosts
-        ? { label: `${counts.unresolvedPosts} need help`, tone: "warn", title: "Seed useful board replies", detail: "Mark helpful answers so the forum starts with a quality signal.", view: "boards" }
-        : { label: "Boards", tone: "good", title: "Boards have helpful replies", detail: "Keep adding practical example discussions.", view: "boards" }
-    ];
-  }
   return [
     counts.completion < 80
       ? { label: `${counts.completion}%`, tone: "warn", title: "Finish your member profile", detail: "Skills, capability and location help people find the right support.", view: "onboarding" }
@@ -2270,9 +2231,10 @@ function renderAdmin(user) {
   const applications = state.applications || [];
   const pendingApplications = applications.filter((application) => application.status === "pending").length;
   return `
-    <section class="section-card section-violet">
-      <h2>Admin review</h2>
-      <p class="muted">Review access requests, create member logins, manage approvals and keep the Hub controlled before launch.</p>
+    <section class="section-card section-violet admin-control-hero">
+      <p class="eyebrow">Private administration</p>
+      <h2>Admin control centre</h2>
+      <p class="muted">Manage access, accounts, moderation, analytics, launch readiness and private quote workflows. These controls are never shown on the member Dashboard.</p>
       <div class="metrics-grid">
         ${metric("Access requests", pendingApplications)}
         ${metric("Flagged items", flagged.length)}
