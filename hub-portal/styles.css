@@ -2026,7 +2026,7 @@ input:focus, textarea:focus, select:focus {
     align-self: stretch;
   }
   .workspace-mobile-logo img {
-    width: min(100%, 370px);
+    width: min(100%, 250px);
   }
   .workspace-heading {
     order: 3;
@@ -2171,7 +2171,7 @@ input:focus, textarea:focus, select:focus {
     padding-bottom: 10px;
   }
   .workspace-mobile-logo img {
-    width: min(100%, 372px);
+    width: min(100%, 250px);
     max-height: 98px;
     object-fit: contain;
   }
