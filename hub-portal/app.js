@@ -26,6 +26,8 @@ const state = loadState();
 normaliseState();
 let currentView = "dashboard";
 let activeBoardPostId = "";
+let boardBackendAvailable = false;
+let boardBackendMessage = "Checking secure board storage...";
 const entryParams = new URLSearchParams(window.location.search);
 const entryMode = entryParams.get("entry") === "hub" ? "hub" : "client";
 const signInRequested = entryParams.get("signin") === "1";
@@ -704,6 +706,127 @@ function defaultLaunchChecklist() {
 
 function currentUser() {
   return state.users.find((user) => user.email === state.sessionEmail) || null;
+}
+
+function mapBoardPost(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    description: row.body,
+    author: row.author_name || "Hub member",
+    authorId: row.author_id,
+    created: formatBoardDate(row.created_at),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    reports: row.reports || 0,
+    flagged: row.flagged === true,
+    responses: (row.board_replies || []).map((reply) => ({
+      id: reply.id,
+      author: reply.author_name || "Hub member",
+      authorId: reply.author_id,
+      body: reply.body,
+      helpful: reply.helpful === true,
+      created: formatBoardDate(reply.created_at),
+      createdAt: reply.created_at
+    })).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  };
+}
+
+function formatBoardDate(value) {
+  if (!value) return "Just now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(date);
+}
+
+async function loadSecureBoards() {
+  const user = currentUser();
+  if (!portalBackend || !user || isClientPortalContext(user)) return false;
+  const { data, error } = await portalBackend
+    .from("board_posts")
+    .select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful)")
+    .order("created_at", { ascending: false });
+  if (error) {
+    boardBackendAvailable = false;
+    boardBackendMessage = "Device-only mode until the secure Boards database is installed.";
+    return false;
+  }
+  boardBackendAvailable = true;
+  boardBackendMessage = "Live member posts are securely shared across devices.";
+  state.posts = (data || []).map(mapBoardPost);
+  saveState();
+  return true;
+}
+
+async function createBoardPostRecord(data, user) {
+  const flagged = moderationFlag(`${data.title} ${data.description}`);
+  if (boardBackendAvailable) {
+    const { data: row, error } = await portalBackend.from("board_posts").insert({
+      title: data.title.trim(),
+      category: data.category,
+      body: data.description.trim(),
+      author_id: user.id,
+      author_name: user.name,
+      flagged
+    }).select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports").single();
+    if (error) throw error;
+    return mapBoardPost({ ...row, board_replies: [] });
+  }
+  return {
+    id: uid("post"), title: data.title, category: data.category, description: data.description,
+    author: user.name, authorEmail: user.email, authorId: user.id, created: "Just now",
+    reports: 0, flagged, responses: []
+  };
+}
+
+async function updateBoardPostRecord(post, data) {
+  if (boardBackendAvailable) {
+    const { error } = await portalBackend.from("board_posts").update({
+      title: data.title.trim(), category: data.category, body: data.description.trim()
+    }).eq("id", post.id);
+    if (error) throw error;
+  }
+  Object.assign(post, { title: data.title.trim(), category: data.category, description: data.description.trim() });
+}
+
+async function deleteBoardPostRecord(postId) {
+  if (boardBackendAvailable) {
+    const { error } = await portalBackend.from("board_posts").delete().eq("id", postId);
+    if (error) throw error;
+  }
+  state.posts = state.posts.filter((post) => post.id !== postId);
+  if (activeBoardPostId === postId) activeBoardPostId = "";
+}
+
+async function createBoardReplyRecord(post, body, user) {
+  if (boardBackendAvailable) {
+    const { data: row, error } = await portalBackend.from("board_replies").insert({
+      post_id: post.id, body, author_id: user.id, author_name: user.name
+    }).select("id,body,author_id,author_name,created_at,updated_at,helpful").single();
+    if (error) throw error;
+    return {
+      id: row.id, author: row.author_name, authorId: row.author_id, body: row.body,
+      helpful: row.helpful === true, created: formatBoardDate(row.created_at), createdAt: row.created_at
+    };
+  }
+  return { id: uid("reply"), author: user.name, authorEmail: user.email, authorId: user.id, body, helpful: false, created: "Just now" };
+}
+
+async function updateBoardReplyRecord(post, reply, body) {
+  if (boardBackendAvailable) {
+    const { error } = await portalBackend.from("board_replies").update({ body }).eq("id", reply.id).eq("post_id", post.id);
+    if (error) throw error;
+  }
+  reply.body = body;
+}
+
+async function deleteBoardReplyRecord(post, replyId) {
+  if (boardBackendAvailable) {
+    const { error } = await portalBackend.from("board_replies").delete().eq("id", replyId).eq("post_id", post.id);
+    if (error) throw error;
+  }
+  post.responses = (post.responses || []).filter((reply) => reply.id !== replyId);
 }
 
 async function syncSecureSession() {
@@ -1587,6 +1710,7 @@ function renderBoards() {
         <span class="pill">${activeCategories} active categories</span>
         <span class="pill good">Member-only discussions</span>
         <span class="pill warn">Mark helpful replies to close the loop</span>
+        <span class="pill ${boardBackendAvailable ? "good" : "warn"}">${escapeHtml(boardBackendMessage)}</span>
       </div>
     </section>
     <section class="section-card section-cyan">
@@ -1598,6 +1722,7 @@ function renderBoards() {
         <label class="wide">Description <textarea name="description" rows="4" required></textarea></label>
         <label class="wide">Optional image upload <input type="file" disabled></label>
         <button class="primary-button wide" type="submit">Submit post</button>
+        <p id="postStatus" class="form-status wide" aria-live="polite"></p>
       </form>
     </section>
     <section class="section-card section-cyan">
@@ -2299,7 +2424,7 @@ function renderAdmin(user) {
 
 function postCard(post) {
   const user = currentUser();
-  const isOwner = user?.email === post.authorEmail || user?.role === "admin";
+  const isOwner = user?.id === post.authorId || user?.email === post.authorEmail || user?.role === "admin";
   const replies = post.responses || [];
   const helpfulCount = countHelpfulReplies(post);
   return `
@@ -2323,7 +2448,8 @@ function postCard(post) {
               <p><strong>${escapeHtml(reply.author)}</strong> ${escapeHtml(reply.body)}</p>
               <div class="meta-row">
                 <span class="pill ${reply.helpful ? "good" : ""}">${reply.helpful ? "Marked helpful" : "Feedback reply"}</span>
-                ${reply.helpful || !isOwner || reply.authorEmail === post.authorEmail ? "" : `<button class="secondary-button helpful-button" data-post-id="${post.id}" data-reply-id="${reply.id}" type="button">Mark helpful</button>`}
+                ${reply.helpful || !isOwner || reply.authorId === post.authorId || reply.authorEmail === post.authorEmail ? "" : `<button class="secondary-button helpful-button" data-post-id="${post.id}" data-reply-id="${reply.id}" type="button">Mark helpful</button>`}
+                ${(user?.id === reply.authorId || user?.email === reply.authorEmail || user?.role === "admin") ? `<details class="inline-edit"><summary>Edit reply</summary><form class="edit-reply-form" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}"><textarea name="body" rows="3" required>${escapeHtml(reply.body)}</textarea><div class="card-actions"><button class="secondary-button" type="submit">Save reply</button><button class="secondary-button delete-reply-button" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Delete reply</button></div></form></details>` : ""}
               </div>
             </div>
           `).join("")}
@@ -2336,7 +2462,7 @@ function postCard(post) {
         <button class="secondary-button" type="submit">Post reply</button>
       </form>
       <button class="secondary-button report-button" data-id="${post.id}" type="button">Report post</button>
-      ${isOwner ? `<button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button>` : ""}
+      ${isOwner ? `<details class="post-edit-panel"><summary>Edit post</summary><form class="edit-post-form form-grid two" data-post-id="${escapeHtml(post.id)}"><label>Title <input name="title" value="${escapeHtml(post.title)}" required></label><label>Category <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === post.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label><label class="wide">Description <textarea name="description" rows="4" required>${escapeHtml(post.description)}</textarea></label><button class="primary-button" type="submit">Save changes</button><button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button></form></details>` : ""}
     </article>
   `;
 }
@@ -2581,28 +2707,22 @@ function bindViewHandlers(view) {
     });
   }
   if (view === "boards") {
-    $("#postForm")?.addEventListener("submit", (event) => {
+    $("#postForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = currentUser();
       const data = formObject(event.currentTarget);
-      const flagged = moderationFlag(`${data.title} ${data.description}`);
-      const newPost = {
-        id: uid("post"),
-        title: data.title,
-        category: data.category,
-        description: data.description,
-        author: user.name,
-        authorEmail: user.email,
-        created: "Just now",
-        reports: 0,
-        flagged,
-        responses: []
-      };
-      state.posts.unshift(newPost);
-      activeBoardPostId = newPost.id;
-      if (flagged) state.flagged.unshift({ title: data.title, description: data.description, reason: "Automatic moderation keyword flag" });
-      saveState();
-      renderView("boards");
+      const status = $("#postStatus");
+      if (status) status.textContent = "Publishing post...";
+      try {
+        const newPost = await createBoardPostRecord(data, user);
+        state.posts.unshift(newPost);
+        activeBoardPostId = newPost.id;
+        if (newPost.flagged) state.flagged.unshift({ title: data.title, description: data.description, reason: "Automatic moderation keyword flag" });
+        saveState();
+        renderView("boards");
+      } catch (error) {
+        if (status) status.textContent = error.message || "The post could not be published.";
+      }
     });
     bindReports();
     bindHelpfulButtons();
@@ -2610,6 +2730,7 @@ function bindViewHandlers(view) {
     bindBoardFilters();
     bindOpenBoardPosts();
     bindBoardCategoryButtons();
+    bindBoardEditForms();
     $(".board-back-button")?.addEventListener("click", () => {
       activeBoardPostId = "";
       renderView("boards");
@@ -3137,10 +3258,15 @@ function bindBoardCategoryButtons() {
 
 function bindDeleteButtons() {
   $all(".delete-item-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      deleteItem(button.dataset.deleteType, button.dataset.id);
-      saveState();
-      renderView(currentView);
+    button.addEventListener("click", async () => {
+      try {
+        if (button.dataset.deleteType === "post") await deleteBoardPostRecord(button.dataset.id);
+        else deleteItem(button.dataset.deleteType, button.dataset.id);
+        saveState();
+        renderView(currentView);
+      } catch (error) {
+        window.alert(error.message || "This item could not be deleted.");
+      }
     });
   });
 }
@@ -3178,10 +3304,17 @@ function bindReports() {
 
 function bindHelpfulButtons() {
   $all(".helpful-button").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const post = state.posts.find((item) => item.id === button.dataset.postId);
       const reply = post?.responses?.find((item) => item.id === button.dataset.replyId);
       if (!post || !reply || reply.helpful) return;
+      if (boardBackendAvailable) {
+        const { error } = await portalBackend.rpc("mark_board_reply_helpful", { reply_uuid: reply.id });
+        if (error) {
+          window.alert(error.message || "The reply could not be marked helpful.");
+          return;
+        }
+      }
       reply.helpful = true;
       state.helpfulAwards.push({
         id: uid("helpful"),
@@ -3209,7 +3342,7 @@ function bindHelpfulButtons() {
 
 function bindReplyForms() {
   $all(".reply-form").forEach((form) => {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = currentUser();
       const post = state.posts.find((item) => item.id === form.dataset.postId);
@@ -3217,19 +3350,63 @@ function bindReplyForms() {
       const data = formObject(form);
       const body = data.body.trim();
       if (!body) return;
-      post.responses ||= [];
-      post.responses.push({
-        id: uid("reply"),
-        author: user.name,
-        authorEmail: user.email,
-        body,
-        helpful: false,
-        created: "Just now"
-      });
-      user.points += 1;
-      syncMember(user);
-      saveState();
-      renderView("boards");
+      try {
+        const reply = await createBoardReplyRecord(post, body, user);
+        post.responses ||= [];
+        post.responses.push(reply);
+        user.points += 1;
+        syncMember(user);
+        saveState();
+        renderView("boards");
+      } catch (error) {
+        window.alert(error.message || "The reply could not be posted.");
+      }
+    });
+  });
+}
+
+function bindBoardEditForms() {
+  $all(".edit-post-form").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const post = state.posts.find((item) => item.id === form.dataset.postId);
+      if (!post) return;
+      try {
+        await updateBoardPostRecord(post, formObject(form));
+        saveState();
+        renderView("boards");
+      } catch (error) {
+        window.alert(error.message || "The post could not be updated.");
+      }
+    });
+  });
+  $all(".edit-reply-form").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const post = state.posts.find((item) => item.id === form.dataset.postId);
+      const reply = post?.responses?.find((item) => item.id === form.dataset.replyId);
+      const body = formObject(form).body.trim();
+      if (!post || !reply || !body) return;
+      try {
+        await updateBoardReplyRecord(post, reply, body);
+        saveState();
+        renderView("boards");
+      } catch (error) {
+        window.alert(error.message || "The reply could not be updated.");
+      }
+    });
+  });
+  $all(".delete-reply-button").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const post = state.posts.find((item) => item.id === button.dataset.postId);
+      if (!post) return;
+      try {
+        await deleteBoardReplyRecord(post, button.dataset.replyId);
+        saveState();
+        renderView("boards");
+      } catch (error) {
+        window.alert(error.message || "The reply could not be deleted.");
+      }
     });
   });
 }
@@ -3287,6 +3464,7 @@ async function boot() {
   }
   try {
     await syncSecureSession();
+    await loadSecureBoards();
   } catch (error) {
     state.sessionEmail = "";
     saveState();
