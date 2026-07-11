@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=shared-logo-client-route-20260711">
+    <link rel="stylesheet" href="styles.css?v=landing-login-profile-menu-20260711">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -23,8 +23,8 @@
       </a>
       <nav class="public-nav" aria-label="Client Portal navigation">
         <a class="home-icon-button" href="../index.html" aria-label="Homepage">⌂</a>
-        <a class="section-switch-button active" href="index.html?entry=client" aria-current="page">Client Portal</a>
-        <a class="section-switch-button" href="../hub/index.html">Innovation Hub</a>
+        <a class="section-switch-button active" href="index.html?entry=client&amp;signin=1" aria-current="page">Client Portal</a>
+        <a class="section-switch-button" href="../hub/index.html?signin=1">Innovation Hub</a>
       </nav>
     </header>
 
@@ -38,10 +38,6 @@
           <p class="eyebrow" id="entryEyebrow" hidden>Client Portal access</p>
           <h1 id="entryTitle">Manage quotes, project updates and messages.</h1>
           <p class="lead" id="entryLead">Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area.</p>
-          <div class="hero-actions">
-            <button class="primary-button" id="entrySignInButton" data-open-auth="signin" type="button">Sign in</button>
-            <button class="secondary-button" id="entryRequestLink" data-open-auth="register" type="button">Register for access</button>
-          </div>
         </div>
         <aside class="hero-panel" aria-label="Membership summary">
           <span id="entryPanelLabel">Account access</span>
@@ -103,7 +99,7 @@
         <button class="auth-tab active" data-auth-tab="signin">Sign in</button>
         <button class="auth-tab" data-auth-tab="register">Register</button>
       </div>
-      <h2 id="authTitle">Client Portal sign in</h2>
+      <h2 id="authTitle">Client Portal login</h2>
       <form id="signinForm" class="auth-form" autocomplete="on">
         <label for="signinEmail">Email <input id="signinEmail" name="email" type="text" inputmode="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
         <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
@@ -162,7 +158,6 @@
         <button id="adminNav" class="nav-link hidden" data-view="admin">Admin Review</button>
       </nav>
       <a class="secondary-button site-return-button" href="../index.html">Back to JP Innovation Site</a>
-      <button id="logoutButton" class="secondary-button logout-button">Log out</button>
     </aside>
     <button id="mobileMenuBackdrop" class="mobile-menu-backdrop" type="button" aria-label="Close dashboard menu"></button>
 
@@ -189,38 +184,31 @@
               <path d="M9.5 20v-6h5v6"/>
             </svg>
           </button>
-          <button id="messageInboxButton" class="header-icon-button" type="button" aria-label="Open messages">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="4" y="6" width="16" height="12" rx="2"/>
-              <path d="m5 8 7 5 7-5"/>
-            </svg>
-            <span id="messageCount" class="notification-count hidden">0</span>
-          </button>
-          <div class="notification-centre">
-            <button id="notificationBell" class="notification-bell" type="button" aria-label="Open notifications" aria-expanded="false" aria-controls="notificationPopover">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>
-              </svg>
-              <span id="notificationCount" class="notification-count">3</span>
-            </button>
-            <div id="notificationPopover" class="notification-popover" role="dialog" aria-label="Notifications">
-              <div class="notification-heading">
-                <div>
-                  <span class="badge">Updates</span>
-                  <h3>Notifications</h3>
-                </div>
-                <button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">x</button>
+          <div class="member-profile-control">
+            <button id="memberProfileButton" class="member-chip" type="button" aria-label="Open account menu" aria-controls="memberProfileMenu" aria-expanded="false">
+              <span id="memberInitials">JP</span>
+              <div>
+                <strong id="memberName">Member</strong>
+                <small id="memberRole">Member</small>
               </div>
-              <div id="notificationList" class="notification-list"></div>
+            </button>
+            <div id="memberProfileMenu" class="member-profile-menu" aria-hidden="true">
+              <button class="profile-menu-link" data-profile-view="profile" type="button"><strong>My Profile</strong><small>View and edit your details</small></button>
+              <button class="profile-menu-link" data-profile-view="settings" type="button"><strong>Account settings</strong><small>Preferences and security</small></button>
+              <button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><strong>Messages</strong><small>Open your private inbox</small><span id="messageCount" class="menu-count hidden">0</span></button>
+              <div class="notification-centre profile-notification-centre">
+                <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications" aria-expanded="false" aria-controls="notificationPopover"><strong>Notifications</strong><small>View recent updates</small><span id="notificationCount" class="menu-count">3</span></button>
+                <div id="notificationPopover" class="notification-popover" role="dialog" aria-label="Notifications">
+                  <div class="notification-heading">
+                    <div><span class="badge">Updates</span><h3>Notifications</h3></div>
+                    <button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">x</button>
+                  </div>
+                  <div id="notificationList" class="notification-list"></div>
+                </div>
+              </div>
+              <button id="logoutButton" class="profile-menu-link profile-menu-signout" type="button"><strong>Sign out</strong><small>Sign out on this device</small></button>
             </div>
           </div>
-          <button id="memberProfileButton" class="member-chip" type="button" aria-label="Open my profile" title="My Profile">
-            <span id="memberInitials">JP</span>
-            <div>
-              <strong id="memberName">Member</strong>
-              <small id="memberRole">Member</small>
-            </div>
-          </button>
         </div>
       </header>
 
@@ -229,6 +217,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=shared-logo-client-route-20260711"></script>
+  <script src="app.js?v=landing-login-profile-menu-20260711"></script>
 </body>
 </html>
