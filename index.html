@@ -780,7 +780,7 @@
         padding: 12px 16px;
         gap: 12px;
       }
-      .brand img { width: min(132px, 34vw); }
+      .brand img { width: clamp(150px, 36vw, 220px); }
       .header-actions { gap: 6px; }
       .section-switcher { gap: 5px; }
       .section-switch-button {
@@ -852,8 +852,17 @@
         margin-top: 18px;
       }
       .proof-item {
-        min-height: 88px;
-        padding: 12px;
+        min-height: 64px;
+        padding: 10px;
+      }
+      .proof-item b {
+        font-size: clamp(15px, 4vw, 18px);
+        line-height: 1.05;
+        overflow-wrap: anywhere;
+      }
+      .proof-item span {
+        font-size: 11px;
+        line-height: 1.25;
       }
       .hero-media {
         height: 310px;
@@ -866,6 +875,8 @@
       .intro-band { padding: 0 16px 42px; }
       .intro-panel h2 { max-width: none; }
       .why-list { grid-template-columns: 1fr; }
+      .why-item { padding: 14px; }
+      .why-item p { margin-bottom: 0; }
       .projects,
       .cards,
       .pricing,
@@ -879,10 +890,19 @@
         grid-template-columns: 1fr;
       }
       .price { min-height: auto; }
+      .testimonial {
+        min-height: auto;
+        padding: 16px;
+      }
+      .testimonial p {
+        margin-bottom: 12px;
+        font-size: 15px;
+        line-height: 1.45;
+      }
     }
 
     @media (max-width: 480px) {
-      .brand img { width: min(230px, 70vw); }
+      .brand img { width: clamp(155px, 42vw, 210px); }
       h1 { font-size: 26px; line-height: 1.12; }
       h2 { font-size: 24px; }
       .eyebrow { font-size: 14px; }
@@ -890,8 +910,8 @@
       .hero-media img {
         min-height: 220px;
       }
-      .hero-proof { margin-top: 20px; }
-      .proof-item { padding: 14px; }
+      .hero-proof { margin-top: 18px; }
+      .proof-item { padding: 9px 8px; }
       .hero-media {
         height: 280px;
         min-height: 0;
