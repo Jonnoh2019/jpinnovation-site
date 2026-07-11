@@ -169,20 +169,20 @@
     <main class="workspace">
       <header class="workspace-header">
         <div class="workspace-heading">
-          <button id="mobileMenuButton" class="mobile-dashboard-menu" type="button" aria-label="Open dashboard menu" aria-controls="dashboardSidebar" aria-expanded="false">
-            <span></span>
-            Menu
-          </button>
           <div>
             <p class="eyebrow">Innovation Hub</p>
             <h1 id="viewTitle">Dashboard</h1>
           </div>
         </div>
         <div class="workspace-header-actions">
+          <button id="mobileMenuButton" class="mobile-dashboard-menu" type="button" aria-label="Open dashboard menu" aria-controls="dashboardSidebar" aria-expanded="false">
+            <span></span>
+            Menu
+          </button>
           <button id="messageInboxButton" class="header-icon-button" type="button" aria-label="Open messages">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 6h16v12H4z"/>
-              <path d="m4 7 8 6 8-6"/>
+              <rect x="4" y="6" width="16" height="12" rx="2"/>
+              <path d="m5 8 7 5 7-5"/>
             </svg>
             <span id="messageCount" class="notification-count hidden">0</span>
           </button>
@@ -219,6 +219,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=hub-flow-pass-20260711"></script>
+  <script src="app.js?v=mobile-hub-header-20260711"></script>
 </body>
 </html>
