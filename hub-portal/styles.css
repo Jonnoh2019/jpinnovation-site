@@ -877,6 +877,39 @@ input:focus, textarea:focus, select:focus {
   color: var(--soft);
   line-height: 1.35;
 }
+.launch-focus-panel {
+  --accent: var(--warn);
+}
+.attention-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.attention-item {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-height: 118px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.04);
+  color: var(--ink);
+  padding: 14px;
+  text-align: left;
+}
+.attention-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(47,141,255,.45);
+  background: rgba(0,111,230,.12);
+}
+.attention-item strong,
+.attention-item small {
+  display: block;
+}
+.attention-item small {
+  color: var(--soft);
+  line-height: 1.35;
+}
 .admin-command {
   border-color: rgba(141,124,255,.3);
   background:
@@ -1852,6 +1885,7 @@ input:focus, textarea:focus, select:focus {
   .board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .section-link-grid,
   .action-grid,
+  .attention-list,
   .admin-summary-grid,
   .momentum-grid,
   .tool-grid,
@@ -2061,6 +2095,7 @@ input:focus, textarea:focus, select:focus {
   .quote-detail-grid-four,
   .section-link-grid,
   .action-grid,
+  .attention-list,
   .admin-summary-grid,
   .momentum-grid,
   .launch-strip,
@@ -2196,7 +2231,8 @@ input:focus, textarea:focus, select:focus {
   .launch-strip,
   .momentum-grid,
   .section-link-grid,
-  .action-grid {
+  .action-grid,
+  .attention-list {
     gap: 7px;
   }
   .launch-strip {
