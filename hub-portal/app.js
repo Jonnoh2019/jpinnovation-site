@@ -1,7 +1,9 @@
 const storeKey = "jpHubPortal.v1";
 const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
 const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
-const portalBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey);
+const portalBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+});
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
 
@@ -817,9 +819,7 @@ function setAuthTab(mode) {
   $("#resetPasswordForm")?.classList.toggle("hidden", !isReset);
   $("#authTitle").textContent = isReset
     ? "Choose a new password"
-    : isRegister
-      ? "Access by approval"
-      : (entryMode === "hub" ? "Innovation Hub sign in" : "Client Portal sign in");
+    : (entryMode === "hub" ? "Innovation Hub login" : "Client Portal login");
   $("#authStatus").textContent = "";
 }
 
@@ -1161,6 +1161,16 @@ function setNotificationsOpen(open) {
   if (!centre || !bell) return;
   centre.classList.toggle("open", open);
   bell.setAttribute("aria-expanded", String(open));
+}
+
+function setMemberProfileMenuOpen(open) {
+  const menu = $("#memberProfileMenu");
+  const button = $("#memberProfileButton");
+  if (!menu || !button) return;
+  menu.classList.toggle("open", open);
+  menu.setAttribute("aria-hidden", String(!open));
+  button.setAttribute("aria-expanded", String(open));
+  if (!open) setNotificationsOpen(false);
 }
 
 function setMobileDashboardMenuOpen(open) {
@@ -3355,6 +3365,7 @@ async function boot() {
     window.history.replaceState({}, document.title, "/hub-portal/index.html?entry=client&signin=1");
   });
   $("#logoutButton").addEventListener("click", async () => {
+    setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
     await signOut();
   });
@@ -3401,15 +3412,22 @@ async function boot() {
     renderView("dashboard");
     setMobileDashboardMenuOpen(false);
   });
-  $("#memberProfileButton")?.addEventListener("click", () => {
+  $("#memberProfileButton")?.addEventListener("click", (event) => {
+    event.stopPropagation();
     setNotificationsOpen(false);
-    renderView("profile");
-    setMobileDashboardMenuOpen(false);
+    setMemberProfileMenuOpen(!$("#memberProfileMenu")?.classList.contains("open"));
   });
+  $("#memberProfileMenu")?.addEventListener("click", (event) => event.stopPropagation());
+  $all("[data-profile-view]").forEach((button) => button.addEventListener("click", () => {
+    renderView(button.dataset.profileView);
+    setMemberProfileMenuOpen(false);
+    setMobileDashboardMenuOpen(false);
+  }));
   $("#messageInboxButton")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setNotificationsOpen(false);
     renderView("messages");
+    setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
   });
   $("#notificationBell")?.addEventListener("click", (event) => {
@@ -3421,10 +3439,14 @@ async function boot() {
     setNotificationsOpen(false);
   });
   $("#notificationPopover")?.addEventListener("click", (event) => event.stopPropagation());
-  document.addEventListener("click", () => setNotificationsOpen(false));
+  document.addEventListener("click", () => {
+    setNotificationsOpen(false);
+    setMemberProfileMenuOpen(false);
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       setNotificationsOpen(false);
+      setMemberProfileMenuOpen(false);
       setMobileDashboardMenuOpen(false);
     }
   });
