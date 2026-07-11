@@ -95,13 +95,21 @@ function setHubAuthTab(mode = "signin") {
   const isRegister = mode === "register";
   const signinForm = $("#hubSigninForm");
   const registerForm = $("#hubRegisterForm");
+  const setFormVisible = (form, visible) => {
+    if (!form) return;
+    form.classList.toggle("hidden", !visible);
+    form.hidden = !visible;
+    form.setAttribute("aria-hidden", String(!visible));
+    $all("input, button, textarea, select", form).forEach((control) => {
+      control.disabled = !visible;
+    });
+  };
   $all("[data-hub-auth-tab]").forEach((button) => {
     button.classList.toggle("active", button.dataset.hubAuthTab === mode);
+    button.setAttribute("aria-selected", String(button.dataset.hubAuthTab === mode));
   });
-  signinForm?.classList.toggle("hidden", isRegister);
-  registerForm?.classList.toggle("hidden", !isRegister);
-  if (signinForm) signinForm.hidden = isRegister;
-  if (registerForm) registerForm.hidden = !isRegister;
+  setFormVisible(signinForm, !isRegister);
+  setFormVisible(registerForm, isRegister);
   if ($("#hubAuthTitle")) {
     $("#hubAuthTitle").textContent = isRegister ? "Register for access" : "Innovation Hub sign in";
   }
@@ -252,6 +260,7 @@ function hubAuthHandler() {
       if (status) status.textContent = error.message;
     }
   });
+  setHubAuthTab("signin");
   if (params.get("register") === "1") openHubAuth("register");
   else if (params.get("signin") === "1") openHubAuth("signin");
 }
