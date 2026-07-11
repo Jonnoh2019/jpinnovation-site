@@ -1255,6 +1255,8 @@ function renderDashboard(user) {
   const verifiedMembers = (state.members || []).filter((member) => member.verified).length;
   const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
   const activeProject = state.projects.find((project) => project.id === state.activeProjectId) || state.projects[0];
+  const unresolvedPosts = state.posts.filter((post) => !countHelpfulReplies(post)).length;
+  const nextActions = dashboardNextActions(user, { completion, pendingApplications, unread, unresolvedPosts, openQuotes });
   return `
     ${user.role !== "admin" && completion < 80 ? `
       <section class="section-card setup-reminder">
@@ -1296,6 +1298,27 @@ function renderDashboard(user) {
       ${metric("Open quotes", openQuotes)}
       ${metric(user.role === "admin" ? "Pending applicants" : "Unread messages", user.role === "admin" ? pendingApplications : unread)}
     </div>
+    <section class="section-card dashboard-actions">
+      <div class="list-title"><div><h2>Quick actions</h2><p>Jump straight into the work members use most.</p></div></div>
+      <div class="action-grid">
+        ${quickAction("Q1", "Create board post", "Ask a technical question or start a focused engineering discussion.", "boards")}
+        ${quickAction("Q2", "Add project", "Share a build, product idea or prototype for member input.", "projects")}
+        ${quickAction("Q3", "Create quote request", "Prepare a private request for JP review or member quoting.", "quotes")}
+        ${quickAction(user.role === "admin" ? "ADM" : "MSG", user.role === "admin" ? "Review admin queue" : "Open messages", user.role === "admin" ? "Approve access, check launch items and manage accounts." : "Read replies, member contact and project updates.", user.role === "admin" ? "admin" : "messages")}
+      </div>
+    </section>
+    <section class="section-card launch-focus-panel">
+      <div class="list-title"><div><h2>${user.role === "admin" ? "Needs attention before launch" : "Your next best steps"}</h2><p>${user.role === "admin" ? "The items most likely to block a smooth paid-member launch." : "A simple route through the Hub without hunting through every section."}</p></div></div>
+      <div class="attention-list">
+        ${nextActions.map((item) => `
+          <button class="attention-item dashboard-link" data-view-link="${escapeHtml(item.view)}" type="button">
+            <span class="pill ${escapeHtml(item.tone || "")}">${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.title)}</strong>
+            <small>${escapeHtml(item.detail)}</small>
+          </button>
+        `).join("")}
+      </div>
+    </section>
     ${user.role === "admin" ? `
       <section class="section-card launch-overview admin-command">
         <div class="list-title">
@@ -1361,6 +1384,43 @@ function renderDashboard(user) {
 
 function metric(label, value) {
   return `<article class="metric-card"><span class="badge">${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`;
+}
+
+function quickAction(code, title, detail, view) {
+  return `
+    <button class="action-card dashboard-link" data-view-link="${escapeHtml(view)}" type="button">
+      <span class="action-icon">${escapeHtml(code)}</span>
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(detail)}</small>
+    </button>
+  `;
+}
+
+function dashboardNextActions(user, counts) {
+  if (user.role === "admin") {
+    return [
+      counts.pendingApplications
+        ? { label: `${counts.pendingApplications} pending`, tone: "warn", title: "Review access applications", detail: "Approve the right people before opening the member area wider.", view: "admin" }
+        : { label: "Access", tone: "good", title: "No pending applications", detail: "Create test clients or members from Admin Review when needed.", view: "admin" },
+      counts.openQuotes
+        ? { label: `${counts.openQuotes} open`, tone: "", title: "Check quote requests", detail: "Keep JP review, open quote and shortlist stages moving.", view: "quotes" }
+        : { label: "Quotes", tone: "warn", title: "Create a sample quote flow", detail: "A clean quote journey will help the Hub feel real at launch.", view: "quotes" },
+      counts.unresolvedPosts
+        ? { label: `${counts.unresolvedPosts} need help`, tone: "warn", title: "Seed useful board replies", detail: "Mark helpful answers so the forum starts with a quality signal.", view: "boards" }
+        : { label: "Boards", tone: "good", title: "Boards have helpful replies", detail: "Keep adding practical example discussions.", view: "boards" }
+    ];
+  }
+  return [
+    counts.completion < 80
+      ? { label: `${counts.completion}%`, tone: "warn", title: "Finish your member profile", detail: "Skills, capability and location help people find the right support.", view: "onboarding" }
+      : { label: "Profile", tone: "good", title: "Profile is ready", detail: "Review your public directory details when your availability changes.", view: "profile" },
+    counts.unread
+      ? { label: `${counts.unread} unread`, tone: "warn", title: "Check messages", detail: "Reply to new Hub messages and project updates.", view: "messages" }
+      : { label: "Inbox", tone: "good", title: "No unread messages", detail: "Use messages for direct contact and introductions.", view: "messages" },
+    counts.unresolvedPosts
+      ? { label: "Help", tone: "", title: "Answer a board question", detail: "Helpful replies build your member reputation.", view: "boards" }
+      : { label: "Boards", tone: "good", title: "Browse active discussions", detail: "Start a new thread when you need advice.", view: "boards" }
+  ];
 }
 
 function analyticsMetric(label, value, detail = "") {
@@ -1493,11 +1553,29 @@ function renderBoards() {
       </section>
     `;
   }
+  const unanswered = state.posts.filter((post) => !(post.responses || []).length).length;
+  const needsHelp = state.posts.filter((post) => !countHelpfulReplies(post)).length;
+  const helpfulReplies = state.posts.reduce((total, post) => total + countHelpfulReplies(post), 0);
+  const activeCategories = new Set(state.posts.map((post) => post.category)).size;
   const categoryOptions = ["All", ...boardCategories].map(option).join("");
   return `
     <section class="section-card section-cyan">
+      <div class="list-title"><div><h2>Engineering Boards</h2><p>A focused member forum for technical questions, project feedback and useful supplier knowledge.</p></div></div>
+      <div class="metrics-grid dashboard-metrics">
+        ${metric("Threads", state.posts.length)}
+        ${metric("Need replies", unanswered)}
+        ${metric("Need helpful answer", needsHelp)}
+        ${metric("Helpful replies", helpfulReplies)}
+      </div>
+      <div class="meta-row">
+        <span class="pill">${activeCategories} active categories</span>
+        <span class="pill good">Member-only discussions</span>
+        <span class="pill warn">Mark helpful replies to close the loop</span>
+      </div>
+    </section>
+    <section class="section-card section-cyan">
       <h2>Create board post</h2>
-      <p class="muted">Posts are visible to logged-in members only in this prototype.</p>
+      <p class="muted">Use posts for specific engineering questions, design choices, supplier recommendations or project blockers.</p>
       <form id="postForm" class="form-grid two">
         <label>Title <input name="title" required></label>
         <label>Category <select name="category">${boardCategories.map(option).join("")}</select></label>
@@ -1577,7 +1655,7 @@ function renderProjectDetail(project) {
           <div class="meta-row">
             <span class="pill">${escapeHtml(project.author)}</span>
             <span class="pill">${escapeHtml(project.location || "Location TBC")}</span>
-            <span class="pill good">${escapeHtml(project.status)}</span>
+            <span class="pill ${projectStatusPill(project.status)}">${escapeHtml(project.status)}</span>
             <span class="pill">${project.points || 0} pts</span>
           </div>
         </div>
@@ -1877,10 +1955,10 @@ function renderMessages() {
   const user = currentUser();
   if (user?.role === "client") {
     const messages = state.messages.filter((message) => message.ownerEmail === user.email);
+    const unread = messages.filter((message) => message.unread).length;
     return `
       <section class="section-card section-blue">
-        <h2>Messages with JP Innovation</h2>
-        <p class="muted">Use this area for quote questions, project updates and anything JP Innovation needs to review.</p>
+        <div class="list-title"><div><h2>Messages with JP Innovation</h2><p>Use this area for quote questions, project updates and anything JP Innovation needs to review.</p></div>${unread ? `<button class="secondary-button mark-messages-read" type="button">Mark all read</button>` : ""}</div>
         <form id="messageForm" class="form-grid two">
           <input name="from" type="hidden" value="${escapeHtml(user.name)}">
           <label>Subject <input name="subject" required></label>
@@ -1897,10 +1975,10 @@ function renderMessages() {
       </section>
     `;
   }
+  const unread = state.messages.filter((message) => message.unread).length;
   return `
     <section class="section-card section-blue">
-      <h2>Messages</h2>
-      <p class="muted">Prototype inbox for member-to-member contact.</p>
+      <div class="list-title"><div><h2>Messages</h2><p>Member-to-member contact, introductions and project follow-ups.</p></div>${unread ? `<button class="secondary-button mark-messages-read" type="button">Mark all read</button>` : ""}</div>
       <form id="messageForm" class="form-grid two">
         <label>From <input name="from" required placeholder="Member or business name"></label>
         <label>Subject <input name="subject" required></label>
@@ -2280,7 +2358,7 @@ function projectCard(project) {
       <div class="meta-row">
         <span class="pill">${escapeHtml(project.author)}</span>
         <span class="pill">${escapeHtml(project.location)}</span>
-        <span class="pill good">${escapeHtml(project.status)}</span>
+        <span class="pill ${projectStatusPill(project.status)}">${escapeHtml(project.status)}</span>
         <span class="pill">${project.likes} likes</span>
         <span class="pill">${(project.discussion || []).length || project.comments} comments</span>
         <span class="pill">${project.points} pts</span>
@@ -2403,6 +2481,14 @@ function quoteStatusLabel(status) {
     closed: "Closed"
   };
   return labels[status] || "JP review";
+}
+
+function projectStatusPill(status = "") {
+  const normalised = status.toLowerCase();
+  if (normalised.includes("complete")) return "good";
+  if (normalised.includes("progress")) return "";
+  if (normalised.includes("planning") || normalised.includes("concept")) return "warn";
+  return "";
 }
 
 function launchStatusLabel(status) {
@@ -2635,6 +2721,18 @@ function bindViewHandlers(view) {
     });
   }
   if (view === "messages") {
+    $(".mark-messages-read")?.addEventListener("click", () => {
+      const user = currentUser();
+      state.messages.forEach((message) => {
+        if (user?.role === "client") {
+          if (message.ownerEmail === user.email) message.unread = false;
+        } else {
+          message.unread = false;
+        }
+      });
+      saveState();
+      renderView("messages");
+    });
     $("#messageForm")?.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = formObject(event.currentTarget);
