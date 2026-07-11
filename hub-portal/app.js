@@ -924,7 +924,7 @@ function setLoggedInView() {
   $(".app-brand span").textContent = isClient ? "Client Portal" : "Innovation Hub";
   $(".workspace-header .eyebrow").textContent = isClient ? "Client Portal" : "Innovation Hub";
   renderNotifications();
-  $(".notification-centre").classList.toggle("hidden", isClient);
+  renderMessageInbox();
   if (isClient && !clientViews.has(currentView)) currentView = "dashboard";
   if (user.role !== "admin" && !user.onboardingComplete) {
     currentView = "onboarding";
@@ -1135,6 +1135,22 @@ function renderNotifications() {
   `).join("");
 }
 
+function unreadMessageCount(user = currentUser()) {
+  if (!user) return 0;
+  const messages = user.role === "client"
+    ? state.messages.filter((message) => message.ownerEmail === user.email)
+    : state.messages;
+  return messages.filter((message) => message.unread).length;
+}
+
+function renderMessageInbox() {
+  const count = unreadMessageCount();
+  const badge = $("#messageCount");
+  if (!badge) return;
+  badge.textContent = count > 9 ? "9+" : String(count);
+  badge.classList.toggle("hidden", count === 0);
+}
+
 function setNotificationsOpen(open) {
   const centre = $(".notification-centre");
   const bell = $("#notificationBell");
@@ -1195,6 +1211,7 @@ function renderView(view) {
     admin: renderAdmin
   };
   mount.innerHTML = (renderers[view] || renderDashboard)(user);
+  renderMessageInbox();
   bindViewHandlers(view);
 }
 
@@ -1260,8 +1277,8 @@ function renderDashboard(user) {
           <span class="pill">${readyItems}/${checklistCount} launch items ready</span>
         </div>
         <div class="hero-button-row">
-          <button class="primary-button dashboard-link" data-view-link="boards" type="button">Ask for help</button>
-          <button class="secondary-button dashboard-link" data-view-link="quotes" type="button">Open Quote Hub</button>
+          <button class="primary-button dashboard-link" data-view-link="boards" type="button">Ask the boards</button>
+          <button class="secondary-button dashboard-link" data-view-link="quotes" type="button">Review quote requests</button>
         </div>
       </div>
       <div class="dashboard-image-card">
@@ -1996,7 +2013,7 @@ function renderSettings(user) {
       <div class="cards-grid">
         <article class="card"><span class="badge">Account plan</span><h3>${isClient ? "Client Portal" : "Innovation Hub"}</h3><p>${isClient ? "Free access for quotes, requests and direct communication with JP Innovation." : "GBP 19/month proposed Innovation Hub membership. Payment integration is not connected in this trial build."}</p></article>
         <article class="card"><span class="badge">Email</span><h3>Notifications</h3><p>Quote alerts, message alerts and application confirmations will use the live email service once connected.</p></article>
-        <article class="card"><span class="badge">Security</span><h3>Password</h3><p>Local demo password only. A real launch needs secure backend authentication.</p></article>
+        <article class="card"><span class="badge">Security</span><h3>Password</h3><p>Secure Supabase login is connected. Password changes and recovery should stay inside the protected sign-in flow.</p></article>
         <article class="card"><span class="badge">Account</span><h3>${escapeHtml(user.email)}</h3><p>Your ${isClient ? "quotes and messages" : "profile, posts and requests"} are saved in this browser for trial review.</p></article>
       </div>
     </section>
@@ -3275,6 +3292,12 @@ async function boot() {
     setMobileDashboardMenuOpen(!$("#appShell").classList.contains("mobile-menu-open"));
   });
   $("#mobileMenuBackdrop")?.addEventListener("click", () => setMobileDashboardMenuOpen(false));
+  $("#messageInboxButton")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setNotificationsOpen(false);
+    renderView("messages");
+    setMobileDashboardMenuOpen(false);
+  });
   $("#notificationBell")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setNotificationsOpen(!$(".notification-centre").classList.contains("open"));
