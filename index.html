@@ -941,31 +941,21 @@
       }
       .lead,
       .section-copy { font-size: 14px; line-height: 1.45; }
+      .hero-grid {
+        gap: 14px;
+      }
       .hero-actions {
         display: grid;
         gap: 9px;
         margin-top: 14px;
       }
       .hero-proof {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        margin-top: 18px;
-      }
-      .proof-item {
-        min-height: 64px;
-        padding: 10px;
-      }
-      .proof-item b {
-        font-size: clamp(15px, 4vw, 18px);
-        line-height: 1.05;
-        overflow-wrap: anywhere;
-      }
-      .proof-item span {
-        font-size: 11px;
-        line-height: 1.25;
+        display: none;
       }
       .hero-media {
         height: 310px;
         min-height: 0;
+        margin-top: 0;
       }
       .hero-media img {
         min-height: 0;
@@ -1121,21 +1111,11 @@
       .hero-media img {
         min-height: 220px;
       }
-      .hero-proof { margin-top: 18px; }
-      .proof-item {
-        min-height: 58px;
-        display: grid;
-        place-items: center;
-        padding: 8px 6px;
-        text-align: center;
-      }
-      .proof-item b { font-size: clamp(14px, 4.2vw, 17px); }
       .hero-media {
-        height: 280px;
+        height: 245px;
         min-height: 0;
       }
       .hero-media img { min-height: 0; }
-      .proof-item span { display: none; }
     }
   </style>
 </head>
