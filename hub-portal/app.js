@@ -1167,6 +1167,8 @@ function setMobileDashboardMenuOpen(open) {
   document.body.classList.toggle("mobile-dashboard-menu-open", open);
   button.setAttribute("aria-expanded", String(open));
   button.setAttribute("aria-label", open ? "Close dashboard menu" : "Open dashboard menu");
+  const label = button.querySelector(".menu-label");
+  if (label) label.textContent = open ? "Close" : "Menu";
 }
 
 function renderView(view) {
