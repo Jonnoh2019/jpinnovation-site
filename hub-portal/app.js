@@ -3392,6 +3392,11 @@ async function boot() {
     setMobileDashboardMenuOpen(!$("#appShell").classList.contains("mobile-menu-open"));
   });
   $("#mobileMenuBackdrop")?.addEventListener("click", () => setMobileDashboardMenuOpen(false));
+  $("#dashboardHomeButton")?.addEventListener("click", () => {
+    setNotificationsOpen(false);
+    renderView("dashboard");
+    setMobileDashboardMenuOpen(false);
+  });
   $("#messageInboxButton")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setNotificationsOpen(false);
