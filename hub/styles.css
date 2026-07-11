@@ -1117,12 +1117,12 @@ input:focus, textarea:focus, select:focus {
     display: none;
   }
   .example-grid {
-    grid-template-columns: repeat(3, minmax(250px, 78vw));
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    padding-bottom: 10px;
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+    padding-bottom: 0;
   }
-  .example-card { grid-template-rows: 170px 1fr; }
+  .example-card { grid-template-rows: 150px 1fr; }
+  .example-card div { padding: 14px; }
   .job-card { grid-template-rows: 1fr; }
   .section-intro-grid,
   .quote-layout,
