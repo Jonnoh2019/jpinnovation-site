@@ -644,15 +644,16 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 210px;
-  padding: 10px;
+  min-width: 0;
+  padding: 8px 9px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255,255,255,.045);
   color: var(--ink);
   text-align: left;
   font: inherit;
-  width: 100%;
+  width: auto;
+  max-width: 220px;
 }
 .member-chip:hover,
 .member-chip:focus-visible {
@@ -660,7 +661,7 @@ input:focus, textarea:focus, select:focus {
   background: rgba(0,111,230,.14);
   outline: none;
 }
-.member-chip span {
+.member-chip #memberInitials {
   display: grid;
   place-items: center;
   width: 42px;
@@ -672,9 +673,56 @@ input:focus, textarea:focus, select:focus {
 .member-chip strong,
 .member-chip small { display: block; }
 .member-chip small { color: var(--soft); }
+.member-chip > div {
+  min-width: 0;
+  max-width: 112px;
+}
+.member-chip strong,
+.member-chip small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.member-chip-alert {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  margin-left: 2px;
+  color: var(--silver);
+}
+.member-chip-alert svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.member-chip-count {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid #0a1119;
+  border-radius: 999px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
 .member-profile-control {
   position: relative;
-  min-width: 210px;
+  min-width: 0;
+  width: fit-content;
+  margin-left: auto;
 }
 .member-profile-menu {
   position: absolute;
@@ -2144,8 +2192,8 @@ input:focus, textarea:focus, select:focus {
   .application-head {
     display: grid;
   }
-  .member-chip { flex: 1; min-width: 0; }
-  .member-profile-control { flex: 1; min-width: 0; }
+  .member-chip { flex: 0 0 auto; min-width: 0; }
+  .member-profile-control { flex: 0 0 auto; min-width: 0; margin-left: auto; }
   .setup-reminder .primary-button {
     justify-self: start;
   }
@@ -2340,11 +2388,17 @@ input:focus, textarea:focus, select:focus {
     min-width: 0;
     padding: 7px;
     gap: 8px;
+    max-width: 205px;
   }
-  .member-chip span {
+  .member-chip #memberInitials {
     width: 34px;
     height: 34px;
     font-size: 13px;
+  }
+  .member-chip-alert {
+    flex-basis: 27px;
+    width: 27px;
+    height: 27px;
   }
   .member-chip strong {
     font-size: 14px;
