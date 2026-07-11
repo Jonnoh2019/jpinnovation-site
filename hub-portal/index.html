@@ -207,6 +207,218 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="app.js?v=register-link-fix-20260711"></script>
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JP Innovation Client Portal</title>
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#05070a">
+  <meta name="apple-mobile-web-app-title" content="Client Portal">
+  <link rel="icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711">
+  <link rel="manifest" href="../site.webmanifest?v=jp-logo-20260711">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=mobile-header-compact-20260711b">
+</head>
+<body>
+  <div id="publicShell" class="public-shell">
+    <header class="portal-header">
+      <a class="brand" href="../index.html" aria-label="JP Innovation home">
+        <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation">
+      </a>
+      <nav class="public-nav" aria-label="Client Portal navigation">
+        <a class="home-icon-button" href="../index.html" aria-label="Homepage">⌂</a>
+        <a class="section-switch-button active" href="index.html?entry=client" aria-current="page">Client Portal</a>
+        <a class="section-switch-button" href="../hub/index.html">Innovation Hub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="portal-hero">
+        <div class="hero-copy">
+          <p class="eyebrow" id="entryEyebrow">Client Portal access</p>
+          <h1 id="entryTitle">Client Portal</h1>
+          <p class="lead" id="entryLead">Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area.</p>
+          <div class="hero-actions">
+            <button class="primary-button" id="entrySignInButton" data-open-auth="signin" type="button">Sign in</button>
+            <button class="secondary-button" id="entryRequestLink" data-open-auth="register" type="button">Register for access</button>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Membership summary">
+          <span id="entryPanelLabel">Account access</span>
+          <strong id="entryPanelTitle">Private account access</strong>
+          <p id="entryPanelCopy">Client Portal accounts are free and separate from the paid Innovation Hub. Approved accounts can sign in while the secure backend is being completed.</p>
+          <ul>
+            <li id="entryPanelPointOne">Trial data is browser-based until backend launch.</li>
+            <li id="entryPanelPointTwo">Paid Innovation Hub registration stays on the Innovation Hub page.</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="section" id="client-features">
+        <div class="section-heading">
+          <p class="eyebrow">Client Portal features</p>
+          <h2>A simple private area for JP Innovation customers.</h2>
+          <p>Use the Client Portal for the customer side of the business: quotes, project updates, repeat requests and direct messages. This is separate from the paid Innovation Hub.</p>
+        </div>
+        <div class="feature-grid" aria-label="Client Portal feature list">
+          <article>
+            <span class="badge">Quotes</span>
+            <h3>View quote requests</h3>
+            <p>Keep quotation details, project notes and follow-up requests in one private customer area.</p>
+          </article>
+          <article>
+            <span class="badge">Projects</span>
+            <h3>Track project updates</h3>
+            <p>See what is active, what information is needed next and what has already been discussed.</p>
+          </article>
+          <article>
+            <span class="badge">Messages</span>
+            <h3>Communicate directly</h3>
+            <p>Keep project communication with JP Innovation tidy instead of losing decisions in separate email chains.</p>
+          </article>
+          <article>
+            <span class="badge">Repeat work</span>
+            <h3>Request things faster</h3>
+            <p>Use saved project context to make repeat orders, revisions and extra tasks easier to scope.</p>
+          </article>
+          <article>
+            <span class="badge">Free account</span>
+            <h3>No paid membership needed</h3>
+            <p>Client Portal access is for customers. Paid Innovation Hub features only unlock after an account upgrade.</p>
+          </article>
+          <article>
+            <span class="badge">Upgrade option</span>
+            <h3>Upgrade the same login</h3>
+            <p>If a client later becomes a paid member, JP Innovation can upgrade the same account for Hub access.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="authDialog" class="auth-dialog" aria-hidden="true">
+    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="close-button" id="closeAuth" aria-label="Close sign in">x</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth-tab="signin">Sign in</button>
+        <button class="auth-tab" data-auth-tab="register">Register</button>
+      </div>
+      <h2 id="authTitle">Client Portal sign in</h2>
+      <form id="signinForm" class="auth-form" autocomplete="on">
+        <label for="signinEmail">Email <input id="signinEmail" name="email" type="text" inputmode="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
+        <button class="primary-button" type="submit">Sign in</button>
+        <button id="forgotPasswordButton" class="secondary-button" type="button">Forgot password? Reset it</button>
+        <p class="muted">Your browser or password manager can save and autofill your own login on this device. JP Innovation does not add a shared saved password here.</p>
+      </form>
+      <form id="registerForm" class="auth-form hidden">
+        <p class="muted">Create a free Client Portal account. JP Innovation can upgrade the same login to paid Innovation Hub membership later.</p>
+        <label>Full name <input name="fullName" required autocomplete="name"></label>
+        <label>Email <input name="email" type="text" inputmode="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
+        <label>Password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <button class="primary-button" type="submit">Create Client Portal account</button>
+      </form>
+      <form id="resetPasswordForm" class="auth-form hidden">
+        <p class="muted">Enter a new password for your JP Innovation account.</p>
+        <label>New password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Confirm new password <input name="confirmPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+        <button class="primary-button" type="submit">Save new password</button>
+      </form>
+      <p id="authStatus" class="form-status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div id="upgradeDialog" class="auth-dialog" aria-hidden="true">
+    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle">
+      <button class="close-button" id="closeUpgrade" aria-label="Close upgrade message">x</button>
+      <p class="eyebrow">Innovation Hub upgrade</p>
+      <h2 id="upgradeTitle">Upgrade needed for paid Hub features</h2>
+      <p class="muted">This login is for the free Client Portal. The Innovation Hub is the paid member area, so Hub tools stay locked until JP Innovation upgrades the account.</p>
+      <a class="primary-button" href="../hub/index.html#apply">View paid membership</a>
+      <a class="secondary-button" href="index.html?entry=client&signin=1">Open Client Portal</a>
+    </div>
+  </div>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside id="dashboardSidebar" class="sidebar">
+      <a class="app-brand" href="../index.html" aria-label="Return to JP Innovation Site">
+        <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation">
+        <span>Innovation Hub</span>
+      </a>
+      <nav class="app-nav" aria-label="Portal navigation">
+        <button class="nav-link active" data-view="dashboard">Dashboard</button>
+        <button class="nav-link" data-view="onboarding">Profile Setup</button>
+        <button class="nav-link" data-view="boards">Engineering Boards</button>
+        <button class="nav-link" data-view="projects">Projects</button>
+        <button class="nav-link" data-view="quotes">Quote Requests</button>
+        <button class="nav-link" data-view="directory">Member Directory</button>
+        <button class="nav-link" data-view="resources">Resources & Tools</button>
+        <button class="nav-link" data-view="events">Events</button>
+        <button class="nav-link" data-view="messages">Messages</button>
+        <button class="nav-link" data-view="rewards">Rewards</button>
+        <button class="nav-link" data-view="profile">My Profile</button>
+        <button class="nav-link" data-view="settings">Settings</button>
+        <button id="adminNav" class="nav-link hidden" data-view="admin">Admin Review</button>
+      </nav>
+      <a class="secondary-button site-return-button" href="../index.html">Back to JP Innovation Site</a>
+      <button id="logoutButton" class="secondary-button logout-button">Log out</button>
+    </aside>
+    <button id="mobileMenuBackdrop" class="mobile-menu-backdrop" type="button" aria-label="Close dashboard menu"></button>
+
+    <main class="workspace">
+      <header class="workspace-header">
+        <div class="workspace-heading">
+          <button id="mobileMenuButton" class="mobile-dashboard-menu" type="button" aria-label="Open dashboard menu" aria-controls="dashboardSidebar" aria-expanded="false">
+            <span></span>
+            Menu
+          </button>
+          <div>
+            <p class="eyebrow">Innovation Hub</p>
+            <h1 id="viewTitle">Dashboard</h1>
+          </div>
+        </div>
+        <div class="workspace-header-actions">
+          <div class="notification-centre">
+            <button id="notificationBell" class="notification-bell" type="button" aria-label="Open notifications" aria-expanded="false" aria-controls="notificationPopover">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>
+              </svg>
+              <span id="notificationCount" class="notification-count">3</span>
+            </button>
+            <div id="notificationPopover" class="notification-popover" role="dialog" aria-label="Notifications">
+              <div class="notification-heading">
+                <div>
+                  <span class="badge">Updates</span>
+                  <h3>Notifications</h3>
+                </div>
+                <button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">x</button>
+              </div>
+              <div id="notificationList" class="notification-list"></div>
+            </div>
+          </div>
+          <div class="member-chip">
+            <span id="memberInitials">JP</span>
+            <div>
+              <strong id="memberName">Member</strong>
+              <small id="memberRole">Member</small>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section id="viewMount" class="view-mount"></section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="app.js?v=reset-mobile-fix-20260711"></script>
 </body>
 </html>
