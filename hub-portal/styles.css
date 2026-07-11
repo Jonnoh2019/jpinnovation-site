@@ -457,6 +457,14 @@ input:focus, textarea:focus, select:focus {
 .workspace-header h1 {
   font-size: clamp(26px, 2.8vw, 38px);
 }
+.workspace-mobile-logo {
+  display: none;
+}
+.workspace-mobile-logo img {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+}
 .workspace-heading {
   display: flex;
   align-items: center;
@@ -1992,11 +2000,22 @@ input:focus, textarea:focus, select:focus {
     align-items: stretch;
     flex-direction: column;
   }
+  .workspace-mobile-logo {
+    order: 1;
+    display: flex;
+    justify-content: center;
+    align-self: stretch;
+  }
+  .workspace-mobile-logo img {
+    width: min(100%, 370px);
+  }
   .workspace-heading {
+    order: 3;
     align-items: flex-start;
     justify-content: flex-start;
   }
   .workspace-header-actions {
+    order: 2;
     width: 100%;
     justify-content: flex-start;
   }
@@ -2121,6 +2140,11 @@ input:focus, textarea:focus, select:focus {
   .workspace-header {
     gap: 8px;
     margin-bottom: 10px;
+  }
+  .workspace-mobile-logo img {
+    width: min(100%, 372px);
+    max-height: 98px;
+    object-fit: contain;
   }
   .workspace-header h1 {
     font-size: 22px;
