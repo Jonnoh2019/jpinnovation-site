@@ -1303,6 +1303,7 @@ function setMemberProfileMenuOpen(open) {
 function setMobileDashboardMenuOpen(open) {
   const shell = $("#appShell");
   const button = $("#mobileMenuButton");
+  const sidebar = $("#dashboardSidebar");
   if (!shell || !button) return;
   shell.classList.toggle("mobile-menu-open", open);
   document.body.classList.toggle("mobile-dashboard-menu-open", open);
@@ -1310,6 +1311,7 @@ function setMobileDashboardMenuOpen(open) {
   button.setAttribute("aria-label", open ? "Close dashboard menu" : "Open dashboard menu");
   const label = button.querySelector(".menu-label");
   if (label) label.textContent = open ? "Close" : "Menu";
+  if (!open && sidebar) sidebar.scrollTop = 0;
 }
 
 function renderView(view) {
@@ -3639,10 +3641,15 @@ async function boot() {
       setMobileDashboardMenuOpen(false);
     }
   });
-  $all(".nav-link").forEach((button) => button.addEventListener("click", () => {
-    renderView(button.dataset.view);
+  $all(".nav-link").forEach((button) => button.addEventListener("click", (event) => {
+    event.preventDefault();
+    const destination = button.dataset.view || "dashboard";
     setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
+    if (destination !== "boards") activeBoardPostId = "";
+    renderView(destination);
+    button.blur();
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }));
   $("#applyForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
