@@ -812,6 +812,19 @@
       font-size: 12px;
       line-height: 1.3;
     }
+    .install-app-steps {
+      display: none;
+      grid-column: 1 / -1;
+      margin: 0;
+      padding-left: 18px;
+      color: var(--silver);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .install-app-panel.show-steps .install-app-steps {
+      display: grid;
+      gap: 4px;
+    }
     .install-app-actions {
       display: flex;
       align-items: center;
@@ -1433,6 +1446,11 @@
       <button class="button" id="installAppPrompt" type="button">Install</button>
       <button class="install-app-close" id="installAppClose" type="button" aria-label="Close install prompt">&times;</button>
     </div>
+    <ol class="install-app-steps" id="installAppSteps">
+      <li>Open this page in Safari if you are inside Instagram or Facebook.</li>
+      <li>Tap the Share button.</li>
+      <li>Choose Add to Home Screen, then Add.</li>
+    </ol>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -1502,19 +1520,32 @@
       const installPrompt = document.querySelector("#installAppPrompt");
       const installClose = document.querySelector("#installAppClose");
       const installMessage = document.querySelector("#installAppMessage");
+      const installSteps = document.querySelector("#installAppSteps");
       let deferredInstallPrompt = null;
 
       const isStandalone = window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
       const isMobile = () => window.matchMedia?.("(max-width: 760px)")?.matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const showPanel = (message) => {
+      const isSocialBrowser = /Instagram|FBAN|FBAV|FB_IAB|Line|TikTok/i.test(navigator.userAgent);
+      const setInstallSteps = () => {
+        if (!installSteps) return;
+        installSteps.innerHTML = isSocialBrowser
+          ? "<li>Tap the browser menu above, then choose Open in browser or Open in Safari.</li><li>In Safari, tap the Share button.</li><li>Choose Add to Home Screen, then Add.</li>"
+          : "<li>Tap the Share button in Safari.</li><li>Choose Add to Home Screen.</li><li>Tap Add.</li>";
+      };
+      const showPanel = (message, showSteps = false) => {
         if (!installPanel || isStandalone) return;
         if (message && installMessage) installMessage.textContent = message;
+        installPanel.classList.toggle("show-steps", showSteps);
         installPanel.classList.add("is-visible");
       };
-      const hidePanel = () => installPanel?.classList.remove("is-visible");
+      const hidePanel = () => {
+        installPanel?.classList.remove("is-visible");
+        installPanel?.classList.remove("show-steps");
+      };
       const manualMessage = () => {
-        if (isAppleMobile) return "On iPhone: tap Share, then Add to Home Screen.";
+        if (isAppleMobile && isSocialBrowser) return "On iPhone: open in Safari first, then use Share > Add to Home Screen.";
+        if (isAppleMobile) return "On iPhone: use Share > Add to Home Screen.";
         return "If your browser does not show Install, use its menu and choose Add to Home screen.";
       };
       const openInstall = async () => {
@@ -1526,7 +1557,13 @@
           hidePanel();
           return;
         }
-        showPanel(manualMessage());
+        if (isAppleMobile) {
+          setInstallSteps();
+          if (installPrompt) installPrompt.textContent = "Show steps";
+          showPanel(manualMessage(), true);
+          return;
+        }
+        showPanel(manualMessage(), false);
       };
 
       window.addEventListener("beforeinstallprompt", (event) => {
@@ -1549,7 +1586,14 @@
         let closedThisSession = false;
         try { closedThisSession = window.sessionStorage.getItem("jpInstallPromptClosed") === "1"; } catch {}
         if (isMobile() && !closedThisSession && !isStandalone) {
-          showPanel(deferredInstallPrompt ? "Tap Install to add JP Innovation to your phone." : manualMessage());
+          if (isAppleMobile) {
+            setInstallSteps();
+            if (installPrompt) installPrompt.textContent = "Show steps";
+            showPanel(manualMessage(), true);
+          } else {
+            if (installPrompt) installPrompt.textContent = "Install";
+            showPanel(deferredInstallPrompt ? "Tap Install to add JP Innovation to your phone." : manualMessage());
+          }
         }
       }, 1800);
     })();
