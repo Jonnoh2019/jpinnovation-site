@@ -843,8 +843,14 @@ function configureEntryPage() {
   const isHubEntry = entryMode === "hub";
   document.body.dataset.entry = entryMode;
   document.title = isHubEntry ? "JP Innovation Hub Sign In" : "JP Innovation Client Portal";
+  const identityBadge = $("#entryIdentityBadge");
+  if (identityBadge) {
+    identityBadge.innerHTML = isHubEntry
+      ? "<span>Innovation Hub</span><strong>Paid member area</strong>"
+      : "<span>Client Portal</span><strong>Free customer account area</strong>";
+  }
   setText("#entryEyebrow", isHubEntry ? "Innovation Hub member access" : "Client Portal access");
-  setText("#entryTitle", isHubEntry ? "Innovation Hub" : "Client Portal");
+  setText("#entryTitle", isHubEntry ? "Innovation Hub — paid member area." : "Client Portal — free customer account area.");
   setText(
     "#entryLead",
     isHubEntry
