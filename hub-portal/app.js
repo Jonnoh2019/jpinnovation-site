@@ -1004,6 +1004,9 @@ function isClientBlockedFromHub(user) {
 }
 
 function isClientPortalContext(user = currentUser()) {
+  // Admins always need the full Hub workspace, even when their saved session
+  // was restored from the Client Portal entry URL on mobile.
+  if (user?.role === "admin") return false;
   return entryMode === "client" || user?.role === "client";
 }
 
