@@ -448,11 +448,18 @@ input:focus, textarea:focus, select:focus {
   padding: 24px;
 }
 .workspace-header {
+  position: sticky;
+  top: 0;
+  z-index: 160;
   display: flex;
   justify-content: space-between;
   gap: 18px;
   align-items: center;
   margin-bottom: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(6,9,13,.96);
+  backdrop-filter: blur(14px);
 }
 .workspace-header h1 {
   font-size: clamp(26px, 2.8vw, 38px);
@@ -580,7 +587,7 @@ input:focus, textarea:focus, select:focus {
   transform: translateY(-6px);
   transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
 }
-.notification-centre.open .notification-popover {
+.notification-popover.open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
