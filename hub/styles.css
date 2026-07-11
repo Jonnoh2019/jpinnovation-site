@@ -176,6 +176,41 @@ button { cursor: pointer; }
   text-transform: uppercase;
 }
 
+.page-identity-badge {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 0 0 12px;
+  padding: 7px;
+  border: 1px solid rgba(47,141,255,.42);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(0,111,230,.24), rgba(255,255,255,.055));
+  box-shadow: 0 16px 34px rgba(0,111,230,.16);
+}
+.page-identity-badge span,
+.page-identity-badge strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.page-identity-badge span {
+  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
+  color: #fff;
+}
+.page-identity-badge strong {
+  background: rgba(255,255,255,.08);
+  color: var(--cyan);
+}
+
 h1, h2, h3, p { margin-top: 0; }
 h1 {
   max-width: 660px;
@@ -1136,6 +1171,17 @@ input:focus, textarea:focus, select:focus {
   .hero .eyebrow {
     font-size: 13px;
     letter-spacing: .04em;
+  }
+  .page-identity-badge {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    width: 100%;
+    border-radius: var(--radius);
+  }
+  .page-identity-badge span,
+  .page-identity-badge strong {
+    justify-content: center;
+    width: 100%;
   }
   h1 {
     font-size: 22px;
