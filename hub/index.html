@@ -10,7 +10,7 @@
   <link rel="icon" href="../assets/jp-app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/jp-app-icon.svg">
   <link rel="manifest" href="../site.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=locked-section-switcher-20260708">
+  <link rel="stylesheet" href="styles.css?v=mobile-hub-compact-20260711">
 </head>
 <body>
   <header class="hub-header">
@@ -37,13 +37,16 @@
           <strong>Coming soon</strong>
           <span>Register for launch updates or sign in if JP Innovation has already approved your trial access.</span>
         </div>
-        <div class="hero-benefits" aria-label="Hub benefits">
-          <span>Professional engineering community</span>
-          <span>Private quote opportunities</span>
-          <span>Monthly engineering competitions</span>
-          <span>Verified engineer profiles</span>
-          <span>Exclusive calculators and tools</span>
-          <span>Private collaboration spaces</span>
+        <div class="hub-feature-summary" aria-label="Hub benefits">
+          <strong>Paid member features include:</strong>
+          <ul>
+            <li>Professional engineering community and focused technical discussions</li>
+            <li>Private collaboration spaces for selected projects</li>
+            <li>Verified engineer profiles, supplier directory and networking</li>
+            <li>Private quote opportunities for approved paid members</li>
+            <li>Monthly engineering challenges, recognition and rewards</li>
+            <li>Premium calculators, templates, guides and practical resources</li>
+          </ul>
         </div>
       </div>
       <div class="hero-panel" aria-label="Membership summary">
@@ -100,52 +103,34 @@
         <h2>What Innovation Hub members will get.</h2>
         <p class="muted">The Innovation Hub is the paid member area layered on top of the free Client Portal, adding community, visibility, opportunities and practical engineering resources.</p>
       </div>
-      <div class="feature-groups">
-        <section class="feature-group" aria-labelledby="community-features">
-          <div class="feature-group-header">
-            <div>
-              <span class="badge">Community</span>
-              <h3 id="community-features">Community and collaboration</h3>
-            </div>
-            <p>Technical discussion, project sharing and useful contacts in one focused engineering space.</p>
+      <div class="hub-feature-list-card">
+        <h3>Paid member features include</h3>
+        <div class="feature-list-columns">
+          <div>
+            <span class="badge">Community</span>
+            <ul>
+              <li>Professional engineering community for designers, makers, suppliers and manufacturers</li>
+              <li>Focused discussions for CAD, machining, fabrication, 3D printing, electronics and product design</li>
+              <li>Private project collaboration where sensitive ideas do not need to be posted publicly</li>
+            </ul>
           </div>
-          <div class="feature-mini-grid">
-            <article class="feature-mini"><span>Network</span><h4>Professional engineering community</h4><p>A focused UK engineering space for designers, makers, manufacturers and practical problem solvers.</p></article>
-            <article class="feature-mini"><span>Discuss</span><h4>Discussion forums</h4><p>Dedicated areas for CAD, 3D printing, machining, fabrication, electronics and product design.</p></article>
-            <article class="feature-mini"><span>Private</span><h4>Private collaboration</h4><p>Discuss selected projects without making sensitive ideas or commercial details public.</p></article>
-            <article class="feature-mini"><span>Showcase</span><h4>Engineering showcase</h4><p>Present builds, prototypes, restoration work, workshop improvements and lessons learned.</p></article>
+          <div>
+            <span class="badge">Opportunities</span>
+            <ul>
+              <li>Private quote opportunities for approved paid members</li>
+              <li>Verified profiles showing capability, location, equipment and partner status</li>
+              <li>Monthly engineering challenges, recognition and useful contribution rewards</li>
+            </ul>
           </div>
-        </section>
-
-        <section class="feature-group" aria-labelledby="opportunity-features">
-          <div class="feature-group-header">
-            <div>
-              <span class="badge">Opportunities</span>
-              <h3 id="opportunity-features">Quotes, recognition and project opportunities</h3>
-            </div>
-            <p>Designed to help good work get seen and suitable opportunities reach the right people.</p>
+          <div>
+            <span class="badge">Tools</span>
+            <ul>
+              <li>Supplier and business directory for practical engineering services</li>
+              <li>Networking to find local capability and specialist knowledge</li>
+              <li>Premium calculators, templates, checklists, guides and resources</li>
+            </ul>
           </div>
-          <div class="feature-mini-grid">
-            <article class="feature-mini"><span>Quotes</span><h4>Private quote opportunities</h4><p>A future paid-member feature where approved engineers can be matched with suitable private quote requests.</p></article>
-            <article class="feature-mini"><span>Rewards</span><h4>Monthly competitions</h4><p>Engineering challenges, member recognition and rewards for useful contribution.</p></article>
-            <article class="feature-mini"><span>Verified</span><h4>Engineer profiles</h4><p>Capability, location, experience, equipment and verified partner status in one profile.</p></article>
-          </div>
-        </section>
-
-        <section class="feature-group" aria-labelledby="resource-features">
-          <div class="feature-group-header">
-            <div>
-              <span class="badge">Resources</span>
-              <h3 id="resource-features">Directory, networking and tools</h3>
-            </div>
-            <p>Practical resources and a searchable network built around engineering work, not noise.</p>
-          </div>
-          <div class="feature-mini-grid">
-            <article class="feature-mini"><span>Directory</span><h4>Business directory</h4><p>Search suppliers and services for CAD, machining, fabrication, prototyping and specialist support.</p></article>
-            <article class="feature-mini"><span>Connect</span><h4>Networking opportunities</h4><p>Find local capability, specialist knowledge and potential project partners more easily.</p></article>
-            <article class="feature-mini"><span>Tools</span><h4>Premium resources</h4><p>Exclusive calculators, templates, checklists, guides and practical engineering resources.</p></article>
-          </div>
-        </section>
+        </div>
       </div>
     </section>
 
@@ -302,6 +287,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=secure-hub-auth-fix-20260709"></script>
+  <script src="app.js?v=reset-mobile-fix-20260711"></script>
 </body>
 </html>
