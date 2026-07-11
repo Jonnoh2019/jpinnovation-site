@@ -8,7 +8,7 @@
   "theme_color": "#050709",
   "icons": [
     {
-      "src": "/assets/jp-app-icon.svg",
+      "src": "/assets/jp-app-icon.svg?v=jp-logo-20260711",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
