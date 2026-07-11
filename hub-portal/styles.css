@@ -485,25 +485,28 @@ input:focus, textarea:focus, select:focus {
   font-size: 13px;
   font-weight: 900;
 }
-.mobile-dashboard-menu span,
-.mobile-dashboard-menu span::before,
-.mobile-dashboard-menu span::after {
+.mobile-dashboard-menu .menu-bars,
+.mobile-dashboard-menu .menu-bars::before,
+.mobile-dashboard-menu .menu-bars::after {
   display: block;
   width: 17px;
   height: 2px;
   background: currentColor;
   content: "";
 }
-.mobile-dashboard-menu span {
+.mobile-dashboard-menu .menu-bars {
   position: relative;
 }
-.mobile-dashboard-menu span::before {
+.mobile-dashboard-menu .menu-bars::before {
   position: absolute;
   top: -6px;
 }
-.mobile-dashboard-menu span::after {
+.mobile-dashboard-menu .menu-bars::after {
   position: absolute;
   top: 6px;
+}
+.mobile-dashboard-menu strong {
+  font: inherit;
 }
 .workspace-header-actions {
   position: relative;
@@ -1965,10 +1968,10 @@ input:focus, textarea:focus, select:focus {
   .app-shell { display: block; }
   .sidebar {
     position: fixed;
-    inset: var(--hub-mobile-header-offset, 188px) auto 0 0;
-    z-index: 100;
+    inset: var(--hub-mobile-header-offset, 210px) auto 0 0;
+    z-index: 110;
     width: min(330px, 88vw);
-    height: calc(100dvh - var(--hub-mobile-header-offset, 188px));
+    height: calc(100dvh - var(--hub-mobile-header-offset, 210px));
     overflow-y: auto;
     border-right: 1px solid var(--line);
     border-bottom: 0;
@@ -1986,10 +1989,10 @@ input:focus, textarea:focus, select:focus {
   .mobile-dashboard-menu { display: inline-flex; }
   .mobile-menu-backdrop {
     position: fixed;
-    inset: var(--hub-mobile-header-offset, 188px) 0 0;
-    z-index: 90;
+    inset: var(--hub-mobile-header-offset, 210px) 0 0;
+    z-index: 80;
     width: 100%;
-    height: calc(100dvh - var(--hub-mobile-header-offset, 188px));
+    height: calc(100dvh - var(--hub-mobile-header-offset, 210px));
     border: 0;
     background: rgba(0,0,0,.62);
   }
@@ -1999,7 +2002,7 @@ input:focus, textarea:focus, select:focus {
   .workspace-header {
     position: sticky;
     top: 0;
-    z-index: 120;
+    z-index: 160;
     align-items: stretch;
     flex-direction: column;
     padding: 10px 0 12px;
@@ -2167,11 +2170,29 @@ input:focus, textarea:focus, select:focus {
     gap: 0;
   }
   .mobile-dashboard-menu {
+    position: relative;
+    z-index: 170;
     flex: 0 0 auto;
     min-height: 40px;
     padding: 7px 9px;
     border-radius: 11px;
     font-size: 12px;
+  }
+  .app-shell.mobile-menu-open .mobile-dashboard-menu {
+    border-color: rgba(47,141,255,.72);
+    background: rgba(0,111,230,.26);
+    color: #fff;
+  }
+  .app-shell.mobile-menu-open .mobile-dashboard-menu .menu-bars {
+    background: transparent;
+  }
+  .app-shell.mobile-menu-open .mobile-dashboard-menu .menu-bars::before {
+    top: 0;
+    transform: rotate(45deg);
+  }
+  .app-shell.mobile-menu-open .mobile-dashboard-menu .menu-bars::after {
+    top: 0;
+    transform: rotate(-45deg);
   }
   .workspace-header-actions {
     display: grid;
