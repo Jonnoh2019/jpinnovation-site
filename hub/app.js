@@ -87,7 +87,9 @@ async function trackPageView() {
 
 const supabaseUrl = "https://ueqdkiwouxhhdhdmjlsl.supabase.co";
 const supabasePublishableKey = "sb_publishable_nLAyyfVIBq_eM3TzZQHb-g_EV-knjl-";
-const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey);
+const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishableKey, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+});
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
 
@@ -110,9 +112,7 @@ function setHubAuthTab(mode = "signin") {
   });
   setFormVisible(signinForm, !isRegister);
   setFormVisible(registerForm, isRegister);
-  if ($("#hubAuthTitle")) {
-    $("#hubAuthTitle").textContent = isRegister ? "Register for access" : "Innovation Hub sign in";
-  }
+  if ($("#hubAuthTitle")) $("#hubAuthTitle").textContent = "Innovation Hub login";
   if ($("#hubAuthStatus")) $("#hubAuthStatus").textContent = "";
 }
 
@@ -265,6 +265,25 @@ function hubAuthHandler() {
   else if (params.get("signin") === "1") openHubAuth("signin");
 }
 
-registerInterestHandler();
-hubAuthHandler();
-trackPageView();
+async function restoreHubSession() {
+  if (!hubBackend) return false;
+  const { data, error } = await hubBackend.auth.getSession();
+  if (error || !data?.session?.user) return false;
+  const { data: profile } = await hubBackend
+    .from("profiles")
+    .select("account_type")
+    .eq("user_id", data.session.user.id)
+    .single();
+  if ((profile?.account_type || "client") === "client") return false;
+  window.location.replace("../hub-portal/index.html?entry=hub");
+  return true;
+}
+
+async function bootHubLanding() {
+  registerInterestHandler();
+  trackPageView();
+  if (await restoreHubSession()) return;
+  hubAuthHandler();
+}
+
+bootHubLanding();
