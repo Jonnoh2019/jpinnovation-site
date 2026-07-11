@@ -2201,7 +2201,7 @@ input:focus, textarea:focus, select:focus {
   }
   .workspace-header-actions {
     display: grid;
-    grid-template-columns: auto auto auto minmax(0, 1fr);
+    grid-template-columns: auto auto auto auto minmax(0, 1fr);
     align-items: center;
     gap: 8px;
   }
