@@ -91,7 +91,7 @@ const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishabl
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
-const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
+const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=hub&signin=1&reset=1`;
 
 function setHubAuthTab(mode = "signin") {
   const isRegister = mode === "register";
