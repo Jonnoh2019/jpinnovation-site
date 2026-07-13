@@ -1060,6 +1060,13 @@ async function loadSecureWorkspace() {
   return true;
 }
 
+async function loadSecureUserData() {
+  await clearKnownPretendSecureContent();
+  await loadSecureBoards();
+  await loadSecureSubmissions();
+  await loadSecureWorkspace();
+}
+
 async function createSecureResource(data, user) {
   if (!sharedWorkspaceBackendAvailable) return null;
   const { data: row, error } = await portalBackend.from("hub_resources").insert({
@@ -1099,7 +1106,7 @@ async function createSecureMessage(data, user, recipientEmail) {
     message_body: data.body.trim()
   });
   if (error) throw error;
-  return mapSecureMessage(row, user);
+  return mapSecureMessage(Array.isArray(row) ? row[0] : row, user);
 }
 
 async function markSecureMessagesRead() {
@@ -1569,6 +1576,7 @@ async function registerUser(data) {
       await portalBackend.rpc("request_hub_access");
       await syncSecureSession();
     }
+    await loadSecureUserData();
   }
   return result;
 }
@@ -1676,6 +1684,7 @@ async function signIn(data) {
     const { error: accessError } = await portalBackend.rpc("request_hub_access");
     if (!accessError) user = await syncSecureSession();
   }
+  await loadSecureUserData();
   return user;
 }
 
@@ -4558,10 +4567,7 @@ async function boot() {
   }
   try {
     await syncSecureSession();
-    await clearKnownPretendSecureContent();
-    await loadSecureBoards();
-    await loadSecureSubmissions();
-    await loadSecureWorkspace();
+    await loadSecureUserData();
   } catch (error) {
     state.sessionEmail = "";
     saveState();
