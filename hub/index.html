@@ -10,7 +10,7 @@
   <link rel="icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711">
   <link rel="manifest" href="../site.webmanifest?v=jp-logo-20260711">
-  <link rel="stylesheet" href="styles.css?v=compact-mobile-admin-auth-20260713">
+  <link rel="stylesheet" href="styles.css?v=real-content-moderation-20260713">
 </head>
 <body>
   <header class="hub-header">
@@ -81,7 +81,7 @@
         <strong>Register interest today and receive 10% off your first approved JP Innovation engineering quote.</strong>
         <small>Offer recorded when you send the registration email. Project suitability and quotation terms still apply.</small>
       </a>
-      <div class="actions launch-actions">
+      <div class="actions launch-actions" hidden>
         <button class="secondary-button" data-open-hub-auth="register" type="button">Register for access</button>
       </div>
       <div class="launch-progress" aria-label="Hub launch progress">
@@ -152,7 +152,7 @@
       </div>
     </section>
 
-    <section class="section examples-section" id="examples">
+    <section class="section examples-section" id="examples" hidden>
       <span class="chapter-label">Example Activity</span>
       <div class="section-heading">
         <h2>The Hub will be built around real engineering posts, not generic social content.</h2>
@@ -216,7 +216,7 @@
       </div>
     </section>
 
-    <section class="section apply-section public-view" id="apply">
+    <section class="section apply-section public-view" id="apply" hidden>
       <span class="chapter-label">Register Interest</span>
       <div class="section-heading">
         <h2>Register interest in the Hub launch.</h2>
@@ -280,6 +280,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=compact-mobile-admin-auth-20260713"></script>
+  <script src="app.js?v=real-content-moderation-20260713"></script>
 </body>
 </html>
