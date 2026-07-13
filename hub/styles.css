@@ -38,6 +38,10 @@ button { cursor: pointer; }
 [hidden] {
   display: none !important;
 }
+html.restoring-hub-session body {
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* Compact public landing page */
 .landing-title {
@@ -106,7 +110,8 @@ button { cursor: pointer; }
   gap: 10px;
   margin-top: 16px;
 }
-.landing-points article {
+.landing-points article,
+.landing-feature-button {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -116,6 +121,53 @@ button { cursor: pointer; }
   border-radius: var(--radius);
   background: rgba(255,255,255,.042);
 }
+.landing-feature-button {
+  position: relative;
+  width: 100%;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.landing-feature-button > span:nth-child(2) { min-width: 0; }
+.landing-feature-copy strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 15px;
+}
+.landing-feature-button > b {
+  margin-left: auto;
+  color: var(--cyan);
+  font-size: 20px;
+}
+.landing-feature-button:hover,
+.landing-feature-button:focus-visible {
+  border-color: rgba(47,141,255,.55);
+  background: rgba(0,111,230,.12);
+  transform: translateY(-1px);
+}
+.feature-preview-card { width: min(620px, 100%); }
+.feature-preview-card h2 { padding-right: 38px; }
+.feature-preview-content {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.feature-preview-content img {
+  width: 100%;
+  max-height: 220px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+.feature-preview-content ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--silver);
+}
+.feature-preview-content p { margin: 0; color: var(--soft); }
 .landing-point-icon {
   display: grid;
   place-items: center;
@@ -163,7 +215,8 @@ button { cursor: pointer; }
   .hero-tick-list { display: grid; gap: 5px; }
   .development-section { padding-top: 10px; }
   .landing-points { gap: 8px; }
-  .landing-points article {
+  .landing-points article,
+  .landing-feature-button {
     align-items: flex-start;
     gap: 8px;
     min-height: 94px;
