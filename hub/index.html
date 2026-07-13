@@ -18,7 +18,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="../assets/jp-app-icon-180.png?v=iphone-jp-logo-20260713">
   <link rel="apple-touch-icon-precomposed" sizes="180x180" href="../assets/jp-app-icon-180.png?v=iphone-jp-logo-20260713">
   <link rel="manifest" href="../site.webmanifest?v=iphone-jp-logo-20260713">
-    <link rel="stylesheet" href="styles.css?v=hub-function-audit-20260713">
+    <link rel="stylesheet" href="styles.css?v=member-reputation-20260713">
 </head>
 <body>
   <header class="hub-header">
@@ -103,10 +103,16 @@
         <button class="landing-feature-button" data-feature-preview="community" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><circle cx="5.5" cy="10" r="2.3"/><circle cx="18.5" cy="10" r="2.3"/><path d="M7 20v-2c0-3 2-5 5-5s5 2 5 5v2M2 19v-1.2c0-2.2 1.4-3.8 3.5-3.8M22 19v-1.2c0-2.2-1.4-3.8-3.5-3.8"/></svg></span><span class="landing-feature-copy"><strong>Engineering boards</strong><p>Focused member discussions.</p></span><b aria-hidden="true">+</b></button>
         <button class="landing-feature-button" data-feature-preview="quotes" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 10h8M8 14h5M15 17h3"/></svg></span><span class="landing-feature-copy"><strong>Private quotes</strong><p>Approved project opportunities.</p></span><b aria-hidden="true">+</b></button>
         <button class="landing-feature-button" data-feature-preview="directory" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-2c0-3 2.2-5 5.5-5s5.5 2 5.5 5v2M16 12l4 4M20 12l-4 4"/></svg></span><span class="landing-feature-copy"><strong>Directory</strong><p>Find verified skills and suppliers.</p></span><b aria-hidden="true">+</b></button>
+        <button class="landing-feature-button" data-feature-preview="reputation" type="button"><span class="landing-point-icon reputation-star-icon" aria-hidden="true">&#9733;</span><span class="landing-feature-copy"><strong>Verified reputation</strong><p>Blue verification and Gold trusted status.</p></span><b aria-hidden="true">+</b></button>
         <button class="landing-feature-button" data-feature-preview="calculators" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6h8v3H8zM8 13h1M12 13h1M16 13h1M8 17h1M12 17h1M16 17h1"/></svg></span><span class="landing-feature-copy"><strong>Calculators</strong><p>Fast engineering calculations.</p></span><b aria-hidden="true">+</b></button>
         <button class="landing-feature-button" data-feature-preview="templates" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg></span><span class="landing-feature-copy"><strong>Templates</strong><p>Checklists, guides and resources.</p></span><b aria-hidden="true">+</b></button>
         <button class="landing-feature-button" data-feature-preview="projects" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9"/></svg></span><span class="landing-feature-copy"><strong>Projects</strong><p>Private collaboration spaces.</p></span><b aria-hidden="true">+</b></button>
       </div>
+      <button class="reputation-landing-card" data-feature-preview="reputation" type="button">
+        <span class="reputation-landing-copy"><small>MEMBER TRUST</small><strong>Clear status. Moderated reviews.</strong><p>Paid members receive Blue Verified after JP Innovation vetting. Gold is earned through helpful contributions or approved positive reviews.</p></span>
+        <span class="reputation-example-stack" aria-hidden="true"><span class="landing-reputation-badge blue">&#9733; Blue Verified</span><span class="landing-reputation-badge gold">&#9733; Gold Trusted</span></span>
+        <b aria-hidden="true">View example &rarr;</b>
+      </button>
     </section>
 
     <section class="section public-view quote-section" id="quote-hub" hidden>
@@ -267,6 +273,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="../analytics.js?v=live-metrics-20260713"></script>
-  <script src="app.js?v=hub-function-audit-20260713"></script>
+  <script src="app.js?v=member-reputation-20260713"></script>
 </body>
 </html>
