@@ -10,7 +10,7 @@
   <link rel="icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711">
   <link rel="manifest" href="../site.webmanifest?v=jp-logo-20260711">
-  <link rel="stylesheet" href="styles.css?v=launch-admin-auth-unify-20260713">
+  <link rel="stylesheet" href="styles.css?v=compact-mobile-admin-auth-20260713">
 </head>
 <body>
   <header class="hub-header">
@@ -264,14 +264,12 @@
       </div>
       <h2 id="hubAuthTitle">Innovation Hub login</h2>
       <form id="hubSigninForm" class="auth-form" autocomplete="on">
-        <p class="muted">Use your approved paid member login. The same email and password can also be used for your free Client Portal.</p>
         <label for="hubSigninEmail">Email <input id="hubSigninEmail" name="email" type="text" inputmode="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
         <label for="hubSigninPassword">Password <input id="hubSigninPassword" name="password" type="password" required autocomplete="current-password"></label>
         <button class="primary-button" type="submit">Sign in</button>
         <button id="hubForgotPasswordButton" class="secondary-button" type="button">Forgot password? Reset it</button>
       </form>
       <form id="hubRegisterForm" class="auth-form hidden" autocomplete="on">
-        <p class="muted">Create your account and request paid Innovation Hub access. JP Innovation will review the registration before member features unlock.</p>
         <label for="hubRegisterName">Full name <input id="hubRegisterName" name="fullName" type="text" required autocomplete="name"></label>
         <label for="hubRegisterEmail">Email <input id="hubRegisterEmail" name="email" type="text" inputmode="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
         <label for="hubRegisterPassword">Password <input id="hubRegisterPassword" name="password" type="password" required minlength="8" autocomplete="new-password"></label>
@@ -282,6 +280,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=launch-admin-auth-unify-20260713"></script>
+  <script src="app.js?v=compact-mobile-admin-auth-20260713"></script>
 </body>
 </html>
