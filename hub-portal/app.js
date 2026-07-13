@@ -1729,7 +1729,7 @@ function renderView(view) {
     admin: "Admin Review"
   };
   $("#viewTitle").textContent = titles[view] || "Dashboard";
-  $all(".nav-link").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
+  syncNavigationState(view);
   const mount = $("#viewMount");
   mount.dataset.view = view;
   const renderers = {
@@ -1752,6 +1752,15 @@ function renderView(view) {
   prepareCompactSections(view);
   renderMessageInbox();
   bindViewHandlers(view);
+}
+
+function syncNavigationState(view = currentView) {
+  $all(".nav-link").forEach((button) => {
+    const isActive = button.dataset.view === view;
+    button.classList.toggle("active", isActive);
+    if (isActive) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
 }
 
 function prepareCompactSections(view) {
@@ -2208,6 +2217,8 @@ function renderProjects() {
 }
 
 function renderProjectDetail(project) {
+  const user = currentUser();
+  const canManage = user?.role === "admin" || user?.id === project.authorId || user?.email === project.authorEmail;
   return `
     <section class="section-card project-detail">
       <div class="project-detail-main">
@@ -2228,11 +2239,11 @@ function renderProjectDetail(project) {
         <article class="project-panel">
           <span class="badge">Next step</span>
           <h3>${escapeHtml(project.nextStep || "Add the next practical milestone")}</h3>
-          <form class="project-update-form" data-project-id="${escapeHtml(project.id)}">
+          ${canManage ? `<form class="project-update-form" data-project-id="${escapeHtml(project.id)}">
             <label>Update title <input name="title" required placeholder="Milestone, issue, decision..."></label>
             <label>Update notes <textarea name="body" rows="3" required></textarea></label>
             <button class="secondary-button" type="submit">Add update</button>
-          </form>
+          </form>` : `<p class="muted">Project updates are managed by the project owner.</p>`}
         </article>
         <article class="project-panel">
           <div class="list-title"><div><h3>Parts and materials</h3><p>Keep track of what needs designing, making or sourcing.</p></div></div>
@@ -2241,12 +2252,12 @@ function renderProjectDetail(project) {
               <div><strong>${escapeHtml(part.name)}</strong><span>${escapeHtml(part.material || "TBC")}</span><em>${escapeHtml(part.status || "Open")}</em></div>
             `).join("")}
           </div>
-          <form class="project-part-form compact-form" data-project-id="${escapeHtml(project.id)}">
+          ${canManage ? `<form class="project-part-form compact-form" data-project-id="${escapeHtml(project.id)}">
             <label>Part <input name="name" required></label>
             <label>Material <input name="material"></label>
             <label>Status <input name="status" placeholder="CAD, ordered, made..."></label>
             <button class="secondary-button" type="submit">Add part</button>
-          </form>
+          </form>` : ""}
         </article>
       </div>
       <div class="project-detail-grid">
@@ -2431,6 +2442,7 @@ function renderDirectory() {
 }
 
 function renderResources() {
+  const isAdmin = currentUser()?.role === "admin";
   return `
     <section class="section-card resources-hero">
       <div>
@@ -2472,7 +2484,7 @@ function renderResources() {
         </article>
       </div>
     </section>
-    <section class="section-card section-green">
+    ${isAdmin ? `<section class="section-card section-green">
       <div class="list-title"><div><h2>Add resource</h2><p>Create your own checklist, guide, template or useful note for members.</p></div></div>
       <form id="resourceForm" class="form-grid two">
         <label>Type <select name="type">${["Checklist", "Template", "Guide", "Tool note", "Supplier note"].map(option).join("")}</select></label>
@@ -2480,7 +2492,7 @@ function renderResources() {
         <label class="wide">Detail <textarea name="detail" rows="3" required></textarea></label>
         <button class="primary-button wide" type="submit">Add resource</button>
       </form>
-    </section>
+    </section>` : ""}
     <section class="section-card section-green">
       <div class="list-title"><div><h2>Templates and checklists</h2><p>Resources that can later become downloadable member files.</p></div></div>
       <div class="resource-grid">
@@ -2490,7 +2502,7 @@ function renderResources() {
             <h3>${escapeHtml(resource.title)}</h3>
             <p>${escapeHtml(resource.detail)}</p>
             <div class="card-actions">
-              <button class="secondary-button delete-item-button" data-delete-type="resource" data-id="${escapeHtml(resource.id)}" type="button">Delete</button>
+              ${isAdmin ? `<button class="secondary-button delete-item-button" data-delete-type="resource" data-id="${escapeHtml(resource.id)}" type="button">Delete</button>` : ""}
             </div>
           </article>
         `).join("")}
@@ -2500,17 +2512,18 @@ function renderResources() {
 }
 
 function renderEvents() {
+  const isAdmin = currentUser()?.role === "admin";
   return `
     <section class="section-card section-rose">
       <h2>Engineering events</h2>
       <p class="muted">Add member meetups, workshops and site visits, then track who has registered interest.</p>
-      <form id="eventForm" class="form-grid two">
+      ${isAdmin ? `<form id="eventForm" class="form-grid two">
         <label>Event title <input name="title" required></label>
         <label>Type <select name="type">${["Meetup", "Workshop", "Site visit", "Online session", "Supplier demo"].map(option).join("")}</select></label>
         <label>Date <input name="date" type="date" required></label>
         <label>Location <input name="location" required placeholder="Milton Keynes, Online, TBC..."></label>
         <button class="primary-button wide" type="submit">Add event</button>
-      </form>
+      </form>` : ""}
       <div class="cards-grid">${state.events.map((event) => {
         const interested = event.interested || [];
         const joined = interested.includes(currentUser()?.email);
@@ -2522,7 +2535,7 @@ function renderEvents() {
           <p class="muted">${interested.length} interested</p>
           <div class="card-actions">
             <button class="secondary-button event-interest-button" data-event-id="${escapeHtml(event.id)}" type="button">${joined ? "Interest registered" : "Register interest"}</button>
-            <button class="secondary-button delete-item-button" data-delete-type="event" data-id="${escapeHtml(event.id)}" type="button">Delete</button>
+            ${isAdmin ? `<button class="secondary-button delete-item-button" data-delete-type="event" data-id="${escapeHtml(event.id)}" type="button">Delete</button>` : ""}
           </div>
         </article>`;
       }).join("")}
@@ -2691,10 +2704,21 @@ function renderSettings(user) {
       <p class="muted">Your secure account, board posts, projects and quote requests use the shared service. Personal display preferences remain on this device.</p>
       <div class="cards-grid">
         <article class="card"><span class="badge">Account plan</span><h3>${isClient ? "Client Portal" : "Innovation Hub"}</h3><p>${isClient ? "Free access for quotes, requests and direct communication with JP Innovation." : "GBP 19/month Innovation Hub membership. Billing begins only when JP Innovation confirms activation."}</p></article>
-        <article class="card"><span class="badge">Email</span><h3>Notifications</h3><p>Important account and submission updates appear in the notification centre. Email alerts are being connected separately.</p></article>
-        <article class="card"><span class="badge">Security</span><h3>Password</h3><p>Secure Supabase login is connected. Password changes and recovery should stay inside the protected sign-in flow.</p></article>
+        <article class="card"><span class="badge">Alerts</span><h3>Notifications</h3><p>Choose which Hub activity appears in your notification centre using the preferences below.</p></article>
+        <article class="card"><span class="badge">Security</span><h3>Password</h3><p>Change your password here, request a recovery email or sign out any other active devices.</p></article>
         <article class="card"><span class="badge">Account</span><h3>${escapeHtml(user.email)}</h3><p>Your ${isClient ? "quote requests" : "board posts, projects and quote requests"} follow this secure login across devices.</p></article>
       </div>
+    </section>
+    <section class="section-card section-blue account-security-section">
+      <div class="list-title"><div><h2>Account security</h2><p>Manage the password and signed-in devices for ${escapeHtml(user.email)}.</p></div></div>
+      <form id="changePasswordForm" class="form-grid two" autocomplete="off">
+        <label>New password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Confirm password <input name="confirmPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+        <button class="primary-button" type="submit">Change password</button>
+        <button id="requestSettingsPasswordReset" class="secondary-button" type="button">Email me a reset link</button>
+        <button id="signOutOtherDevices" class="secondary-button wide" type="button">Sign out other devices</button>
+        <p id="accountSecurityStatus" class="form-status wide" aria-live="polite"></p>
+      </form>
     </section>
     <section class="section-card section-silver">
       <div class="list-title"><div><h2>Device data backup</h2><p>Export locally saved preferences, drafts and non-secure working notes before changing browser.</p></div></div>
@@ -2767,7 +2791,7 @@ async function loadSecureAdminProfiles(force = false) {
     adminProfilesStatus = "error";
     adminProfilesMessage = "Live account permissions still need enabling in Supabase. The admin setup script must be run before launch.";
   } else {
-    secureAdminProfiles = data || [];
+    secureAdminProfiles = Array.isArray(data) ? data : [];
     adminProfilesStatus = "ready";
     adminProfilesMessage = `${secureAdminProfiles.length} registered account${secureAdminProfiles.length === 1 ? "" : "s"} loaded from Supabase. Approvals made here change real Hub access.`;
     secureAdminProfiles.forEach((profile) => {
@@ -3532,7 +3556,10 @@ function bindViewHandlers(view) {
       renderView("messages");
     });
   }
-  if (view === "settings") bindTrialDataTools();
+  if (view === "settings") {
+    bindTrialDataTools();
+    bindAccountSecurity();
+  }
   if (view === "admin") {
     const createForm = $("#adminCreateMemberForm");
     if (createForm) {
@@ -3578,13 +3605,65 @@ function bindViewHandlers(view) {
       Object.assign(user, formObject(event.currentTarget));
       syncMember(user);
       saveState();
-      $("#settingsStatus").textContent = "Preferences saved.";
       setLoggedInView();
-      renderView("settings");
+      $("#settingsStatus").textContent = "Preferences saved.";
     });
   }
   $all(".nav-link-jump").forEach((button) => button.addEventListener("click", () => renderView(button.dataset.targetView)));
   bindDeleteButtons();
+}
+
+function bindAccountSecurity() {
+  const user = currentUser();
+  const status = $("#accountSecurityStatus");
+  const form = $("#changePasswordForm");
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = formObject(event.currentTarget);
+    const password = String(data.password || "");
+    const confirmPassword = String(data.confirmPassword || "");
+    if (password.length < 8) {
+      status.textContent = "Use a password of at least 8 characters.";
+      return;
+    }
+    if (password !== confirmPassword) {
+      status.textContent = "The two passwords do not match.";
+      return;
+    }
+    if (!portalBackend) {
+      status.textContent = "Secure password changes are temporarily unavailable. Please try again.";
+      return;
+    }
+    status.textContent = "Updating your password...";
+    const { error } = await portalBackend.auth.updateUser({ password });
+    if (error) {
+      status.textContent = error.message;
+      return;
+    }
+    event.currentTarget.reset();
+    status.textContent = "Password updated successfully.";
+  });
+  $("#requestSettingsPasswordReset")?.addEventListener("click", async () => {
+    if (!portalBackend || !user?.email) {
+      status.textContent = "Secure password recovery is temporarily unavailable. Please try again.";
+      return;
+    }
+    status.textContent = "Sending your reset email...";
+    const resetEntry = isClientPortalContext(user) ? "client" : "hub";
+    const { error } = await portalBackend.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${publicSiteOrigin}/hub-portal/index.html?entry=${resetEntry}&signin=1&reset=1`
+    });
+    status.textContent = error ? error.message : `Reset email sent to ${user.email}.`;
+  });
+  $("#signOutOtherDevices")?.addEventListener("click", async () => {
+    if (!portalBackend) {
+      status.textContent = "Secure session controls are temporarily unavailable. Please try again.";
+      return;
+    }
+    status.textContent = "Signing out other devices...";
+    const { error } = await portalBackend.auth.signOut({ scope: "others" });
+    status.textContent = error ? error.message : "Other devices have been signed out. This device remains signed in.";
+  });
 }
 
 function bindAdminActions() {
@@ -4347,7 +4426,7 @@ async function boot() {
     $("#authStatus").textContent = "Password updated. You can now sign in with the new password.";
     await portalBackend.auth.signOut();
     setAuthTab("signin");
-    window.history.replaceState({}, document.title, "/hub-portal/index.html?entry=client&signin=1");
+    window.history.replaceState({}, document.title, `/hub-portal/index.html?entry=${entryMode}&signin=1`);
   });
   $("#logoutButton").addEventListener("click", async () => {
     setMemberProfileMenuOpen(false);
