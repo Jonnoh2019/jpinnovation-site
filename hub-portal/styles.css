@@ -1250,6 +1250,126 @@ input:focus, textarea:focus, select:focus {
   width: fit-content;
   margin-left: auto;
 }
+.member-status-star {
+  position: absolute;
+  top: -7px;
+  left: 42px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 2px solid #07101a;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 5px 16px rgba(0,0,0,.42);
+}
+.member-status-star.blue { background: #1788ff; }
+.member-status-star.gold { background: linear-gradient(145deg, #ffe27a, #c98b00); color: #241700; }
+.member-status-star:hover,
+.member-status-star:focus-visible { transform: scale(1.08); outline: 2px solid rgba(255,255,255,.35); }
+.reputation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.reputation-badge > span { font-size: 13px; }
+.reputation-badge.blue {
+  border-color: rgba(47,141,255,.58);
+  background: rgba(23,136,255,.15);
+  color: #72b8ff;
+}
+.reputation-badge.gold {
+  border-color: rgba(255,203,66,.62);
+  background: rgba(255,194,42,.13);
+  color: #ffd66b;
+}
+.member-name-with-badge,
+.reply-author {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.member-name-with-badge h3 { margin: 0; }
+.author-reputation { display: inline-flex; align-items: center; gap: 5px; }
+.reputation-status-dialog { z-index: 980; }
+.reputation-status-card { width: min(560px, calc(100vw - 24px)); }
+.reputation-dialog-heading { display: grid; gap: 8px; }
+.reputation-dialog-heading h2,
+.reputation-dialog-heading p { margin: 0; }
+.reputation-dialog-metrics,
+.reputation-tier-guide,
+.reputation-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 14px;
+}
+.reputation-dialog-metrics article,
+.reputation-tier-guide article,
+.reputation-progress-grid article {
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 9px;
+  background: rgba(255,255,255,.035);
+  padding: 11px;
+}
+.reputation-dialog-metrics strong,
+.reputation-dialog-metrics span { display: block; }
+.reputation-dialog-metrics strong { font-size: 24px; }
+.reputation-dialog-metrics span,
+.reputation-tier-guide p { margin: 4px 0 0; color: var(--soft); font-size: 12px; }
+.reputation-open-profile { width: 100%; margin-top: 14px; }
+.profile-reputation-card { position: relative; overflow: hidden; }
+.profile-reputation-heading { display: grid; gap: 8px; }
+.profile-reputation-heading h2,
+.profile-reputation-heading p { margin: 0; }
+.reputation-progress-grid article { display: grid; gap: 8px; }
+.reputation-progress-grid article > div { display: flex; justify-content: space-between; gap: 10px; }
+.reputation-progress-grid progress { width: 100%; accent-color: var(--blue-soft); }
+.profile-reputation-card.gold .reputation-progress-grid progress { accent-color: #e0a900; }
+.reputation-rule { margin: 11px 0 0; }
+.member-review-panel,
+.member-review-history { margin-top: 10px; }
+.member-review-panel > summary,
+.member-review-history > summary { color: var(--blue-soft); font-size: 12px; font-weight: 800; cursor: pointer; }
+.member-review-form { display: grid; gap: 8px; margin-top: 9px; }
+.member-review-list { display: grid; gap: 7px; margin-top: 8px; }
+.member-review-list article,
+.member-review-admin-card {
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  background: rgba(255,255,255,.03);
+  padding: 10px;
+}
+.member-review-list p,
+.member-review-admin-card p { margin: 5px 0; color: var(--muted); font-size: 12px; }
+.member-review-list small,
+.member-review-admin-card small { color: var(--soft); font-size: 10px; }
+.review-stars { color: #ffc83d; letter-spacing: 1px; }
+.member-review-admin-list { display: grid; gap: 8px; }
+.member-review-admin-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+@media (max-width: 640px) {
+  .member-status-star { left: 38px; }
+  .reputation-dialog-metrics,
+  .reputation-tier-guide,
+  .reputation-progress-grid { grid-template-columns: 1fr; }
+  .member-review-admin-card { grid-template-columns: 1fr; }
+  .reputation-badge b { font-size: 10px; }
+}
 .member-profile-menu {
   position: absolute;
   top: calc(100% + 10px);
