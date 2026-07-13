@@ -132,6 +132,64 @@ function closeHubAuth() {
   if ($("#hubAuthStatus")) $("#hubAuthStatus").textContent = "";
 }
 
+const featurePreviews = {
+  community: {
+    label: "Engineering boards",
+    title: "Useful answers from real engineering discussions.",
+    copy: "Open a board, browse its discussion threads or start a focused question for other approved members.",
+    points: ["General Chat", "CAD & Design", "3D Printing", "CNC & Machining", "Jobs & Collaboration"]
+  },
+  quotes: {
+    label: "Private quotes",
+    title: "Share requirements without a public price race.",
+    copy: "Approved requests can be reviewed by suitable members, with each response kept private.",
+    points: ["Clear scope and files", "Private supplier responses", "JP Innovation moderation"]
+  },
+  directory: {
+    label: "Member directory",
+    title: "Find the right capability faster.",
+    copy: "Search approved profiles by skill, location, equipment and current capacity.",
+    points: ["Verified profiles", "Local specialists", "Supplier and workshop capability"]
+  },
+  calculators: {
+    label: "Engineering calculators",
+    title: "Quick checks without leaving the Hub.",
+    copy: "Use focused tools for common workshop and early design calculations.",
+    points: ["Speed, feed and cutting checks", "Weight and material estimates", "Unit conversions"]
+  },
+  templates: {
+    label: "Templates and guides",
+    title: "Start with the right information.",
+    copy: "Practical templates make quotes, project briefs and design reviews clearer.",
+    points: ["Quote request checklist", "Project brief template", "Design and prototype checks"]
+  },
+  projects: {
+    label: "Member projects",
+    title: "Mini project preview: restoration bracket.",
+    copy: "A member can share a small build, add milestones and parts, then collect focused feedback in one private workspace.",
+    image: "../assets/case-study-fixture-bracket.png",
+    points: ["Project overview and next step", "Parts and milestone list", "Member discussion thread"]
+  }
+};
+
+function openFeaturePreview(key) {
+  const feature = featurePreviews[key];
+  const dialog = $("#featurePreviewDialog");
+  if (!feature || !dialog) return;
+  $("#featurePreviewLabel").textContent = feature.label;
+  $("#featurePreviewTitle").textContent = feature.title;
+  $("#featurePreviewBody").innerHTML = `<div class="feature-preview-content">${feature.image ? `<img src="${feature.image}" alt="Mini engineering project preview">` : ""}<p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
+  dialog.classList.add("open");
+  dialog.setAttribute("aria-hidden", "false");
+}
+
+function closeFeaturePreview() {
+  const dialog = $("#featurePreviewDialog");
+  if (!dialog) return;
+  dialog.classList.remove("open");
+  dialog.setAttribute("aria-hidden", "true");
+}
+
 async function signInToHub(data) {
   if (!hubBackend) throw new Error("Secure sign in is temporarily unavailable. Please try again.");
   const email = validateEmail(data.email);
@@ -219,7 +277,15 @@ function hubAuthHandler() {
   setupEmailFieldCleaning();
 
   $all("[data-open-hub-auth]").forEach((button) => {
-    button.addEventListener("click", () => openHubAuth(button.dataset.openHubAuth || "signin"));
+    button.addEventListener("click", () => {
+      closeFeaturePreview();
+      openHubAuth(button.dataset.openHubAuth || "signin");
+    });
+  });
+  $all("[data-feature-preview]").forEach((button) => button.addEventListener("click", () => openFeaturePreview(button.dataset.featurePreview)));
+  $("#closeFeaturePreview")?.addEventListener("click", closeFeaturePreview);
+  $("#featurePreviewDialog")?.addEventListener("click", (event) => {
+    if (event.target === $("#featurePreviewDialog")) closeFeaturePreview();
   });
   $all("[data-hub-auth-tab]").forEach((button) => {
     button.addEventListener("click", () => setHubAuthTab(button.dataset.hubAuthTab));
@@ -286,8 +352,8 @@ async function bootHubLanding() {
   registerInterestHandler();
   trackPageView();
   if (await restoreHubSession()) return;
+  document.documentElement.classList.remove("restoring-hub-session");
   hubAuthHandler();
 }
 
 bootHubLanding();
-
