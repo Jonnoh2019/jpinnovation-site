@@ -245,6 +245,7 @@ function emptySeedState() {
     flagged: [],
     helpfulAwards: [],
     seenBoardReplyIds: [],
+    chatSummaryMinimised: false,
     rewardMonth: "July 2026",
     rewardPrize: "GBP 50 workshop voucher",
     realContentCleanupVersion: 4,
@@ -266,6 +267,7 @@ function normaliseState() {
   state.rewardPrize = String(state.rewardPrize).replace(/\u00A3/g, "GBP ").replace(/[^\x20-\x7E]+/g, "").replace(/GBP\s*GBP/g, "GBP").trim();
   state.helpfulAwards ||= [];
   state.seenBoardReplyIds ||= [];
+  state.chatSummaryMinimised = state.chatSummaryMinimised === true;
   state.resources ||= defaultResources();
   state.applications ||= [];
   state.flagged ||= [];
@@ -1568,9 +1570,17 @@ function renderProfileChatNotifications(items = notificationItems(currentUser())
   if (!mount) return;
   const chatItems = items.filter((item) => item.kind === "board").slice(0, 4);
   mount.innerHTML = chatItems.length ? `
-    <p class="profile-menu-label">Board activity</p>
-    ${chatItems.map((item) => `<button class="profile-chat-alert" data-post-id="${escapeHtml(item.postId)}" data-reply-id="${escapeHtml(item.replyId || "")}" type="button"><span aria-hidden="true">&#128172;</span><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>${item.isNew ? `<b>New</b>` : ""}</button>`).join("")}
+    <details class="profile-chat-summary" ${state.chatSummaryMinimised ? "" : "open"}>
+      <summary><span>Chat summary</span><b aria-hidden="true"></b></summary>
+      <div class="profile-chat-alerts">
+        ${chatItems.map((item) => `<button class="profile-chat-alert" data-post-id="${escapeHtml(item.postId)}" data-reply-id="${escapeHtml(item.replyId || "")}" type="button"><span aria-hidden="true">&#128172;</span><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>${item.isNew ? `<b>New</b>` : ""}</button>`).join("")}
+      </div>
+    </details>
   ` : "";
+  $(".profile-chat-summary", mount)?.addEventListener("toggle", (event) => {
+    state.chatSummaryMinimised = !event.currentTarget.open;
+    saveState();
+  });
   $all(".profile-chat-alert", mount).forEach((button) => button.addEventListener("click", () => {
     openBoardNotification(button.dataset.postId, button.dataset.replyId);
   }));
