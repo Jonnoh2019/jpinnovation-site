@@ -8,7 +8,7 @@ const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
 
 const boardCategories = [
-  "General Engineering Chat",
+  "General Chat",
   "CAD & Design",
   "3D Printing",
   "CNC & Machining",
@@ -19,6 +19,19 @@ const boardCategories = [
   "Jobs & Collaboration"
 ];
 
+const knownPretendBoardTitles = [
+  "Best way to jig a small aluminium bracket",
+  "Classic Mini rear subframe repair approach"
+];
+const knownPretendProjectTitles = [
+  "Classic Mini restoration build",
+  "Smart key locker wall unit"
+];
+const knownPretendQuoteTitles = [
+  "CNC machined prototype plate",
+  "Sheet metal enclosure prototype"
+];
+
 const adminEmail = "jpinnovation.enquiries@gmail.com";
 const previousAdminEmail = "enquiries-jpinnovation@gmail.com";
 
@@ -26,6 +39,7 @@ const state = loadState();
 normaliseState();
 let currentView = "dashboard";
 let activeBoardPostId = "";
+let activeBoardCategory = "";
 let boardBackendAvailable = false;
 let boardBackendMessage = "Checking secure board storage...";
 let contentBackendAvailable = false;
@@ -210,9 +224,30 @@ function buildSearchResults(term) {
 function loadState() {
   const saved = localStorage.getItem(storeKey);
   if (saved) return JSON.parse(saved);
-  const starter = seedState();
+  const starter = emptySeedState();
   localStorage.setItem(storeKey, JSON.stringify(starter));
   return starter;
+}
+
+function emptySeedState() {
+  return {
+    sessionEmail: "",
+    users: [],
+    posts: [],
+    projects: [],
+    quotes: [],
+    members: [],
+    messages: [],
+    events: [],
+    applications: [],
+    resources: defaultResources(),
+    flagged: [],
+    helpfulAwards: [],
+    rewardMonth: "July 2026",
+    rewardPrize: "GBP 50 workshop voucher",
+    realContentCleanupVersion: 3,
+    examplePackVersion: 999
+  };
 }
 
 function saveState() {
@@ -324,10 +359,14 @@ function normaliseState() {
 }
 
 function purgePretendContent() {
-  if (state.realContentCleanupVersion >= 2) return;
+  if (state.realContentCleanupVersion >= 3) return;
   const isPretend = (item = {}) => item.example === true
     || item.created === "Example"
-    || /@local$|@example$|\.example@/i.test(String(item.email || item.authorEmail || item.providerEmail || ""));
+    || /@local$|@example$|\.example@/i.test(String(item.email || item.authorEmail || item.providerEmail || ""))
+    || ["Demo Member", "MK Restorations", "Secure Workshop Systems", "Example Applicant"].includes(item.author || item.name || item.fullName)
+    || knownPretendBoardTitles.includes(item.title)
+    || knownPretendProjectTitles.includes(item.title)
+    || knownPretendQuoteTitles.includes(item.service);
   state.posts = (state.posts || []).filter((item) => !isPretend(item));
   state.projects = (state.projects || []).filter((item) => !isPretend(item));
   state.quotes = (state.quotes || []).filter((item) => !isPretend(item));
@@ -339,7 +378,7 @@ function purgePretendContent() {
   state.flagged = [];
   state.helpfulAwards = [];
   state.examplePackVersion = 999;
-  state.realContentCleanupVersion = 2;
+  state.realContentCleanupVersion = 3;
 }
 
 function ensureStarterExamples() {
@@ -773,6 +812,16 @@ function formatBoardDate(value) {
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(date);
 }
 
+async function clearKnownPretendSecureContent() {
+  const user = currentUser();
+  if (!portalBackend || user?.role !== "admin") return;
+  await Promise.allSettled([
+    portalBackend.from("board_posts").delete().in("title", knownPretendBoardTitles),
+    portalBackend.from("hub_projects").delete().in("title", knownPretendProjectTitles),
+    portalBackend.from("quote_requests").delete().in("service", knownPretendQuoteTitles)
+  ]);
+}
+
 async function loadSecureBoards() {
   const user = currentUser();
   if (!portalBackend || !user || isClientPortalContext(user)) return false;
@@ -787,7 +836,7 @@ async function loadSecureBoards() {
   }
   boardBackendAvailable = true;
   boardBackendMessage = "Live member posts are securely shared across devices.";
-  state.posts = (data || []).map(mapBoardPost);
+  state.posts = (data || []).filter((row) => !knownPretendBoardTitles.includes(row.title)).map(mapBoardPost);
   saveState();
   return true;
 }
@@ -860,8 +909,8 @@ async function loadSecureSubmissions() {
     return false;
   }
   contentBackendAvailable = true;
-  state.projects = (projectsResult.data || []).map(mapSecureProject);
-  state.quotes = (quotesResult.data || []).map(mapSecureQuote);
+  state.projects = (projectsResult.data || []).filter((row) => !knownPretendProjectTitles.includes(row.title)).map(mapSecureProject);
+  state.quotes = (quotesResult.data || []).filter((row) => !knownPretendQuoteTitles.includes(row.service)).map(mapSecureQuote);
   state.activeProjectId = state.projects[0]?.id || "";
   saveState();
   return true;
@@ -1536,7 +1585,7 @@ function renderView(view) {
 }
 
 function prepareCompactSections(view) {
-  const compactViews = new Set(["dashboard", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings"]);
+  const compactViews = new Set(["dashboard", "onboarding", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings"]);
   if (!compactViews.has(view)) return;
   const mobile = window.matchMedia("(max-width: 560px)").matches;
   $all("#viewMount > .section-card").forEach((section, index) => {
@@ -1872,60 +1921,68 @@ function renderBoards() {
   const unanswered = posts.filter((post) => !(post.responses || []).length).length;
   const needsHelp = posts.filter((post) => !countHelpfulReplies(post)).length;
   const helpfulReplies = posts.reduce((total, post) => total + countHelpfulReplies(post), 0);
-  const activeCategories = new Set(posts.map((post) => post.category)).size;
-  const categoryOptions = ["All", ...boardCategories].map(option).join("");
+  if (activeBoardCategory) {
+    const categoryPosts = posts.filter((post) => post.category === activeBoardCategory || (activeBoardCategory === "General Chat" && post.category === "General Engineering Chat"));
+    return `
+      <section class="section-card section-cyan">
+        <div class="board-category-header">
+          <div><p class="eyebrow">Engineering Boards</p><h2>${escapeHtml(activeBoardCategory)}</h2><p class="muted">${escapeHtml(boardDescription(activeBoardCategory))}</p></div>
+          <button class="secondary-button board-all-button" type="button">All boards</button>
+        </div>
+        <div class="meta-row"><span class="pill">${categoryPosts.length} ${categoryPosts.length === 1 ? "thread" : "threads"}</span><span class="pill ${boardBackendAvailable ? "good" : "warn"}">${escapeHtml(boardBackendMessage)}</span></div>
+      </section>
+      ${renderBoardPostComposer(activeBoardCategory)}
+      <section class="section-card section-cyan">
+        <div class="list-title"><div><h2>Discussion threads</h2><p>Open a thread to read replies or add your own.</p></div></div>
+        <div class="feed-list">${categoryPosts.length ? categoryPosts.map(postSummaryCard).join("") : `<div class="board-empty-state"><strong>No discussions yet.</strong><p>Start the first ${escapeHtml(activeBoardCategory)} thread above.</p></div>`}</div>
+      </section>
+    `;
+  }
   return `
-    <section class="section-card section-cyan">
-      <div class="list-title"><div><h2>Engineering Boards</h2><p>A focused member forum for technical questions, project feedback and useful supplier knowledge.</p></div></div>
+    <section class="section-card section-cyan boards-launch-hero">
+      <div><p class="eyebrow">Main Hub feature</p><h2>Engineering Boards</h2><p class="muted">Choose a board to see its discussion threads, ask a question or share practical knowledge.</p></div>
+      <button class="primary-button open-general-chat" type="button">Open General Chat</button>
       <div class="metrics-grid dashboard-metrics">
         ${metric("Threads", posts.length)}
         ${metric("Need replies", unanswered)}
         ${metric("Need helpful answer", needsHelp)}
         ${metric("Helpful replies", helpfulReplies)}
       </div>
-      <div class="meta-row">
-        <span class="pill">${activeCategories} active categories</span>
-        <span class="pill good">Member-only discussions</span>
-        <span class="pill warn">Mark helpful replies to close the loop</span>
-        <span class="pill ${boardBackendAvailable ? "good" : "warn"}">${escapeHtml(boardBackendMessage)}</span>
-      </div>
     </section>
     <section class="section-card section-cyan">
-      <h2>Create board post</h2>
-      <p class="muted">Use posts for specific engineering questions, design choices, supplier recommendations or project blockers.</p>
+      <div class="list-title"><div><h2>Choose a board</h2><p>Each board opens its own list of member-created threads.</p></div></div>
+      <div class="board-grid">${boardCategories.map((category) => {
+        const count = posts.filter((post) => post.category === category || (category === "General Chat" && post.category === "General Engineering Chat")).length;
+        return `<button class="board-card board-category-button" data-board-category="${escapeHtml(category)}" type="button"><span class="badge">${escapeHtml(category)}</span><h3>${escapeHtml(category)}</h3><p>${boardDescription(category)}</p><small class="board-card-count">${count} ${count === 1 ? "thread" : "threads"} &rarr;</small></button>`;
+      }).join("")}</div>
+    </section>
+    <section class="section-card section-cyan">
+      <div class="list-title"><div><h2>Latest discussions</h2><p>New approved threads from across every board.</p></div></div>
+      <div class="feed-list">${posts.length ? posts.slice(0, 8).map(postSummaryCard).join("") : `<div class="board-empty-state"><strong>No discussions yet.</strong><p>Open General Chat or choose a specialist board to start the first thread.</p></div>`}</div>
+    </section>
+  `;
+}
+
+function renderBoardPostComposer(selectedCategory = "General Chat") {
+  return `
+    <section class="section-card section-cyan">
+      <h2>Start a discussion</h2>
+      <p class="muted">Posts are sent to JP Innovation for approval before other members see them.</p>
       <form id="postForm" class="form-grid two">
-        <label>Title <input name="title" required></label>
-        <label>Category <select name="category">${boardCategories.map(option).join("")}</select></label>
-        <label class="wide">Description <textarea name="description" rows="4" required></textarea></label>
-        <label class="wide">Optional image upload <input type="file" disabled></label>
-        <button class="primary-button wide" type="submit">Submit for approval</button>
+        <label>Thread title <input name="title" required placeholder="What would you like help with?"></label>
+        <label>Board <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === selectedCategory ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label>
+        <label class="wide">First message <textarea name="description" rows="4" required placeholder="Add the important dimensions, constraints or context..."></textarea></label>
+        <button class="primary-button wide" type="submit">Submit thread for approval</button>
         <p id="postStatus" class="form-status wide" aria-live="polite"></p>
       </form>
-    </section>
-    <section class="section-card section-cyan">
-      <div class="list-title"><div><h2>Boards</h2><p>Choose where your question or update belongs.</p></div></div>
-      <div class="board-grid">${boardCategories.map((category) => `<button class="board-card board-category-button" data-board-category="${escapeHtml(category)}" type="button"><span class="badge">${escapeHtml(category)}</span><h3>${escapeHtml(category)}</h3><p>${boardDescription(category)}</p></button>`).join("")}</div>
-    </section>
-    <section class="section-card section-cyan">
-      <div class="list-title"><div><h2>Discussion threads</h2><p>Search, filter and reply to member questions.</p></div></div>
-      <div class="board-tools">
-        <label>Search threads <input id="boardSearch" placeholder="CAD, Mini, quote, supplier..."></label>
-        <label>Category <select id="boardCategory">${categoryOptions}</select></label>
-        <label>Status <select id="boardMode">
-          <option value="all">All threads</option>
-          <option value="needs-help">Needs help</option>
-          <option value="unanswered">Unanswered</option>
-          <option value="helpful">Has helpful reply</option>
-        </select></label>
-      </div>
-      <div id="boardResults" class="feed-list"></div>
     </section>
   `;
 }
 
 function boardDescription(category) {
   const descriptions = {
-    "General Engineering Chat": "General questions, tips and practical workshop discussion.",
+    "General Chat": "General questions, introductions, tips and practical workshop discussion.",
+    "General Engineering Chat": "General questions, introductions, tips and practical workshop discussion.",
     "CAD & Design": "Design reviews, drawings, tolerances, assemblies and fixtures.",
     "3D Printing": "Materials, print settings, prototypes and finishing advice.",
     "CNC & Machining": "Machining methods, workholding, cutters and small batch jobs.",
@@ -3013,6 +3070,10 @@ function bindViewHandlers(view) {
         event.currentTarget.reset();
         if (status) status.textContent = "Post submitted for JP Innovation approval.";
         renderNotifications();
+        window.setTimeout(() => {
+          activeBoardCategory = data.category;
+          renderView("boards");
+        }, 550);
       } catch (error) {
         if (status) status.textContent = error.message || "The post could not be published.";
       }
@@ -3026,6 +3087,15 @@ function bindViewHandlers(view) {
     bindBoardEditForms();
     $(".board-back-button")?.addEventListener("click", () => {
       activeBoardPostId = "";
+      renderView("boards");
+    });
+    $(".board-all-button")?.addEventListener("click", () => {
+      activeBoardCategory = "";
+      activeBoardPostId = "";
+      renderView("boards");
+    });
+    $(".open-general-chat")?.addEventListener("click", () => {
+      activeBoardCategory = "General Chat";
       renderView("boards");
     });
   }
@@ -3671,11 +3741,10 @@ function bindOpenBoardPosts() {
 function bindBoardCategoryButtons() {
   $all(".board-category-button").forEach((button) => {
     button.addEventListener("click", () => {
-      const category = $("#boardCategory");
-      if (!category) return;
-      category.value = button.dataset.boardCategory;
-      category.dispatchEvent(new Event("change"));
-      $("#boardResults")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      activeBoardCategory = button.dataset.boardCategory;
+      activeBoardPostId = "";
+      renderView("boards");
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     });
   });
 }
@@ -3898,6 +3967,7 @@ async function boot() {
   }
   try {
     await syncSecureSession();
+    await clearKnownPretendSecureContent();
     await loadSecureBoards();
     await loadSecureSubmissions();
   } catch (error) {
@@ -3909,6 +3979,7 @@ async function boot() {
     window.location.replace(`../hub/index.html${signInRequested ? "?signin=1" : ""}`);
     return;
   }
+  document.documentElement.classList.remove("restoring-portal-session");
   configureEntryPage();
   setupEmailFieldCleaning();
   $all("[data-open-auth]").forEach((button) => button.addEventListener("click", () => openAuth(button.dataset.openAuth)));
@@ -4075,7 +4146,8 @@ async function boot() {
     const destination = button.dataset.view || "dashboard";
     setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
-    if (destination !== "boards") activeBoardPostId = "";
+    activeBoardPostId = "";
+    activeBoardCategory = "";
     renderView(destination);
     button.blur();
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
