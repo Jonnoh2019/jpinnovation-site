@@ -40,6 +40,7 @@ normaliseState();
 let currentView = "dashboard";
 let activeBoardPostId = "";
 let activeBoardCategory = "";
+let messageDraftRecipientEmail = "";
 let boardBackendAvailable = false;
 let boardBackendMessage = "Checking secure board storage...";
 let contentBackendAvailable = false;
@@ -245,7 +246,8 @@ function emptySeedState() {
     helpfulAwards: [],
     rewardMonth: "July 2026",
     rewardPrize: "GBP 50 workshop voucher",
-    realContentCleanupVersion: 3,
+    realContentCleanupVersion: 4,
+    launchChecklistVersion: 2,
     examplePackVersion: 999
   };
 }
@@ -271,6 +273,10 @@ function normaliseState() {
     application.notes ||= "";
     application.generatedPassword ||= "";
   });
+  if ((state.launchChecklistVersion || 0) < 2) {
+    state.launchChecklist = defaultLaunchChecklist();
+    state.launchChecklistVersion = 2;
+  }
   state.launchChecklist ||= defaultLaunchChecklist();
   state.activeProjectId ||= state.projects[0]?.id || "";
   state.projects.forEach((project) => {
@@ -294,7 +300,7 @@ function normaliseState() {
   state.quotes.forEach((quote) => {
     quote.status ||= quote.jpFirst ? "jp-review" : "open";
     quote.created ||= "Today";
-    quote.files ||= "Not attached in prototype";
+    quote.files ||= "No files noted";
     quote.material ||= "";
     quote.quantity ||= "";
     quote.visibility ||= "Private";
@@ -359,7 +365,7 @@ function normaliseState() {
 }
 
 function purgePretendContent() {
-  if (state.realContentCleanupVersion >= 3) return;
+  if (state.realContentCleanupVersion >= 4) return;
   const isPretend = (item = {}) => item.example === true
     || item.created === "Example"
     || /@local$|@example$|\.example@/i.test(String(item.email || item.authorEmail || item.providerEmail || ""))
@@ -371,14 +377,14 @@ function purgePretendContent() {
   state.projects = (state.projects || []).filter((item) => !isPretend(item));
   state.quotes = (state.quotes || []).filter((item) => !isPretend(item));
   state.members = (state.members || []).filter((item) => !isPretend(item));
-  state.messages = (state.messages || []).filter((item) => item.example === false && !isPretend(item));
-  state.events = (state.events || []).filter((item) => item.example === false && !isPretend(item));
+  state.messages = (state.messages || []).filter((item) => !isPretend(item));
+  state.events = (state.events || []).filter((item) => !isPretend(item));
   state.applications = (state.applications || []).filter((item) => !isPretend(item));
-  state.resources = (state.resources || []).filter((item) => item.example === false && !isPretend(item));
+  state.resources = (state.resources || []).filter((item) => !isPretend(item));
   state.flagged = [];
   state.helpfulAwards = [];
   state.examplePackVersion = 999;
-  state.realContentCleanupVersion = 3;
+  state.realContentCleanupVersion = 4;
 }
 
 function ensureStarterExamples() {
@@ -740,16 +746,16 @@ function defaultLaunchChecklist() {
     {
       id: "front-end",
       area: "Portal front-end",
-      title: "Member navigation and page structure",
-      detail: "Dashboard, boards, projects, quotes, directory, resources, events, messages, rewards and admin are in place for review.",
+      title: "Member navigation and responsive pages",
+      detail: "Dashboard, Engineering Boards, projects, quotes, directory, tools, events, messages, rewards and admin are available on desktop and mobile.",
       status: "ready"
     },
     {
       id: "auth",
       area: "Secure access",
       title: "Real login and member database",
-      detail: "Replace local browser-only sign in with hosted authentication, protected member records and password recovery.",
-      status: "needs-backend"
+      detail: "Supabase authentication, persistent sessions, protected profiles and password recovery are connected.",
+      status: "ready"
     },
     {
       id: "payments",
@@ -762,8 +768,8 @@ function defaultLaunchChecklist() {
       id: "moderation",
       area: "Moderation",
       title: "Admin approval and reporting workflow",
-      detail: "Approval, warnings, suspensions and reported content controls are designed here and need live database wiring.",
-      status: "in-progress"
+      detail: "New board posts, member projects and quote requests enter an admin-controlled review workflow.",
+      status: "ready"
     },
     {
       id: "email",
@@ -1131,6 +1137,59 @@ function closeAuth() {
   $("#authDialog").classList.remove("open");
   $("#authDialog").setAttribute("aria-hidden", "true");
   $("#authStatus").textContent = "";
+}
+
+const clientFeaturePreviews = {
+  quotes: {
+    label: "Quotes",
+    title: "Clear requests and private quotations.",
+    copy: "Send JP Innovation the scope, timing and technical information, then keep the quotation and response together in your account.",
+    image: "../assets/case-study-fixture-bracket.png",
+    imageAlt: "Manufacture-ready engineering part for a quotation",
+    points: ["Submit a new request", "Review quotation details", "Keep decisions with the project"]
+  },
+  projects: {
+    label: "Project updates",
+    title: "See progress and the next action.",
+    copy: "Use one private project view for agreed work, progress notes and the information JP Innovation needs from you.",
+    image: "../assets/case-study-linkage-assembly.png",
+    imageAlt: "Mechanical linkage project assembly",
+    points: ["Current project status", "Next steps and milestones", "Technical notes in one place"]
+  },
+  messages: {
+    label: "Direct messages",
+    title: "Keep project communication easy to find.",
+    copy: "Ask a question or reply to JP Innovation without losing an important decision across separate conversations.",
+    image: "../assets/mechanical-assembly.jpg",
+    imageAlt: "Engineering assembly discussed with JP Innovation",
+    points: ["Quote questions", "Project updates", "A clear record of decisions"]
+  },
+  repeat: {
+    label: "Repeat work",
+    title: "Start revisions and follow-on work faster.",
+    copy: "Return to the same account when a component changes, another version is needed or a completed job needs extending.",
+    image: "../assets/retaining-bracket.jpg",
+    imageAlt: "Engineered retaining bracket for repeat manufacture",
+    points: ["Reference earlier work", "Request a revision", "Keep the new scope connected"]
+  }
+};
+
+function openClientFeature(key) {
+  const feature = clientFeaturePreviews[key];
+  const dialog = $("#clientFeatureDialog");
+  if (!feature || !dialog) return;
+  $("#clientFeatureLabel").textContent = feature.label;
+  $("#clientFeatureTitle").textContent = feature.title;
+  $("#clientFeatureBody").innerHTML = `<div class="feature-preview-content"><img src="${feature.image}" alt="${feature.imageAlt}"><p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
+  dialog.classList.add("open");
+  dialog.setAttribute("aria-hidden", "false");
+}
+
+function closeClientFeature() {
+  const dialog = $("#clientFeatureDialog");
+  if (!dialog) return;
+  dialog.classList.remove("open");
+  dialog.setAttribute("aria-hidden", "true");
 }
 
 function setAuthTab(mode) {
@@ -2011,7 +2070,6 @@ function renderProjects() {
         <label>Location <input name="location"></label>
         <label>Progress status <select name="status">${["Planning", "In Progress", "Completed"].map(option).join("")}</select></label>
         <label class="wide">Description <textarea name="description" rows="4" required></textarea></label>
-        <label class="wide">Images placeholder <input type="file" disabled></label>
         <button class="primary-button wide" type="submit">Submit for approval</button>
       </form>
     </section>
@@ -2162,7 +2220,7 @@ function renderQuotes() {
       <div class="quote-board">${visibleQuotes.map(quoteCard).join("") || `<p class="muted">No quote requests yet.</p>`}</div>
     </section>
     <section class="section-card section-violet">
-      <div class="list-title"><div><h2>Submit a private response</h2><p>Responses are visible only to the customer and JP Innovation in this prototype.</p></div></div>
+      <div class="list-title"><div><h2>Submit a private response</h2><p>Responses are visible only to the customer, the responding member and JP Innovation.</p></div></div>
       <form id="quoteResponseForm" class="form-grid two">
         <label>Request <select name="requestId">${openQuotes.map((quote) => `<option value="${quote.id}">${escapeHtml(quote.service)}</option>`).join("")}</select></label>
         <label>Price <input name="price" placeholder="Private"></label>
@@ -2242,10 +2300,10 @@ function renderResources() {
       <div>
         <p class="eyebrow">Member resources</p>
         <h2>Practical tools for scoping work before asking for help.</h2>
-        <p class="muted">These are prototype tools for review. The live Hub can grow this into calculators, downloadable templates, checklists and premium engineering guides.</p>
+        <p class="muted">Use the working calculators now, then add practical checklists, guides and templates for the member library.</p>
       </div>
       <div class="tool-summary">
-        <span class="badge">Working prototype</span>
+        <span class="badge">Working tools</span>
         <strong>3 calculators</strong>
         <p>Quote estimate, 3D print time and clearance helper.</p>
       </div>
@@ -2296,7 +2354,6 @@ function renderResources() {
             <h3>${escapeHtml(resource.title)}</h3>
             <p>${escapeHtml(resource.detail)}</p>
             <div class="card-actions">
-              <button class="secondary-button" type="button">Preview</button>
               <button class="secondary-button delete-item-button" data-delete-type="resource" data-id="${escapeHtml(resource.id)}" type="button">Delete</button>
             </div>
           </article>
@@ -2310,24 +2367,29 @@ function renderEvents() {
   return `
     <section class="section-card section-rose">
       <h2>Engineering events</h2>
-      <p class="muted">Events can later connect to bookings, attendance and member hosting approval.</p>
+      <p class="muted">Add member meetups, workshops and site visits, then track who has registered interest.</p>
       <form id="eventForm" class="form-grid two">
         <label>Event title <input name="title" required></label>
         <label>Type <select name="type">${["Meetup", "Workshop", "Site visit", "Online session", "Supplier demo"].map(option).join("")}</select></label>
-        <label>Date <input name="date" required placeholder="18 July, August, TBC..."></label>
+        <label>Date <input name="date" type="date" required></label>
         <label>Location <input name="location" required placeholder="Milton Keynes, Online, TBC..."></label>
         <button class="primary-button wide" type="submit">Add event</button>
       </form>
-      <div class="cards-grid">${state.events.map((event) => `
+      <div class="cards-grid">${state.events.map((event) => {
+        const interested = event.interested || [];
+        const joined = interested.includes(currentUser()?.email);
+        return `
         <article class="event-card">
           <span class="badge">${escapeHtml(event.type)}</span>
           <h3>${escapeHtml(event.title)}</h3>
           <p>${escapeHtml(event.date)} - ${escapeHtml(event.location)}</p>
+          <p class="muted">${interested.length} interested</p>
           <div class="card-actions">
-            <button class="secondary-button" type="button">Register interest</button>
+            <button class="secondary-button event-interest-button" data-event-id="${escapeHtml(event.id)}" type="button">${joined ? "Interest registered" : "Register interest"}</button>
             <button class="secondary-button delete-item-button" data-delete-type="event" data-id="${escapeHtml(event.id)}" type="button">Delete</button>
           </div>
-        </article>`).join("")}
+        </article>`;
+      }).join("")}
       </div>
     </section>
   `;
@@ -2374,25 +2436,29 @@ function renderMessages() {
       </section>
     `;
   }
-  const unread = state.messages.filter((message) => message.unread).length;
+  const memberMessages = user?.role === "admin"
+    ? state.messages
+    : state.messages.filter((message) => message.senderEmail === user?.email || message.recipientEmail === user?.email);
+  const unread = memberMessages.filter((message) => message.unread && (!message.recipientEmail || message.recipientEmail === user?.email)).length;
+  const recipients = state.members.filter((member) => member.email && member.email !== user?.email && member.directoryVisible !== false);
   return `
     <section class="section-card section-blue">
-      <div class="list-title"><div><h2>Messages</h2><p>Member-to-member contact, introductions and project follow-ups.</p></div>${unread ? `<button class="secondary-button mark-messages-read" type="button">Mark all read</button>` : ""}</div>
+      <div class="list-title"><div><h2>Messages</h2><p>Send a direct message to an approved member and keep project follow-ups together.</p></div>${unread ? `<button class="secondary-button mark-messages-read" type="button">Mark all read</button>` : ""}</div>
       <form id="messageForm" class="form-grid two">
-        <label>From <input name="from" required placeholder="Member or business name"></label>
+        <input name="from" type="hidden" value="${escapeHtml(user?.name || "Hub member")}">
+        <label>To <select name="toEmail" required><option value="">Choose a member</option>${recipients.map((member) => `<option value="${escapeHtml(member.email)}" ${member.email === messageDraftRecipientEmail ? "selected" : ""}>${escapeHtml(member.name)}${member.business ? ` - ${escapeHtml(member.business)}` : ""}</option>`).join("")}</select></label>
         <label>Subject <input name="subject" required></label>
         <label class="wide">Message <textarea name="body" rows="3" required></textarea></label>
-        <label class="check wide"><input name="unread" type="checkbox" checked> Mark as unread</label>
-        <button class="primary-button wide" type="submit">Add message</button>
+        <button class="primary-button wide" type="submit" ${recipients.length ? "" : "disabled"}>Send message</button>
       </form>
-      <div class="feed-list">${state.messages.map((message) => `
+      <div class="feed-list">${memberMessages.map((message) => `
         <article class="feed-item">
           <span class="badge">${message.unread ? "Unread" : "Read"}</span>
           <h3>${escapeHtml(message.subject)}</h3>
-          <p><strong>${escapeHtml(message.from)}</strong></p>
+          <p><strong>${escapeHtml(message.from)}</strong>${message.recipientName ? ` to ${escapeHtml(message.recipientName)}` : ""}</p>
           <p>${escapeHtml(message.body)}</p>
           <button class="secondary-button delete-item-button" data-delete-type="message" data-id="${escapeHtml(message.id)}" type="button">Delete</button>
-        </article>`).join("")}
+        </article>`).join("") || `<p class="muted">No messages yet.</p>`}
       </div>
     </section>
   `;
@@ -2486,19 +2552,19 @@ function renderSettings(user) {
   return `
     <section class="section-card section-silver">
       <h2>Settings</h2>
-      <p class="muted">This is a live front-end trial. Your test data is saved in this browser until a secure shared database, payment system and email service are connected.</p>
+      <p class="muted">Your secure account, board posts, projects and quote requests use the shared service. Personal display preferences remain on this device.</p>
       <div class="cards-grid">
-        <article class="card"><span class="badge">Account plan</span><h3>${isClient ? "Client Portal" : "Innovation Hub"}</h3><p>${isClient ? "Free access for quotes, requests and direct communication with JP Innovation." : "GBP 19/month proposed Innovation Hub membership. Payment integration is not connected in this trial build."}</p></article>
-        <article class="card"><span class="badge">Email</span><h3>Notifications</h3><p>Quote alerts, message alerts and application confirmations will use the live email service once connected.</p></article>
+        <article class="card"><span class="badge">Account plan</span><h3>${isClient ? "Client Portal" : "Innovation Hub"}</h3><p>${isClient ? "Free access for quotes, requests and direct communication with JP Innovation." : "GBP 19/month Innovation Hub membership. Billing begins only when JP Innovation confirms activation."}</p></article>
+        <article class="card"><span class="badge">Email</span><h3>Notifications</h3><p>Important account and submission updates appear in the notification centre. Email alerts are being connected separately.</p></article>
         <article class="card"><span class="badge">Security</span><h3>Password</h3><p>Secure Supabase login is connected. Password changes and recovery should stay inside the protected sign-in flow.</p></article>
-        <article class="card"><span class="badge">Account</span><h3>${escapeHtml(user.email)}</h3><p>Your ${isClient ? "quotes and messages" : "profile, posts and requests"} are saved in this browser for trial review.</p></article>
+        <article class="card"><span class="badge">Account</span><h3>${escapeHtml(user.email)}</h3><p>Your ${isClient ? "quote requests" : "board posts, projects and quote requests"} follow this secure login across devices.</p></article>
       </div>
     </section>
     <section class="section-card section-silver">
-      <div class="list-title"><div><h2>Trial data backup</h2><p>Export your test Hub data before switching browser or device. Import restores the saved trial state on this browser.</p></div></div>
+      <div class="list-title"><div><h2>Device data backup</h2><p>Export locally saved preferences, drafts and non-secure working notes before changing browser.</p></div></div>
       <div class="trial-data-actions">
-        <button id="exportDataButton" class="secondary-button" type="button">Export trial data</button>
-        <label class="secondary-button import-data-button">Import trial data <input id="importDataInput" type="file" accept="application/json"></label>
+        <button id="exportDataButton" class="secondary-button" type="button">Export device data</button>
+        <label class="secondary-button import-data-button">Import device data <input id="importDataInput" type="file" accept="application/json"></label>
       </div>
       <p id="dataStatus" class="form-status" aria-live="polite"></p>
     </section>
@@ -3030,7 +3096,7 @@ function memberCard(member) {
         <span class="pill ${member.verified ? "good" : ""}">${member.verified ? "Verified" : "Member"}</span>
         <span class="pill">${member.points} pts</span>
       </div>
-      <button class="secondary-button" type="button">Message</button>
+      <button class="secondary-button message-member-button" data-member-email="${escapeHtml(member.email || "")}" type="button">Message</button>
     </article>
   `;
 }
@@ -3162,7 +3228,7 @@ function bindViewHandlers(view) {
         outcome: data.outcome,
         tolerance: data.tolerance,
         description: data.description,
-        files: data.files || "Not attached in prototype",
+        files: data.files || "No files noted",
         jpFirst: data.jpFirst,
         status: "jp-review",
         created: "Just now",
@@ -3240,11 +3306,23 @@ function bindViewHandlers(view) {
         date: data.date.trim(),
         location: data.location.trim(),
         type: data.type,
+        interested: [],
         example: false
       });
       saveState();
       renderView("events");
     });
+    $all(".event-interest-button").forEach((button) => button.addEventListener("click", () => {
+      const item = state.events.find((event) => event.id === button.dataset.eventId);
+      const email = currentUser()?.email;
+      if (!item || !email) return;
+      item.interested = item.interested || [];
+      item.interested = item.interested.includes(email)
+        ? item.interested.filter((entry) => entry !== email)
+        : [...item.interested, email];
+      saveState();
+      renderView("events");
+    }));
   }
   if (view === "messages") {
     $(".mark-messages-read")?.addEventListener("click", () => {
@@ -3252,8 +3330,10 @@ function bindViewHandlers(view) {
       state.messages.forEach((message) => {
         if (user?.role === "client") {
           if (message.ownerEmail === user.email) message.unread = false;
-        } else {
+        } else if (user?.role === "admin") {
           message.unread = false;
+        } else {
+          if (message.recipientEmail === user?.email) message.unread = false;
         }
       });
       saveState();
@@ -3262,15 +3342,22 @@ function bindViewHandlers(view) {
     $("#messageForm")?.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = formObject(event.currentTarget);
+      const user = currentUser();
+      const recipientEmail = user?.role === "client" ? adminEmail : cleanEmailValue(data.toEmail || "");
+      const recipient = state.members.find((member) => member.email === recipientEmail);
       state.messages.unshift({
         id: uid("msg"),
         from: data.from.trim(),
         subject: data.subject.trim(),
         body: data.body.trim(),
-        unread: currentUser()?.role === "client" ? true : data.unread === true,
-        ownerEmail: currentUser()?.role === "client" ? currentUser().email : "",
+        unread: true,
+        ownerEmail: user?.role === "client" ? user.email : "",
+        senderEmail: user?.email || "",
+        recipientEmail,
+        recipientName: user?.role === "client" ? "JP Innovation" : (recipient?.name || recipientEmail),
         example: false
       });
+      messageDraftRecipientEmail = "";
       saveState();
       renderView("messages");
     });
@@ -3930,6 +4017,10 @@ function bindDirectory() {
       return visibleMatch && skillMatch && locationMatch && verifiedMatch;
     });
     $("#directoryResults").innerHTML = results.length ? results.map(memberCard).join("") : `<p class="muted">No matching members found.</p>`;
+    $all(".message-member-button", $("#directoryResults")).forEach((button) => button.addEventListener("click", () => {
+      messageDraftRecipientEmail = button.dataset.memberEmail || "";
+      renderView("messages");
+    }));
   };
   [skill, location, verified].forEach((input) => input.addEventListener("input", render));
   verified.addEventListener("change", render);
@@ -3982,6 +4073,15 @@ async function boot() {
   document.documentElement.classList.remove("restoring-portal-session");
   configureEntryPage();
   setupEmailFieldCleaning();
+  $all("[data-client-feature]").forEach((button) => button.addEventListener("click", () => openClientFeature(button.dataset.clientFeature)));
+  $("#closeClientFeature")?.addEventListener("click", closeClientFeature);
+  $("#clientFeatureDialog")?.addEventListener("click", (event) => {
+    if (event.target === $("#clientFeatureDialog")) closeClientFeature();
+  });
+  $("#clientFeatureSignIn")?.addEventListener("click", () => {
+    closeClientFeature();
+    openAuth("signin");
+  });
   $all("[data-open-auth]").forEach((button) => button.addEventListener("click", () => openAuth(button.dataset.openAuth)));
   $("#closeAuth").addEventListener("click", closeAuth);
   $("#authDialog").addEventListener("click", (event) => {
