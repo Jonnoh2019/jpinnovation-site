@@ -165,10 +165,10 @@ const featurePreviews = {
   },
   projects: {
     label: "Member projects",
-    title: "Mini project preview: restoration bracket.",
-    copy: "A member can share a small build, add milestones and parts, then collect focused feedback in one private workspace.",
-    image: "../assets/case-study-fixture-bracket.png",
-    points: ["Project overview and next step", "Parts and milestone list", "Member discussion thread"]
+    title: "Classic Mini restoration build.",
+    copy: "A member can share a Mini restoration, track the work and ask the Engineering Boards for practical help with repairs, fabrication and sourcing.",
+    imageSelector: '#examples img[alt="Classic Mini restoration project in a workshop"]',
+    points: ["Bodywork and fabrication plan", "Parts and milestone list", "Member advice and progress updates"]
   }
 };
 
@@ -176,9 +176,10 @@ function openFeaturePreview(key) {
   const feature = featurePreviews[key];
   const dialog = $("#featurePreviewDialog");
   if (!feature || !dialog) return;
+  const imageSource = feature.image || (feature.imageSelector ? document.querySelector(feature.imageSelector)?.src : "") || "";
   $("#featurePreviewLabel").textContent = feature.label;
   $("#featurePreviewTitle").textContent = feature.title;
-  $("#featurePreviewBody").innerHTML = `<div class="feature-preview-content">${feature.image ? `<img src="${feature.image}" alt="Mini engineering project preview">` : ""}<p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
+  $("#featurePreviewBody").innerHTML = `<div class="feature-preview-content">${imageSource ? `<img src="${imageSource}" alt="Classic Mini restoration project preview">` : ""}<p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
   dialog.classList.add("open");
   dialog.setAttribute("aria-hidden", "false");
 }
