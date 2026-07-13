@@ -82,7 +82,7 @@ const portalSections = [
   { view: "settings", title: "Settings", detail: "Membership, alerts and account preferences." }
 ];
 
-const clientViews = new Set(["dashboard", "quotes", "messages", "notifications", "profile", "settings"]);
+const clientViews = new Set(["dashboard", "projects", "quotes", "messages", "notifications", "profile", "settings"]);
 
 function $(selector, root = document) {
   return root.querySelector(selector);
@@ -759,6 +759,26 @@ function defaultResources() {
     { type: "Template", title: "Project brief structure", detail: "Problem, constraints, target cost, known risks, deadline and success criteria." },
     { type: "Guide", title: "3D print design checks", detail: "Wall thickness, supports, inserts, orientation, heat, thread strategy and finish." },
     { type: "Guide", title: "Reverse engineering notes", detail: "Datums, critical dimensions, wear points, tolerances and scan limitations." }
+  ];
+}
+
+function builtInResources() {
+  return [
+    {
+      key: "project-brief", type: "Template", title: "Engineering project brief",
+      detail: "A structured brief covering the problem, constraints, deliverables, timing and success criteria.",
+      sections: ["Project and contact details", "Problem to solve", "Required outcome", "Known constraints", "Dimensions, materials and environment", "Files supplied", "Budget and timing", "Acceptance criteria", "Open questions"]
+    },
+    {
+      key: "design-review", type: "Checklist", title: "Design review checklist",
+      detail: "A practical review for function, fit, material, manufacture, assembly, safety and documentation.",
+      sections: ["Function and load cases", "Interfaces and clearances", "Materials and finishes", "Tolerances and datums", "Manufacturing method", "Assembly and tool access", "Safety and compliance", "Drawings and revision control"]
+    },
+    {
+      key: "supplier-quote", type: "Checklist", title: "Supplier quote checklist",
+      detail: "The information a supplier needs to return a useful and comparable quotation.",
+      sections: ["Part and revision", "Quantity and repeat quantity", "Material specification", "Drawing and 3D files", "Critical tolerances", "Finish and inspection", "Delivery location and date", "Packaging", "Assumptions and exclusions"]
+    }
   ];
 }
 
@@ -1983,14 +2003,15 @@ function renderClientDashboard(user) {
       <div class="metrics-grid">
         ${metric("My quote requests", quotes.length)}
         ${metric("Open requests", quotes.filter((quote) => quote.status !== "closed").length)}
+        ${metric("Project updates", quotes.filter((quote) => quote.status === "shortlisted" || quote.status === "closed").length)}
         ${metric("Messages", messages.length)}
-        ${metric("Account plan", "Client Portal")}
       </div>
     </section>
     <section class="section-card section-violet">
       <div class="list-title"><div><h2>Client Portal tools</h2><p>Everything needed to manage work with JP Innovation without joining the paid Innovation Hub.</p></div></div>
       <div class="cards-grid">
         <article class="card"><span class="badge">Quotes</span><h3>Request engineering work</h3><p>Send specifications, follow review status and keep each request private.</p><button class="primary-button nav-link-jump" data-target-view="quotes" type="button">Open my quotes</button></article>
+        <article class="card"><span class="badge">Projects</span><h3>Follow progress</h3><p>See the current stage, next action and the history linked to your requests.</p><button class="secondary-button nav-link-jump" data-target-view="projects" type="button">Open projects</button></article>
         <article class="card"><span class="badge">Contact</span><h3>Message JP Innovation</h3><p>Keep questions, updates and project communication together.</p><button class="secondary-button nav-link-jump" data-target-view="messages" type="button">Open messages</button></article>
         <article class="card"><span class="badge">Optional upgrade</span><h3>Innovation Hub</h3><p>Innovation Hub members also receive engineering boards, the professional directory, resources, events, rewards and supplier opportunities.</p><p class="muted">Ask JP Innovation to upgrade this same login when you are ready.</p></article>
       </div>
@@ -2373,6 +2394,7 @@ function boardDescription(category) {
 
 function renderProjects() {
   const user = currentUser();
+  if (isClientPortalContext(user)) return renderClientProjects(user);
   const visibleProjects = state.projects.filter((project) => user?.role === "admin"
     || project.authorEmail === user?.email
     || project.moderationStatus === "approved");
@@ -2395,6 +2417,38 @@ function renderProjects() {
       <div class="cards-grid">${visibleProjects.map(projectCard).join("") || `<p class="muted">No approved projects yet.</p>`}</div>
     </section>
   `;
+}
+
+function renderClientProjects(user) {
+  const workItems = state.quotes.filter((quote) => quote.authorEmail === user?.email);
+  return `
+    <section class="section-card section-teal compact-view-hero">
+      <div class="list-title"><div><h2>My project progress</h2><p>Each request stays connected to its review stage, next action and follow-on work.</p></div><span class="pill">${workItems.length}</span></div>
+    </section>
+    <section class="section-card section-teal">
+      <div class="client-project-list">
+        ${workItems.length ? workItems.map((item) => {
+          const step = quoteStepNumber(item.status);
+          const nextAction = {
+            "jp-review": "JP Innovation is checking the scope and supplied information.",
+            open: "The request is approved and suitable responses are being collected.",
+            shortlisted: "Review the available option and confirm any final changes.",
+            closed: "This item is complete. Use follow-on work if another revision is needed."
+          }[item.status] || "JP Innovation will confirm the next action.";
+          return `<article class="client-project-card">
+            <div class="list-title"><div><span class="badge">${escapeHtml(quoteStatusLabel(item.status))}</span><h3>${escapeHtml(item.service)}</h3></div><span class="pill">${step}/4</span></div>
+            <div class="client-project-timeline" aria-label="Project progress">
+              ${["Brief received", "Scope review", "Client decision", "Complete"].map((label, index) => `<span class="${index + 1 < step ? "complete" : (index + 1 === step ? "current" : "")}"><b>${index + 1}</b><small>${label}</small></span>`).join("")}
+            </div>
+            <div class="feature-ui-note"><small>NEXT ACTION</small><b>${escapeHtml(nextAction)}</b></div>
+            <div class="card-actions">
+              <button class="secondary-button client-project-message" data-project-title="${escapeHtml(item.service)}" type="button">Message JP Innovation</button>
+              <button class="secondary-button repeat-quote-button" data-id="${escapeHtml(item.id)}" type="button">Request follow-on work</button>
+            </div>
+          </article>`;
+        }).join("") : `<div class="empty-state"><strong>No projects yet</strong><span>Your first quote request will appear here automatically.</span><button class="primary-button nav-link-jump" data-target-view="quotes" type="button">Request a quote</button></div>`}
+      </div>
+    </section>`;
 }
 
 function renderProjectDetail(project) {
@@ -2641,6 +2695,26 @@ function renderResources() {
       <div class="list-title"><div><h2>Quick calculators</h2><p>Simple tools that give members a useful starting point.</p></div></div>
       <div class="tool-grid">
         <article class="tool-card">
+          <span class="badge">Machining</span>
+          <h3>Cutting speed</h3>
+          <label>Tool diameter mm <input id="cuttingDiameter" type="number" min="0.1" step="0.1" value="10"></label>
+          <label>Cutting speed m/min <input id="cuttingSpeed" type="number" min="1" step="1" value="120"></label>
+          <p class="tool-result" id="cuttingSpeedResult">Recommended: 3,820 RPM</p>
+        </article>
+        <article class="tool-card">
+          <span class="badge">Material</span>
+          <h3>Material weight</h3>
+          <label>Volume cm&sup3; <input id="materialVolume" type="number" min="0" step="1" value="250"></label>
+          <label>Material <select id="materialDensity"><option value="2.70">Aluminium</option><option value="7.85">Steel</option><option value="8.96">Copper</option><option value="1.24">PLA</option></select></label>
+          <p class="tool-result" id="materialWeightResult">Estimated weight: 0.68 kg</p>
+        </article>
+        <article class="tool-card">
+          <span class="badge">Convert</span>
+          <h3>Unit conversion</h3>
+          <label>Millimetres <input id="unitMillimetres" type="number" step="0.01" value="25.4"></label>
+          <p class="tool-result" id="unitConversionResult">1.000 inches</p>
+        </article>
+        <article class="tool-card">
           <span class="badge">Quote</span>
           <h3>Small job estimate</h3>
           <label>Hours <input id="calcHours" type="number" min="0" step="0.25" value="3"></label>
@@ -2663,6 +2737,12 @@ function renderResources() {
           <label>Fit type <select id="clearanceFit"><option value="close">Close fit</option><option value="standard">Standard fit</option><option value="loose">Loose fit</option></select></label>
           <p class="tool-result" id="clearanceResult">Suggested opening: 10.2 mm</p>
         </article>
+      </div>
+    </section>
+    <section class="section-card section-green">
+      <div class="list-title"><div><h2>Ready-to-use templates</h2><p>Open or save a practical starting document, then replace the prompts with the real job details.</p></div></div>
+      <div class="resource-grid built-in-resources">
+        ${builtInResources().map((resource) => `<article class="resource-card"><span class="badge">${escapeHtml(resource.type)}</span><h3>${escapeHtml(resource.title)}</h3><p>${escapeHtml(resource.detail)}</p><button class="secondary-button download-resource-button" data-resource-key="${escapeHtml(resource.key)}" type="button">Download template</button></article>`).join("")}
       </div>
     </section>
     ${isAdmin ? `<section class="section-card section-green">
@@ -3368,7 +3448,7 @@ function quoteCard(quote) {
           <button class="secondary-button quote-action" data-quote-action="closed" data-id="${escapeHtml(quote.id)}" type="button">Close</button>
           <button class="secondary-button delete-item-button" data-delete-type="quote" data-id="${escapeHtml(quote.id)}" type="button">Delete</button>
         </div>
-      ` : ""}
+      ` : (isOwner ? `<div class="quote-admin-actions"><button class="secondary-button repeat-quote-button" data-id="${escapeHtml(quote.id)}" type="button">Request follow-on work</button></div>` : "")}
     </article>
   `;
 }
@@ -3543,7 +3623,7 @@ function bindViewHandlers(view) {
     bindHubSearch();
   }
   if (view === "projects") {
-    $("#projectForm").addEventListener("submit", async (event) => {
+    $("#projectForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = currentUser();
       const data = formObject(event.currentTarget);
@@ -3582,6 +3662,7 @@ function bindViewHandlers(view) {
       renderView("projects");
     });
     bindProjectDetail();
+    bindClientProjectActions();
   }
   if (view === "quotes") {
     $(".quote-all-button")?.addEventListener("click", () => {
@@ -3653,10 +3734,12 @@ function bindViewHandlers(view) {
     });
     bindQuoteActions();
     bindQuoteJumps();
+    bindRepeatWorkActions();
   }
   if (view === "directory") bindDirectory();
   if (view === "resources") {
     bindResourceTools();
+    bindResourceDownloads();
     $("#resourceForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = formObject(event.currentTarget);
@@ -4242,13 +4325,90 @@ function bindResourceTools() {
     const result = $("#clearanceResult");
     if (result) result.textContent = `Suggested opening: ${opening.toFixed(1)} mm`;
   };
+  const updateCuttingSpeed = () => {
+    const diameter = Math.max(0.1, numberValue("cuttingDiameter"));
+    const rpm = Math.round((numberValue("cuttingSpeed") * 1000) / (Math.PI * diameter));
+    const result = $("#cuttingSpeedResult");
+    if (result) result.textContent = `Recommended: ${rpm.toLocaleString("en-GB")} RPM`;
+  };
+  const updateMaterialWeight = () => {
+    const kilograms = (numberValue("materialVolume") * numberValue("materialDensity")) / 1000;
+    const result = $("#materialWeightResult");
+    if (result) result.textContent = `Estimated weight: ${kilograms.toFixed(2)} kg`;
+  };
+  const updateUnitConversion = () => {
+    const inches = numberValue("unitMillimetres") / 25.4;
+    const result = $("#unitConversionResult");
+    if (result) result.textContent = `${inches.toFixed(3)} inches`;
+  };
   ["calcHours", "calcRate", "calcMaterial"].forEach((id) => $(`#${id}`)?.addEventListener("input", updateQuote));
   ["printWeight", "printRate", "printSetup"].forEach((id) => $(`#${id}`)?.addEventListener("input", updatePrint));
   ["clearanceNominal", "clearanceFit"].forEach((id) => $(`#${id}`)?.addEventListener("input", updateClearance));
   $("#clearanceFit")?.addEventListener("change", updateClearance);
+  ["cuttingDiameter", "cuttingSpeed"].forEach((id) => $(`#${id}`)?.addEventListener("input", updateCuttingSpeed));
+  ["materialVolume", "materialDensity"].forEach((id) => $(`#${id}`)?.addEventListener("input", updateMaterialWeight));
+  $("#materialDensity")?.addEventListener("change", updateMaterialWeight);
+  $("#unitMillimetres")?.addEventListener("input", updateUnitConversion);
   updateQuote();
   updatePrint();
   updateClearance();
+  updateCuttingSpeed();
+  updateMaterialWeight();
+  updateUnitConversion();
+}
+
+function bindResourceDownloads() {
+  $all(".download-resource-button").forEach((button) => button.addEventListener("click", () => {
+    const resource = builtInResources().find((item) => item.key === button.dataset.resourceKey);
+    if (!resource) return;
+    const rows = resource.sections.map((section) => `<p><strong>${escapeHtml(section)}</strong></p><p>________________________________________________________________</p>`).join("");
+    const documentHtml = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(resource.title)}</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:40px auto;color:#17202a}h1{color:#087bf0}p{line-height:1.5}</style></head><body><h1>${escapeHtml(resource.title)}</h1><p>${escapeHtml(resource.detail)}</p>${rows}</body></html>`;
+    const blob = new Blob([documentHtml], { type: "application/msword" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${resource.key}.doc`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }));
+}
+
+function bindRepeatWorkActions() {
+  $all(".repeat-quote-button").forEach((button) => button.addEventListener("click", () => {
+    const original = state.quotes.find((quote) => quote.id === button.dataset.id);
+    if (!original) return;
+    if (currentView !== "quotes") renderView("quotes");
+    window.setTimeout(() => {
+      const form = $("#quoteForm");
+      if (!form) return;
+      const assign = (name, value) => { if (form.elements[name]) form.elements[name].value = value || ""; };
+      assign("service", `Follow-on: ${original.service}`);
+      assign("location", original.location);
+      assign("material", original.material);
+      assign("quantity", original.quantity);
+      assign("outcome", original.outcome);
+      assign("tolerance", original.tolerance);
+      assign("description", `Previous request: ${original.service}\n\nWhat has changed:\n`);
+      assign("files", `Reference previous request ${original.service}. Add any revised files.`);
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      form.elements.description?.focus();
+    }, 50);
+  }));
+}
+
+function bindClientProjectActions() {
+  bindRepeatWorkActions();
+  $all(".client-project-message").forEach((button) => button.addEventListener("click", () => {
+    const subject = `Project update: ${button.dataset.projectTitle || "My project"}`;
+    renderView("messages");
+    window.setTimeout(() => {
+      const form = $("#messageForm");
+      if (!form) return;
+      if (form.elements.subject) form.elements.subject.value = subject;
+      form.elements.body?.focus();
+    }, 50);
+  }));
 }
 
 function bindDashboardLinks() {
