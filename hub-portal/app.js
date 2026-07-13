@@ -28,6 +28,7 @@ let currentView = "dashboard";
 let activeBoardPostId = "";
 let boardBackendAvailable = false;
 let boardBackendMessage = "Checking secure board storage...";
+let contentBackendAvailable = false;
 let secureAdminProfiles = [];
 let adminProfilesStatus = "idle";
 let adminProfilesMessage = "Connecting to live account records...";
@@ -36,7 +37,7 @@ const entryMode = entryParams.get("entry") === "hub" ? "hub" : "client";
 const signInRequested = entryParams.get("signin") === "1";
 const registerRequested = entryParams.get("register") === "1";
 const requestedView = entryParams.get("view");
-if (["dashboard", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "rewards", "profile", "settings", "admin"].includes(requestedView)) {
+if (["dashboard", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings", "admin"].includes(requestedView)) {
   currentView = requestedView;
 }
 
@@ -49,12 +50,13 @@ const portalSections = [
   { view: "resources", title: "Resources & Tools", detail: "Use quick calculators, templates and practical engineering checklists." },
   { view: "events", title: "Events", detail: "See meetups, workshops, site visits and hosted sessions." },
   { view: "messages", title: "Messages", detail: "Keep member conversations and introductions tidy." },
+  { view: "notifications", title: "Notifications", detail: "See approvals, account updates and items needing attention." },
   { view: "rewards", title: "Rewards", detail: "Track helpful points, monthly prizes and vouchers." },
   { view: "profile", title: "My Profile", detail: "Update verification details, skills and equipment." },
   { view: "settings", title: "Settings", detail: "Membership, alerts and account preferences." }
 ];
 
-const clientViews = new Set(["dashboard", "quotes", "messages", "profile", "settings"]);
+const clientViews = new Set(["dashboard", "quotes", "messages", "notifications", "profile", "settings"]);
 
 function $(selector, root = document) {
   return root.querySelector(selector);
@@ -219,7 +221,8 @@ function saveState() {
 
 function normaliseState() {
   ensureAdminAccount();
-  ensureStarterExamples();
+  purgePretendContent();
+  ensureAdminAccount();
   state.rewardMonth ||= "July 2026";
   state.rewardPrize ||= "GBP 50 workshop voucher";
   state.rewardPrize = String(state.rewardPrize).replace(/\u00A3/g, "GBP ").replace(/[^\x20-\x7E]+/g, "").replace(/GBP\s*GBP/g, "GBP").trim();
@@ -268,18 +271,19 @@ function normaliseState() {
   });
   state.resources.forEach((resource) => {
     resource.id ||= uid("resource");
-    resource.example = resource.example !== false;
+    resource.example = resource.example === true;
   });
   state.events.forEach((event) => {
     event.id ||= uid("event");
-    event.example = event.example !== false;
+    event.example = event.example === true;
   });
   state.messages.forEach((message) => {
     message.id ||= uid("msg");
-    message.example = message.example !== false;
+    message.example = message.example === true;
   });
   state.posts.forEach((post) => {
-    post.example = post.example !== false;
+    post.example = post.example === true;
+    post.moderationStatus ||= post.authorEmail === adminEmail ? "approved" : "pending";
     post.responses ||= [
       {
         id: uid("reply"),
@@ -293,10 +297,11 @@ function normaliseState() {
     ];
   });
   state.projects.forEach((project) => {
-    project.example = project.example !== false;
+    project.example = project.example === true;
+    project.moderationStatus ||= project.authorEmail === adminEmail ? "approved" : "pending";
   });
   state.members.forEach((member) => {
-    member.example = member.example !== false;
+    member.example = member.example === true;
     member.helpfulPoints ||= Math.max(0, Math.round((member.points || 0) / 12));
     member.directoryVisible = member.directoryVisible !== false;
     member.preferredWork ||= "";
@@ -316,6 +321,25 @@ function normaliseState() {
     user.capacity ||= "";
   });
   saveState();
+}
+
+function purgePretendContent() {
+  if (state.realContentCleanupVersion >= 2) return;
+  const isPretend = (item = {}) => item.example === true
+    || item.created === "Example"
+    || /@local$|@example$|\.example@/i.test(String(item.email || item.authorEmail || item.providerEmail || ""));
+  state.posts = (state.posts || []).filter((item) => !isPretend(item));
+  state.projects = (state.projects || []).filter((item) => !isPretend(item));
+  state.quotes = (state.quotes || []).filter((item) => !isPretend(item));
+  state.members = (state.members || []).filter((item) => !isPretend(item));
+  state.messages = (state.messages || []).filter((item) => item.example === false && !isPretend(item));
+  state.events = (state.events || []).filter((item) => item.example === false && !isPretend(item));
+  state.applications = (state.applications || []).filter((item) => !isPretend(item));
+  state.resources = (state.resources || []).filter((item) => item.example === false && !isPretend(item));
+  state.flagged = [];
+  state.helpfulAwards = [];
+  state.examplePackVersion = 999;
+  state.realContentCleanupVersion = 2;
 }
 
 function ensureStarterExamples() {
@@ -729,6 +753,7 @@ function mapBoardPost(row) {
     updatedAt: row.updated_at,
     reports: row.reports || 0,
     flagged: row.flagged === true,
+    moderationStatus: row.moderation_status || "pending",
     responses: (row.board_replies || []).map((reply) => ({
       id: reply.id,
       author: reply.author_name || "Hub member",
@@ -753,7 +778,7 @@ async function loadSecureBoards() {
   if (!portalBackend || !user || isClientPortalContext(user)) return false;
   const { data, error } = await portalBackend
     .from("board_posts")
-    .select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful)")
+    .select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,moderation_status,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful)")
     .order("created_at", { ascending: false });
   if (error) {
     boardBackendAvailable = false;
@@ -767,6 +792,121 @@ async function loadSecureBoards() {
   return true;
 }
 
+function mapSecureProject(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    description: row.description,
+    location: row.location || "",
+    status: row.progress_status || "Planning",
+    moderationStatus: row.moderation_status || "pending",
+    author: row.author_name || "Hub member",
+    authorEmail: row.author_email || "",
+    authorId: row.author_id,
+    created: formatBoardDate(row.created_at),
+    image: "", likes: 0, comments: 0, points: 0,
+    nextStep: "Add the first project milestone", parts: [], updates: [], discussion: [], example: false
+  };
+}
+
+function mapSecureQuote(row) {
+  const secureResponses = row.quote_responses || row.responses || [];
+  return {
+    id: row.id,
+    service: row.service,
+    location: row.location || "",
+    material: row.material || "",
+    quantity: row.quantity || "",
+    budget: row.budget || "",
+    deadline: row.deadline || "",
+    outcome: row.outcome || "",
+    tolerance: row.tolerance || "",
+    description: row.description,
+    files: row.files_note || "",
+    jpFirst: true,
+    status: row.status || "jp-review",
+    created: formatBoardDate(row.created_at),
+    visibility: "Private",
+    author: row.author_name || "Customer",
+    authorEmail: row.author_email || "",
+    authorId: row.author_id,
+    responses: secureResponses.map((response) => ({
+      id: response.id,
+      provider: response.provider_name || response.provider || "Hub member",
+      providerEmail: response.provider_email || "",
+      providerId: response.provider_id,
+      price: response.price || "",
+      leadTime: response.lead_time || response.leadTime || "",
+      assumptions: response.assumptions || "",
+      availability: response.availability || "",
+      notes: response.notes || "",
+      status: response.status || "submitted",
+      created: formatBoardDate(response.created_at)
+    })),
+    example: false
+  };
+}
+
+async function loadSecureSubmissions() {
+  const user = currentUser();
+  if (!portalBackend || !user) return false;
+  const [projectsResult, quotesResult] = await Promise.all([
+    portalBackend.from("hub_projects").select("*").order("created_at", { ascending: false }),
+    portalBackend.from("quote_requests").select("*,quote_responses(*)").order("created_at", { ascending: false })
+  ]);
+  if (projectsResult.error || quotesResult.error) {
+    contentBackendAvailable = false;
+    return false;
+  }
+  contentBackendAvailable = true;
+  state.projects = (projectsResult.data || []).map(mapSecureProject);
+  state.quotes = (quotesResult.data || []).map(mapSecureQuote);
+  state.activeProjectId = state.projects[0]?.id || "";
+  saveState();
+  return true;
+}
+
+async function createSecureProject(data, user) {
+  if (!contentBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.from("hub_projects").insert({
+    title: data.title.trim(), category: data.category.trim(), description: data.description.trim(),
+    location: data.location || "", progress_status: data.status || "Planning",
+    author_id: user.id, author_name: user.name, author_email: user.email,
+    moderation_status: "pending"
+  }).select("*").single();
+  if (error) throw error;
+  return mapSecureProject(row);
+}
+
+async function createSecureQuote(data, user) {
+  if (!contentBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.from("quote_requests").insert({
+    service: data.service.trim(), location: data.location || "", material: data.material || "",
+    quantity: data.quantity || "", budget: data.budget || "", deadline: data.deadline || "",
+    outcome: data.outcome || "", tolerance: data.tolerance || "", description: data.description.trim(),
+    files_note: data.files || "", author_id: user.id, author_name: user.name,
+    author_email: user.email, status: "jp-review"
+  }).select("*").single();
+  if (error) throw error;
+  return mapSecureQuote(row);
+}
+
+async function createSecureQuoteResponse(quote, data, user) {
+  if (!contentBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.from("quote_responses").insert({
+    request_id: quote.id, provider_id: user.id, provider_name: user.name, provider_email: user.email,
+    price: data.price || "", lead_time: data.leadTime || "", assumptions: data.assumptions || "",
+    availability: data.availability || "", notes: data.notes || "", status: "submitted"
+  }).select("*").single();
+  if (error) throw error;
+  return {
+    id: row.id, provider: row.provider_name, providerEmail: row.provider_email, providerId: row.provider_id,
+    price: row.price, leadTime: row.lead_time, assumptions: row.assumptions,
+    availability: row.availability, notes: row.notes, status: row.status, created: formatBoardDate(row.created_at)
+  };
+}
+
 async function createBoardPostRecord(data, user) {
   const flagged = moderationFlag(`${data.title} ${data.description}`);
   if (boardBackendAvailable) {
@@ -776,15 +916,16 @@ async function createBoardPostRecord(data, user) {
       body: data.description.trim(),
       author_id: user.id,
       author_name: user.name,
-      flagged
-    }).select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports").single();
+      flagged,
+      moderation_status: "pending"
+    }).select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,moderation_status").single();
     if (error) throw error;
     return mapBoardPost({ ...row, board_replies: [] });
   }
   return {
     id: uid("post"), title: data.title, category: data.category, description: data.description,
     author: user.name, authorEmail: user.email, authorId: user.id, created: "Just now",
-    reports: 0, flagged, responses: []
+    reports: 0, flagged, moderationStatus: "pending", responses: []
   };
 }
 
@@ -1086,7 +1227,13 @@ async function registerUser(data) {
     }
   });
   if (error) throw error;
-  if (result.session) await syncSecureSession();
+  if (result.session) {
+    const user = await syncSecureSession();
+    if (entryMode === "hub" && user?.role === "client") {
+      await portalBackend.rpc("request_hub_access");
+      await syncSecureSession();
+    }
+  }
   return result;
 }
 
@@ -1188,7 +1335,12 @@ async function signIn(data) {
     }
     throw new Error(message || "Sign in failed. Please try again.");
   }
-  return syncSecureSession();
+  let user = await syncSecureSession();
+  if (entryMode === "hub" && user?.role === "client") {
+    const { error: accessError } = await portalBackend.rpc("request_hub_access");
+    if (!accessError) user = await syncSecureSession();
+  }
+  return user;
 }
 
 async function signOut() {
@@ -1245,24 +1397,7 @@ function moderationFlag(text) {
 }
 
 function renderNotifications() {
-  const upcoming = state.events.slice(0, 2);
-  const items = [
-    {
-      title: "Hub trial update",
-      detail: "Private trial mode is active. Your test data remains saved in this browser.",
-      isNew: true
-    },
-    ...upcoming.map((event) => ({
-      title: event.title,
-      detail: `${event.date} - Upcoming engineering event`,
-      isNew: true
-    })),
-    {
-      title: "Private quote reminder",
-      detail: "Provider prices stay private and are never shown to competing providers.",
-      isNew: false
-    }
-  ];
+  const items = notificationItems(currentUser());
   const unread = items.filter((item) => item.isNew).length;
   $("#notificationCount").textContent = unread > 9 ? "9+" : String(unread);
   $("#notificationCount").classList.toggle("hidden", unread === 0);
@@ -1271,12 +1406,31 @@ function renderNotifications() {
     profileAlertCount.textContent = unread > 9 ? "9+" : String(unread);
     profileAlertCount.classList.toggle("hidden", unread === 0);
   }
-  $("#notificationList").innerHTML = items.map((item) => `
-    <article class="notification-item ${item.isNew ? "new" : ""}">
-      <strong>${escapeHtml(item.title)}</strong>
-      <span>${escapeHtml(item.detail)}</span>
-    </article>
-  `).join("");
+}
+
+function notificationItems(user = currentUser()) {
+  if (!user) return [];
+  const items = [];
+  const unreadMessages = unreadMessageCount(user);
+  if (unreadMessages) items.push({ title: `${unreadMessages} unread message${unreadMessages === 1 ? "" : "s"}`, detail: "Open Messages to review them.", isNew: true, view: "messages" });
+  if (user.role === "admin") {
+    const pendingAccess = secureAdminProfiles.filter((profile) => profile.membership_status === "pending").length;
+    const pendingPosts = state.posts.filter((post) => post.moderationStatus === "pending").length;
+    const pendingProjects = state.projects.filter((project) => project.moderationStatus === "pending").length;
+    const pendingQuotes = state.quotes.filter((quote) => quote.status === "jp-review").length;
+    if (pendingAccess) items.push({ title: `${pendingAccess} access request${pendingAccess === 1 ? "" : "s"}`, detail: "Approve or reject access in Admin Review.", isNew: true, view: "admin", targetId: "adminAccessRequests" });
+    if (pendingPosts) items.push({ title: `${pendingPosts} post${pendingPosts === 1 ? "" : "s"} awaiting moderation`, detail: "Review posts before publication.", isNew: true, view: "admin", targetId: "adminPostModeration" });
+    if (pendingProjects) items.push({ title: `${pendingProjects} project${pendingProjects === 1 ? "" : "s"} awaiting moderation`, detail: "Review member projects before publication.", isNew: true, view: "admin", targetId: "adminProjectModeration" });
+    if (pendingQuotes) items.push({ title: `${pendingQuotes} quote request${pendingQuotes === 1 ? "" : "s"} awaiting review`, detail: "Review them in the admin quote queue.", isNew: true, view: "admin", targetId: "adminQuoteQueue" });
+  } else {
+    const pendingPosts = state.posts.filter((post) => post.authorEmail === user.email && post.moderationStatus === "pending").length;
+    const pendingProjects = state.projects.filter((project) => project.authorEmail === user.email && project.moderationStatus === "pending").length;
+    const pendingQuotes = state.quotes.filter((quote) => quote.authorEmail === user.email && quote.status === "jp-review").length;
+    if (pendingPosts) items.push({ title: `${pendingPosts} post${pendingPosts === 1 ? "" : "s"} awaiting approval`, detail: "JP Innovation will publish approved posts.", isNew: true, view: "boards" });
+    if (pendingProjects) items.push({ title: `${pendingProjects} project${pendingProjects === 1 ? "" : "s"} awaiting approval`, detail: "JP Innovation will publish approved projects.", isNew: true, view: "projects" });
+    if (pendingQuotes) items.push({ title: `${pendingQuotes} quote request${pendingQuotes === 1 ? "" : "s"} under review`, detail: "JP Innovation is reviewing the scope.", isNew: true, view: "quotes" });
+  }
+  return items;
 }
 
 function unreadMessageCount(user = currentUser()) {
@@ -1351,6 +1505,7 @@ function renderView(view) {
     resources: "Resources & Tools",
     events: "Events",
     messages: "Messages",
+    notifications: "Notifications",
     rewards: "Rewards",
     profile: "My Profile",
     settings: "Settings",
@@ -1370,14 +1525,44 @@ function renderView(view) {
     resources: renderResources,
     events: renderEvents,
     messages: renderMessages,
+    notifications: renderNotificationsView,
     rewards: renderRewards,
     profile: renderProfile,
     settings: renderSettings,
     admin: renderAdmin
   };
   mount.innerHTML = (renderers[view] || renderDashboard)(user);
+  prepareCompactSections(view);
   renderMessageInbox();
   bindViewHandlers(view);
+}
+
+function prepareCompactSections(view) {
+  const compactViews = new Set(["dashboard", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings"]);
+  if (!compactViews.has(view)) return;
+  const mobile = window.matchMedia("(max-width: 560px)").matches;
+  $all("#viewMount > .section-card").forEach((section, index) => {
+    if (section.matches("details")) return;
+    const heading = section.querySelector("h2, h3");
+    if (!heading) return;
+    section.classList.add("compact-collapsible");
+    heading.classList.add("compact-original-title");
+    const toggle = document.createElement("button");
+    toggle.className = "compact-section-toggle";
+    toggle.type = "button";
+    toggle.innerHTML = `<span>${escapeHtml(heading.textContent.trim())}</span><b aria-hidden="true">−</b>`;
+    const collapsed = mobile && index > 0;
+    section.classList.toggle("is-collapsed", collapsed);
+    toggle.setAttribute("aria-expanded", String(!collapsed));
+    toggle.querySelector("b").textContent = collapsed ? "+" : "−";
+    toggle.addEventListener("click", () => {
+      const willCollapse = !section.classList.contains("is-collapsed");
+      section.classList.toggle("is-collapsed", willCollapse);
+      toggle.setAttribute("aria-expanded", String(!willCollapse));
+      toggle.querySelector("b").textContent = willCollapse ? "+" : "−";
+    });
+    section.prepend(toggle);
+  });
 }
 
 function renderClientDashboard(user) {
@@ -1669,8 +1854,15 @@ function renderOnboarding(user) {
   `;
 }
 
+function visibleBoardPosts(user = currentUser()) {
+  if (!user) return [];
+  if (user.role === "admin") return state.posts;
+  return state.posts.filter((post) => post.moderationStatus === "approved" || post.authorId === user.id || post.authorEmail === user.email);
+}
+
 function renderBoards() {
-  const activePost = state.posts.find((post) => post.id === activeBoardPostId);
+  const posts = visibleBoardPosts();
+  const activePost = posts.find((post) => post.id === activeBoardPostId);
   if (activePost) {
     return `
       <section class="section-card section-cyan board-thread-detail">
@@ -1679,16 +1871,16 @@ function renderBoards() {
       </section>
     `;
   }
-  const unanswered = state.posts.filter((post) => !(post.responses || []).length).length;
-  const needsHelp = state.posts.filter((post) => !countHelpfulReplies(post)).length;
-  const helpfulReplies = state.posts.reduce((total, post) => total + countHelpfulReplies(post), 0);
-  const activeCategories = new Set(state.posts.map((post) => post.category)).size;
+  const unanswered = posts.filter((post) => !(post.responses || []).length).length;
+  const needsHelp = posts.filter((post) => !countHelpfulReplies(post)).length;
+  const helpfulReplies = posts.reduce((total, post) => total + countHelpfulReplies(post), 0);
+  const activeCategories = new Set(posts.map((post) => post.category)).size;
   const categoryOptions = ["All", ...boardCategories].map(option).join("");
   return `
     <section class="section-card section-cyan">
       <div class="list-title"><div><h2>Engineering Boards</h2><p>A focused member forum for technical questions, project feedback and useful supplier knowledge.</p></div></div>
       <div class="metrics-grid dashboard-metrics">
-        ${metric("Threads", state.posts.length)}
+        ${metric("Threads", posts.length)}
         ${metric("Need replies", unanswered)}
         ${metric("Need helpful answer", needsHelp)}
         ${metric("Helpful replies", helpfulReplies)}
@@ -1708,7 +1900,7 @@ function renderBoards() {
         <label>Category <select name="category">${boardCategories.map(option).join("")}</select></label>
         <label class="wide">Description <textarea name="description" rows="4" required></textarea></label>
         <label class="wide">Optional image upload <input type="file" disabled></label>
-        <button class="primary-button wide" type="submit">Submit post</button>
+        <button class="primary-button wide" type="submit">Submit for approval</button>
         <p id="postStatus" class="form-status wide" aria-live="polite"></p>
       </form>
     </section>
@@ -1749,7 +1941,11 @@ function boardDescription(category) {
 }
 
 function renderProjects() {
-  const activeProject = state.projects.find((project) => project.id === state.activeProjectId) || state.projects[0];
+  const user = currentUser();
+  const visibleProjects = state.projects.filter((project) => user?.role === "admin"
+    || project.authorEmail === user?.email
+    || project.moderationStatus === "approved");
+  const activeProject = visibleProjects.find((project) => project.id === state.activeProjectId) || visibleProjects[0];
   return `
     ${activeProject ? renderProjectDetail(activeProject) : ""}
     <section class="section-card section-teal">
@@ -1761,12 +1957,12 @@ function renderProjects() {
         <label>Progress status <select name="status">${["Planning", "In Progress", "Completed"].map(option).join("")}</select></label>
         <label class="wide">Description <textarea name="description" rows="4" required></textarea></label>
         <label class="wide">Images placeholder <input type="file" disabled></label>
-        <button class="primary-button wide" type="submit">Submit project</button>
+        <button class="primary-button wide" type="submit">Submit for approval</button>
       </form>
     </section>
     <section class="section-card section-teal">
       <div class="list-title"><div><h2>Member projects</h2><p>Select a project to open its full detail page.</p></div></div>
-      <div class="cards-grid">${state.projects.map(projectCard).join("")}</div>
+      <div class="cards-grid">${visibleProjects.map(projectCard).join("") || `<p class="muted">No approved projects yet.</p>`}</div>
     </section>
   `;
 }
@@ -1847,7 +2043,10 @@ function renderQuotes() {
   const user = currentUser();
   if (user?.role === "client") return renderClientQuotes(user);
   const isAdmin = user?.role === "admin";
-  const visibleQuotes = state.quotes.filter((quote) => isAdmin || quote.status !== "draft");
+  const visibleQuotes = state.quotes.filter((quote) => isAdmin
+    || quote.authorEmail === user?.email
+    || quote.status === "open"
+    || quote.status === "shortlisted");
   const openQuotes = state.quotes.filter((quote) => quote.status === "open" || quote.status === "shortlisted");
   const responseCount = state.quotes.reduce((total, quote) => total + quote.responses.length, 0);
   return `
@@ -1900,7 +2099,7 @@ function renderQuotes() {
         <label class="wide">Description <textarea name="description" rows="4" required placeholder="What is needed, what exists already, and any important constraints..."></textarea></label>
         <label class="wide">Files / drawings note <input name="files" placeholder="STEP file, drawing, photo set, NDA required..."></label>
         <label class="check wide"><input name="jpFirst" type="checkbox" checked> Allow JP Innovation to quote first</label>
-        <button class="primary-button wide" type="submit">Submit request</button>
+        <button class="primary-button wide" type="submit">Submit for JP approval</button>
       </form>
     </section>
     <section class="section-card section-violet">
@@ -2074,6 +2273,23 @@ function renderEvents() {
             <button class="secondary-button delete-item-button" data-delete-type="event" data-id="${escapeHtml(event.id)}" type="button">Delete</button>
           </div>
         </article>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderNotificationsView() {
+  const items = notificationItems(currentUser());
+  return `
+    <section class="section-card section-blue compact-view-hero">
+      <div class="list-title"><div><h2>Notifications</h2><p>Only genuine account activity and items requiring action appear here.</p></div><span class="pill ${items.length ? "warn" : "good"}">${items.length}</span></div>
+      <div class="notification-page-list">
+        ${items.length ? items.map((item) => `
+          <button class="notification-page-item dashboard-link" data-view-link="${escapeHtml(item.view)}" data-target-id="${escapeHtml(item.targetId || "")}" type="button">
+            <strong>${escapeHtml(item.title)}</strong>
+            <span>${escapeHtml(item.detail)}</span>
+          </button>
+        `).join("") : `<div class="empty-state"><strong>Nothing needs attention</strong><span>New approvals, messages and submission updates will appear here.</span></div>`}
       </div>
     </section>
   `;
@@ -2319,6 +2535,8 @@ async function updateSecureProfileAccess(userId, changes) {
 function renderAdmin(user) {
   if (user.role !== "admin") return `<section class="section-card"><h2>Not available</h2><p class="muted">Admin review is only visible to JP Innovation admins.</p></section>`;
   const flagged = [...state.posts.filter((post) => post.flagged || post.reports > 0), ...state.flagged];
+  const moderationPosts = state.posts.filter((post) => post.moderationStatus === "pending" || post.flagged || post.reports > 0);
+  const moderationProjects = state.projects.filter((project) => project.moderationStatus === "pending");
   const applications = adminProfilesStatus === "ready"
     ? secureAdminProfiles.filter((profile) => profile.membership_status === "pending").map(secureProfileApplication)
     : (state.applications || []).filter((application) => !application.example && application.created !== "Example");
@@ -2332,8 +2550,9 @@ function renderAdmin(user) {
       <p class="muted">Everything requiring admin attention is summarised here. Open a section only when you need its controls.</p>
       <div class="metrics-grid">
         ${metric("Access requests", pendingApplications)}
-        ${metric("Flagged items", flagged.length)}
-        ${metric("Open quotes", openAdminQuotes)}
+        ${metric("Post reviews", moderationPosts.length)}
+        ${metric("Project reviews", moderationProjects.length)}
+        ${metric("Quote reviews", state.quotes.filter((quote) => quote.status === "jp-review").length)}
         ${metric("Suspended", suspendedAccounts)}
       </div>
     </section>
@@ -2396,14 +2615,32 @@ function renderAdmin(user) {
         `).join("") : `<p class="muted">No access requests yet.</p>`}
       </div>
     </details>
-    <details class="section-card admin-fold section-rose" ${flagged.length ? "open" : ""}>
-      <summary class="list-title"><div><h2>Flagged content</h2><p>Review reported posts and messages.</p></div><span class="pill ${flagged.length ? "warn" : "good"}">${flagged.length}</span></summary>
-      <div class="feed-list">${flagged.length ? flagged.map((item) => `
+    <details id="adminPostModeration" class="section-card admin-fold section-rose" ${moderationPosts.length ? "open" : ""}>
+      <summary class="list-title"><div><h2>Post moderation</h2><p>Approve, reject or review reported posts.</p></div><span class="pill ${moderationPosts.length ? "warn" : "good"}">${moderationPosts.length}</span></summary>
+      <div class="feed-list">${moderationPosts.length ? moderationPosts.map((item) => `
         <article class="feed-item">
-          <span class="pill warn">Review</span>
+          <span class="pill warn">${item.moderationStatus === "pending" ? "Awaiting approval" : "Reported"}</span>
           <h3>${escapeHtml(item.title || "Flagged content")}</h3>
           <p>${escapeHtml(item.description || item.reason || "")}</p>
+          <div class="admin-actions">
+            <button class="primary-button post-moderation-action" data-post-action="approved" data-post-id="${escapeHtml(item.id)}" type="button">Approve</button>
+            <button class="secondary-button post-moderation-action danger-action" data-post-action="rejected" data-post-id="${escapeHtml(item.id)}" type="button">Reject</button>
+          </div>
         </article>`).join("") : `<p class="muted">No flagged content right now.</p>`}
+      </div>
+    </details>
+    <details id="adminProjectModeration" class="section-card admin-fold section-teal" ${moderationProjects.length ? "open" : ""}>
+      <summary class="list-title"><div><h2>Project moderation</h2><p>Approve or reject member project submissions.</p></div><span class="pill ${moderationProjects.length ? "warn" : "good"}">${moderationProjects.length}</span></summary>
+      <div class="feed-list">${moderationProjects.length ? moderationProjects.map((item) => `
+        <article class="feed-item">
+          <span class="pill warn">Awaiting approval</span>
+          <h3>${escapeHtml(item.title)}</h3>
+          <p>${escapeHtml(item.description)}</p>
+          <div class="admin-actions">
+            <button class="primary-button project-moderation-action" data-project-action="approved" data-project-id="${escapeHtml(item.id)}" type="button">Approve</button>
+            <button class="secondary-button project-moderation-action danger-action" data-project-action="rejected" data-project-id="${escapeHtml(item.id)}" type="button">Reject</button>
+          </div>
+        </article>`).join("") : `<p class="muted">No project submissions waiting.</p>`}
       </div>
     </details>
     <details class="section-card admin-fold section-amber">
@@ -2426,7 +2663,7 @@ function renderAdmin(user) {
         `).join("")}
       </div>
     </details>
-    <details class="section-card admin-fold section-violet">
+    <details id="adminQuoteQueue" class="section-card admin-fold section-violet">
       <summary class="list-title"><div><h2>Quote queue</h2><p>Review and control private quote requests.</p></div><span class="pill">${openAdminQuotes} open</span></summary>
       <div class="quote-admin-queue">
         ${state.quotes.map((quote) => `
@@ -2485,6 +2722,7 @@ function postCard(post) {
     <article class="feed-item thread-card" id="post-${escapeHtml(post.id)}">
       <div class="thread-topline">
         <span class="badge">${escapeHtml(post.category)}</span>
+        ${post.moderationStatus !== "approved" ? `<span class="pill warn">${post.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>` : ""}
         ${helpfulCount ? `<span class="pill good">${helpfulCount} helpful</span>` : `<span class="pill warn">Needs help</span>`}
       </div>
       <h3>${escapeHtml(post.title)}</h3>
@@ -2509,12 +2747,12 @@ function postCard(post) {
           `).join("")}
         </div>
       ` : ""}
-      <form class="reply-form" data-post-id="${post.id}">
+      ${post.moderationStatus === "approved" || user?.role === "admin" ? `<form class="reply-form" data-post-id="${post.id}">
         <label>Reply with advice, a recommendation or a question
           <textarea name="body" rows="3" required placeholder="Add useful feedback..."></textarea>
         </label>
         <button class="secondary-button" type="submit">Post reply</button>
-      </form>
+      </form>` : `<p class="muted">Replies open after JP Innovation approves this post.</p>`}
       <button class="secondary-button report-button" data-id="${post.id}" type="button">Report post</button>
       ${isOwner ? `<details class="post-edit-panel"><summary>Edit post</summary><form class="edit-post-form form-grid two" data-post-id="${escapeHtml(post.id)}"><label>Title <input name="title" value="${escapeHtml(post.title)}" required></label><label>Category <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === post.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label><label class="wide">Description <textarea name="description" rows="4" required>${escapeHtml(post.description)}</textarea></label><button class="primary-button" type="submit">Save changes</button><button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button></form></details>` : ""}
     </article>
@@ -2528,6 +2766,7 @@ function postSummaryCard(post) {
     <article class="feed-item thread-card thread-summary">
       <div class="thread-topline">
         <span class="badge">${escapeHtml(post.category)}</span>
+        ${post.moderationStatus !== "approved" ? `<span class="pill warn">${post.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>` : ""}
         ${helpfulCount ? `<span class="pill good">${helpfulCount} helpful</span>` : `<span class="pill warn">Needs help</span>`}
       </div>
       <h3>${escapeHtml(post.title)}</h3>
@@ -2549,6 +2788,7 @@ function projectCard(project) {
     <article class="feed-item">
       ${project.image ? `<img class="post-image" src="${escapeHtml(project.image)}" alt="">` : ""}
       <span class="badge">${escapeHtml(project.category)}</span>
+      ${project.moderationStatus !== "approved" ? `<span class="pill warn">${project.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>` : ""}
       <h3>${escapeHtml(project.title)}</h3>
       <p>${escapeHtml(project.description)}</p>
       <div class="meta-row">
@@ -2770,10 +3010,11 @@ function bindViewHandlers(view) {
       try {
         const newPost = await createBoardPostRecord(data, user);
         state.posts.unshift(newPost);
-        activeBoardPostId = newPost.id;
         if (newPost.flagged) state.flagged.unshift({ title: data.title, description: data.description, reason: "Automatic moderation keyword flag" });
         saveState();
-        renderView("boards");
+        event.currentTarget.reset();
+        if (status) status.textContent = "Post submitted for JP Innovation approval.";
+        renderNotifications();
       } catch (error) {
         if (status) status.textContent = error.message || "The post could not be published.";
       }
@@ -2790,16 +3031,18 @@ function bindViewHandlers(view) {
       renderView("boards");
     });
   }
-  if (view === "dashboard") {
+  if (view === "dashboard" || view === "notifications") {
     bindDashboardLinks();
+  }
+  if (view === "dashboard") {
     bindHubSearch();
   }
   if (view === "projects") {
-    $("#projectForm").addEventListener("submit", (event) => {
+    $("#projectForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = currentUser();
       const data = formObject(event.currentTarget);
-      state.projects.unshift({
+      const localProject = {
         id: uid("project"),
         title: data.title,
         category: data.category,
@@ -2808,6 +3051,8 @@ function bindViewHandlers(view) {
         status: data.status,
         author: user.name,
         authorEmail: user.email,
+        moderationStatus: "pending",
+        example: false,
         image: "",
         likes: 0,
         comments: 0,
@@ -2818,22 +3063,27 @@ function bindViewHandlers(view) {
           { id: uid("update"), title: "Project created", body: data.description, created: "Just now" }
         ],
         discussion: []
-      });
+      };
+      try {
+        const secureProject = await createSecureProject(data, user);
+        state.projects.unshift(secureProject || localProject);
+      } catch (error) {
+        window.alert(error.message || "The project could not be submitted.");
+        return;
+      }
       state.activeProjectId = state.projects[0].id;
-      user.points += 10;
-      user.helpfulPoints = (user.helpfulPoints || 0) + 2;
-      syncMember(user);
       saveState();
+      renderNotifications();
       renderView("projects");
     });
     bindProjectDetail();
   }
   if (view === "quotes") {
-    $("#quoteForm")?.addEventListener("submit", (event) => {
+    $("#quoteForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = currentUser();
       const data = formObject(event.currentTarget);
-      state.quotes.unshift({
+      const localQuote = {
         id: uid("quote"),
         service: data.service,
         location: data.location,
@@ -2846,22 +3096,32 @@ function bindViewHandlers(view) {
         description: data.description,
         files: data.files || "Not attached in prototype",
         jpFirst: data.jpFirst,
-        status: data.jpFirst ? "jp-review" : "open",
+        status: "jp-review",
         created: "Just now",
         visibility: "Private",
         author: user.name,
         authorEmail: user.email,
-        responses: []
-      });
+        responses: [],
+        example: false
+      };
+      try {
+        const secureQuote = await createSecureQuote(data, user);
+        state.quotes.unshift(secureQuote || localQuote);
+      } catch (error) {
+        window.alert(error.message || "The quote request could not be submitted.");
+        return;
+      }
       saveState();
+      renderNotifications();
       renderView("quotes");
     });
-    $("#quoteResponseForm")?.addEventListener("submit", (event) => {
+    $("#quoteResponseForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = currentUser();
       const data = formObject(event.currentTarget);
       const quote = state.quotes.find((item) => item.id === data.requestId);
-      if (quote) quote.responses.push({
+      if (!quote) return;
+      const localResponse = {
         provider: user.name,
         providerEmail: user.email,
         price: data.price,
@@ -2871,7 +3131,14 @@ function bindViewHandlers(view) {
         notes: data.notes,
         status: "submitted",
         created: "Just now"
-      });
+      };
+      try {
+        const secureResponse = await createSecureQuoteResponse(quote, data, user);
+        quote.responses.push(secureResponse || localResponse);
+      } catch (error) {
+        window.alert(error.message || "The private quote could not be submitted.");
+        return;
+      }
       saveState();
       renderView("quotes");
     });
@@ -2959,6 +3226,8 @@ function bindViewHandlers(view) {
     }
     bindApplicationActions();
     bindAdminActions();
+    bindPostModerationActions();
+    bindProjectModerationActions();
     bindQuoteActions();
     loadSiteAnalytics();
     $("#refreshAdminProfiles")?.addEventListener("click", () => loadSecureAdminProfiles(true));
@@ -3062,6 +3331,57 @@ function bindAdminActions() {
   });
 }
 
+function bindPostModerationActions() {
+  $all(".post-moderation-action").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const post = state.posts.find((item) => item.id === button.dataset.postId);
+      if (!post) return;
+      const moderationStatus = button.dataset.postAction;
+      try {
+        if (boardBackendAvailable) {
+          const { error } = await portalBackend.from("board_posts").update({
+            moderation_status: moderationStatus,
+            flagged: moderationStatus === "approved" ? false : post.flagged
+          }).eq("id", post.id);
+          if (error) throw error;
+        }
+        post.moderationStatus = moderationStatus;
+        if (moderationStatus === "approved") post.flagged = false;
+        saveState();
+        renderNotifications();
+        renderView("admin");
+      } catch (error) {
+        adminProfilesMessage = `Post moderation failed: ${error.message}`;
+        renderView("admin");
+      }
+    });
+  });
+}
+
+function bindProjectModerationActions() {
+  $all(".project-moderation-action").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const project = state.projects.find((item) => item.id === button.dataset.projectId);
+      if (!project) return;
+      const moderationStatus = button.dataset.projectAction;
+      try {
+        if (contentBackendAvailable) {
+          const { error } = await portalBackend.from("hub_projects").update({ moderation_status: moderationStatus }).eq("id", project.id);
+          if (error) throw error;
+        }
+      } catch (error) {
+        adminProfilesMessage = `Project moderation failed: ${error.message}`;
+        renderView("admin");
+        return;
+      }
+      project.moderationStatus = moderationStatus;
+      saveState();
+      renderNotifications();
+      renderView("admin");
+    });
+  });
+}
+
 function bindApplicationActions() {
   $all(".application-action").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -3131,10 +3451,20 @@ function bindApplicationActions() {
 
 function bindQuoteActions() {
   $all(".quote-action").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const quote = state.quotes.find((item) => item.id === button.dataset.id);
       if (!quote) return;
-      quote.status = button.dataset.quoteAction;
+      const nextStatus = button.dataset.quoteAction;
+      try {
+        if (contentBackendAvailable) {
+          const { error } = await portalBackend.from("quote_requests").update({ status: nextStatus }).eq("id", quote.id);
+          if (error) throw error;
+        }
+      } catch (error) {
+        window.alert(error.message || "The quote status could not be updated.");
+        return;
+      }
+      quote.status = nextStatus;
       quote.visibility = quote.status === "closed" ? "Archived" : "Private";
       saveState();
       renderView(currentView);
@@ -3277,7 +3607,17 @@ function bindResourceTools() {
 
 function bindDashboardLinks() {
   $all(".dashboard-link").forEach((button) => {
-    button.addEventListener("click", () => renderView(button.dataset.viewLink));
+    button.addEventListener("click", () => {
+      renderView(button.dataset.viewLink);
+      const targetId = button.dataset.targetId;
+      if (!targetId) return;
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById(targetId);
+        if (!target) return;
+        if (target.matches("details")) target.open = true;
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   });
 }
 
@@ -3310,7 +3650,7 @@ function bindBoardFilters() {
   if (!search || !category || !mode || !results) return;
   const render = () => {
     const term = search.value.trim().toLowerCase();
-    const filtered = state.posts.filter((post) => boardMatches(post, term, category.value, mode.value));
+    const filtered = visibleBoardPosts().filter((post) => boardMatches(post, term, category.value, mode.value));
     results.innerHTML = filtered.length ? filtered.map(postSummaryCard).join("") : `<p class="muted">No threads match those filters.</p>`;
     bindOpenBoardPosts();
   };
@@ -3347,7 +3687,17 @@ function bindDeleteButtons() {
     button.addEventListener("click", async () => {
       try {
         if (button.dataset.deleteType === "post") await deleteBoardPostRecord(button.dataset.id);
-        else deleteItem(button.dataset.deleteType, button.dataset.id);
+        else {
+          if (contentBackendAvailable && button.dataset.deleteType === "project") {
+            const { error } = await portalBackend.from("hub_projects").delete().eq("id", button.dataset.id);
+            if (error) throw error;
+          }
+          if (contentBackendAvailable && button.dataset.deleteType === "quote") {
+            const { error } = await portalBackend.from("quote_requests").delete().eq("id", button.dataset.id);
+            if (error) throw error;
+          }
+          deleteItem(button.dataset.deleteType, button.dataset.id);
+        }
         saveState();
         renderView(currentView);
       } catch (error) {
@@ -3551,6 +3901,7 @@ async function boot() {
   try {
     await syncSecureSession();
     await loadSecureBoards();
+    await loadSecureSubmissions();
   } catch (error) {
     state.sessionEmail = "";
     saveState();
@@ -3581,7 +3932,7 @@ async function boot() {
         closeAuth();
         setLoggedInView();
       } else {
-        $("#authStatus").textContent = "Account created. Check your email to verify it, then sign in. Your JP Innovation email will become the admin account after sign-in.";
+        $("#authStatus").textContent = "Account created. Check your email to verify it, then sign in.";
         if (typeof registerForm?.reset === "function") registerForm.reset();
         setAuthTab("signin");
       }
@@ -3701,9 +4052,9 @@ async function boot() {
   });
   $("#notificationBell")?.addEventListener("click", (event) => {
     event.stopPropagation();
-    const willOpen = !$("#notificationPopover")?.classList.contains("open");
+    renderView("notifications");
     setMemberProfileMenuOpen(false);
-    setNotificationsOpen(willOpen);
+    setMobileDashboardMenuOpen(false);
   });
   $("#closeNotifications")?.addEventListener("click", (event) => {
     event.stopPropagation();
