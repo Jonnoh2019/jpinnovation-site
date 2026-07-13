@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=centred-dialogs-20260713">
+    <link rel="stylesheet" href="styles.css?v=launch-usability-20260713">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -65,13 +65,23 @@
           <h2>Simple tools for your project.</h2>
         </div>
         <div class="landing-points" aria-label="Client Portal feature list">
-          <article><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 9h8M8 13h8M8 17h5"/></svg></span><div><h3>Quotes</h3><p>Request, review and respond.</p></div></article>
-          <article><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V6h6l2 2h8v11zM8 13h8M8 16h5"/></svg></span><div><h3>Projects</h3><p>See progress and next steps.</p></div></article>
-          <article><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4zM8 9h8M8 12h5"/></svg></span><div><h3>Messages</h3><p>Keep decisions easy to find.</p></div></article>
-          <article><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 1 1-6.2 3.8M4 3v5h5"/></svg></span><div><h3>Repeat work</h3><p>Send revisions and new requests faster.</p></div></article>
+          <button class="landing-feature-button" data-client-feature="quotes" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 9h8M8 13h8M8 17h5"/></svg></span><span><strong>Quotes</strong><small>Request, review and respond.</small></span><b aria-hidden="true">+</b></button>
+          <button class="landing-feature-button" data-client-feature="projects" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V6h6l2 2h8v11zM8 13h8M8 16h5"/></svg></span><span><strong>Projects</strong><small>See progress and next steps.</small></span><b aria-hidden="true">+</b></button>
+          <button class="landing-feature-button" data-client-feature="messages" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4zM8 9h8M8 12h5"/></svg></span><span><strong>Messages</strong><small>Keep decisions easy to find.</small></span><b aria-hidden="true">+</b></button>
+          <button class="landing-feature-button" data-client-feature="repeat" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 1 1-6.2 3.8M4 3v5h5"/></svg></span><span><strong>Repeat work</strong><small>Send revisions and new requests faster.</small></span><b aria-hidden="true">+</b></button>
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="clientFeatureDialog" class="auth-dialog feature-preview-dialog" aria-hidden="true">
+    <div class="auth-card feature-preview-card" role="dialog" aria-modal="true" aria-labelledby="clientFeatureTitle">
+      <button class="close-button" id="closeClientFeature" aria-label="Close feature preview">x</button>
+      <p class="eyebrow" id="clientFeatureLabel">Client Portal feature</p>
+      <h2 id="clientFeatureTitle">Client Portal feature</h2>
+      <div id="clientFeatureBody"></div>
+      <button id="clientFeatureSignIn" class="primary-button" type="button">Open Client Portal</button>
+    </div>
   </div>
 
   <div id="authDialog" class="auth-dialog" aria-hidden="true">
@@ -190,6 +200,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=boards-launch-ready-20260713"></script>
+  <script src="app.js?v=launch-usability-20260713"></script>
 </body>
 </html>
