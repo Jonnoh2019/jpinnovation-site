@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=compact-mobile-admin-auth-20260713">
+    <link rel="stylesheet" href="styles.css?v=real-content-moderation-20260713">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -189,25 +189,16 @@
               </div>
               <span class="member-chip-alert" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
-                <b id="profileAlertCount" class="member-chip-count">3</b>
+                <b id="profileAlertCount" class="member-chip-count hidden">0</b>
               </span>
             </button>
             <div id="memberProfileMenu" class="member-profile-menu" aria-hidden="true">
               <button class="profile-menu-link" data-profile-view="profile" type="button"><strong>My Profile</strong><small>View and edit your details</small></button>
-              <div class="notification-centre profile-notification-centre">
-                <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications" aria-expanded="false" aria-controls="notificationPopover"><strong>Notifications</strong><small>View recent updates</small><span id="notificationCount" class="menu-count">3</span></button>
-              </div>
+              <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications"><strong>Notifications</strong><small>Approvals and account updates</small><span id="notificationCount" class="menu-count hidden">0</span></button>
               <button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><strong>Messages</strong><small>Open your private inbox</small><span id="messageCount" class="menu-count hidden">0</span></button>
               <button class="profile-menu-link" data-profile-view="settings" type="button"><strong>Account settings</strong><small>Preferences and security</small></button>
               <button id="logoutButton" class="profile-menu-link profile-menu-signout" type="button"><strong>Sign out</strong><small>Sign out on this device</small></button>
             </div>
-          </div>
-          <div id="notificationPopover" class="notification-popover" role="dialog" aria-label="Notifications">
-            <div class="notification-heading">
-              <div><span class="badge">Updates</span><h3>Notifications</h3></div>
-              <button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">x</button>
-            </div>
-            <div id="notificationList" class="notification-list"></div>
           </div>
         </div>
       </header>
@@ -217,6 +208,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=compact-mobile-admin-auth-20260713"></script>
+  <script src="app.js?v=real-content-moderation-20260713"></script>
 </body>
 </html>
