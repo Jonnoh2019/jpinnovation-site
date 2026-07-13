@@ -175,7 +175,7 @@ async function trackPageView() {
 }
 
 function countHelpfulReplies(post) {
-  return (post.responses || []).filter((reply) => reply.helpful).length;
+  return visibleBoardReplies(post).filter((reply) => reply.helpful && reply.moderationStatus === "approved").length;
 }
 
 function boardMatches(post, term, category, mode) {
@@ -244,6 +244,7 @@ function emptySeedState() {
     resources: defaultResources(),
     flagged: [],
     helpfulAwards: [],
+    seenBoardReplyIds: [],
     rewardMonth: "July 2026",
     rewardPrize: "GBP 50 workshop voucher",
     realContentCleanupVersion: 4,
@@ -264,6 +265,7 @@ function normaliseState() {
   state.rewardPrize ||= "GBP 50 workshop voucher";
   state.rewardPrize = String(state.rewardPrize).replace(/\u00A3/g, "GBP ").replace(/[^\x20-\x7E]+/g, "").replace(/GBP\s*GBP/g, "GBP").trim();
   state.helpfulAwards ||= [];
+  state.seenBoardReplyIds ||= [];
   state.resources ||= defaultResources();
   state.applications ||= [];
   state.flagged ||= [];
@@ -336,6 +338,10 @@ function normaliseState() {
         helpful: false
       }
     ];
+    post.responses.forEach((reply) => {
+      reply.moderationStatus ||= "approved";
+      reply.createdAt ||= reply.created === "Just now" ? new Date().toISOString() : "";
+    });
   });
   state.projects.forEach((project) => {
     project.example = project.example === true;
@@ -805,6 +811,7 @@ function mapBoardPost(row) {
       authorId: reply.author_id,
       body: reply.body,
       helpful: reply.helpful === true,
+      moderationStatus: reply.moderation_status || "approved",
       created: formatBoardDate(reply.created_at),
       createdAt: reply.created_at
     })).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
@@ -833,7 +840,7 @@ async function loadSecureBoards() {
   if (!portalBackend || !user || isClientPortalContext(user)) return false;
   const { data, error } = await portalBackend
     .from("board_posts")
-    .select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,moderation_status,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful)")
+    .select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,moderation_status,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful,moderation_status)")
     .order("created_at", { ascending: false });
   if (error) {
     boardBackendAvailable = false;
@@ -1006,23 +1013,25 @@ async function deleteBoardPostRecord(postId) {
 async function createBoardReplyRecord(post, body, user) {
   if (boardBackendAvailable) {
     const { data: row, error } = await portalBackend.from("board_replies").insert({
-      post_id: post.id, body, author_id: user.id, author_name: user.name
-    }).select("id,body,author_id,author_name,created_at,updated_at,helpful").single();
+      post_id: post.id, body, author_id: user.id, author_name: user.name, moderation_status: "pending"
+    }).select("id,body,author_id,author_name,created_at,updated_at,helpful,moderation_status").single();
     if (error) throw error;
     return {
       id: row.id, author: row.author_name, authorId: row.author_id, body: row.body,
-      helpful: row.helpful === true, created: formatBoardDate(row.created_at), createdAt: row.created_at
+      helpful: row.helpful === true, moderationStatus: row.moderation_status || "pending",
+      created: formatBoardDate(row.created_at), createdAt: row.created_at
     };
   }
-  return { id: uid("reply"), author: user.name, authorEmail: user.email, authorId: user.id, body, helpful: false, created: "Just now" };
+  return { id: uid("reply"), author: user.name, authorEmail: user.email, authorId: user.id, body, helpful: false, moderationStatus: "pending", created: "Just now", createdAt: new Date().toISOString() };
 }
 
 async function updateBoardReplyRecord(post, reply, body) {
   if (boardBackendAvailable) {
-    const { error } = await portalBackend.from("board_replies").update({ body }).eq("id", reply.id).eq("post_id", post.id);
+    const { error } = await portalBackend.from("board_replies").update({ body, moderation_status: "pending" }).eq("id", reply.id).eq("post_id", post.id);
     if (error) throw error;
   }
   reply.body = body;
+  reply.moderationStatus = "pending";
 }
 
 async function deleteBoardReplyRecord(post, replyId) {
@@ -1303,9 +1312,8 @@ function setLoggedInView() {
   $("#memberInitials").textContent = userInitials(user);
   $("#memberName").textContent = user.name;
   $("#memberRole").textContent = isClient ? "Client Portal" : roleLabel(user);
-  $("#adminNav").classList.toggle("hidden", user.role !== "admin" || isClient);
+  $("#profileAdminLink")?.classList.toggle("hidden", user.role !== "admin" || isClient);
   $all(".nav-link").forEach((button) => {
-    if (button.id === "adminNav") return;
     button.classList.toggle("hidden", isClient && !clientViews.has(button.dataset.view));
   });
   $(".workspace-header .eyebrow").textContent = isClient ? "Client Portal" : "Innovation Hub";
@@ -1512,6 +1520,7 @@ function renderNotifications() {
     profileAlertCount.textContent = unread > 9 ? "9+" : String(unread);
     profileAlertCount.classList.toggle("hidden", unread === 0);
   }
+  renderProfileChatNotifications(items);
 }
 
 function notificationItems(user = currentUser()) {
@@ -1522,10 +1531,16 @@ function notificationItems(user = currentUser()) {
   if (user.role === "admin") {
     const pendingAccess = secureAdminProfiles.filter((profile) => profile.membership_status === "pending").length;
     const pendingPosts = state.posts.filter((post) => post.moderationStatus === "pending").length;
+    const pendingReplies = state.posts.flatMap((post) => (post.responses || []).filter((reply) => reply.moderationStatus === "pending").map((reply) => ({ post, reply })));
     const pendingProjects = state.projects.filter((project) => project.moderationStatus === "pending").length;
     const pendingQuotes = state.quotes.filter((quote) => quote.status === "jp-review").length;
     if (pendingAccess) items.push({ title: `${pendingAccess} access request${pendingAccess === 1 ? "" : "s"}`, detail: "Approve or reject access in Admin Review.", isNew: true, view: "admin", targetId: "adminAccessRequests" });
     if (pendingPosts) items.push({ title: `${pendingPosts} post${pendingPosts === 1 ? "" : "s"} awaiting moderation`, detail: "Review posts before publication.", isNew: true, view: "admin", targetId: "adminPostModeration" });
+    pendingReplies.slice(0, 5).forEach(({ post, reply }) => items.push({
+      title: `New reply: ${post.title}`,
+      detail: `${reply.author} submitted a reply for approval.`,
+      isNew: true, view: "boards", kind: "board", postId: post.id, replyId: reply.id
+    }));
     if (pendingProjects) items.push({ title: `${pendingProjects} project${pendingProjects === 1 ? "" : "s"} awaiting moderation`, detail: "Review member projects before publication.", isNew: true, view: "admin", targetId: "adminProjectModeration" });
     if (pendingQuotes) items.push({ title: `${pendingQuotes} quote request${pendingQuotes === 1 ? "" : "s"} awaiting review`, detail: "Review them in the admin quote queue.", isNew: true, view: "admin", targetId: "adminQuoteQueue" });
   } else {
@@ -1535,8 +1550,44 @@ function notificationItems(user = currentUser()) {
     if (pendingPosts) items.push({ title: `${pendingPosts} post${pendingPosts === 1 ? "" : "s"} awaiting approval`, detail: "JP Innovation will publish approved posts.", isNew: true, view: "boards" });
     if (pendingProjects) items.push({ title: `${pendingProjects} project${pendingProjects === 1 ? "" : "s"} awaiting approval`, detail: "JP Innovation will publish approved projects.", isNew: true, view: "projects" });
     if (pendingQuotes) items.push({ title: `${pendingQuotes} quote request${pendingQuotes === 1 ? "" : "s"} under review`, detail: "JP Innovation is reviewing the scope.", isNew: true, view: "quotes" });
+    const boardActivity = state.posts.flatMap((post) => (post.responses || [])
+      .filter((reply) => reply.authorId !== user.id && reply.moderationStatus === "approved" && (post.authorId === user.id || post.authorEmail === user.email))
+      .map((reply) => ({ post, reply })))
+      .sort((a, b) => new Date(b.reply.createdAt || 0) - new Date(a.reply.createdAt || 0));
+    boardActivity.slice(0, 5).forEach(({ post, reply }) => items.push({
+      title: `Reply to: ${post.title}`,
+      detail: `${reply.author} replied in ${post.category}.`,
+      isNew: !state.seenBoardReplyIds.includes(reply.id), view: "boards", kind: "board", postId: post.id, replyId: reply.id
+    }));
   }
   return items;
+}
+
+function renderProfileChatNotifications(items = notificationItems(currentUser())) {
+  const mount = $("#profileChatNotifications");
+  if (!mount) return;
+  const chatItems = items.filter((item) => item.kind === "board").slice(0, 4);
+  mount.innerHTML = chatItems.length ? `
+    <p class="profile-menu-label">Board activity</p>
+    ${chatItems.map((item) => `<button class="profile-chat-alert" data-post-id="${escapeHtml(item.postId)}" data-reply-id="${escapeHtml(item.replyId || "")}" type="button"><span aria-hidden="true">&#128172;</span><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>${item.isNew ? `<b>New</b>` : ""}</button>`).join("")}
+  ` : "";
+  $all(".profile-chat-alert", mount).forEach((button) => button.addEventListener("click", () => {
+    openBoardNotification(button.dataset.postId, button.dataset.replyId);
+  }));
+}
+
+function openBoardNotification(postId, replyId = "") {
+  const post = state.posts.find((item) => item.id === postId);
+  if (!post) return;
+  if (replyId && !state.seenBoardReplyIds.includes(replyId)) state.seenBoardReplyIds.push(replyId);
+  activeBoardCategory = post.category === "General Engineering Chat" ? "General Chat" : post.category;
+  activeBoardPostId = post.id;
+  saveState();
+  setMemberProfileMenuOpen(false);
+  setMobileDashboardMenuOpen(false);
+  renderView("boards");
+  renderNotifications();
+  window.requestAnimationFrame(() => document.getElementById(`reply-${replyId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }));
 }
 
 function unreadMessageCount(user = currentUser()) {
@@ -1966,13 +2017,19 @@ function visibleBoardPosts(user = currentUser()) {
   return state.posts.filter((post) => post.moderationStatus === "approved" || post.authorId === user.id || post.authorEmail === user.email);
 }
 
+function visibleBoardReplies(post, user = currentUser()) {
+  if (!user) return [];
+  if (user.role === "admin") return post.responses || [];
+  return (post.responses || []).filter((reply) => reply.moderationStatus === "approved" || reply.authorId === user.id || reply.authorEmail === user.email);
+}
+
 function renderBoards() {
   const posts = visibleBoardPosts();
   const activePost = posts.find((post) => post.id === activeBoardPostId);
   if (activePost) {
     return `
       <section class="section-card section-cyan board-thread-detail">
-        <button class="secondary-button board-back-button" type="button">Back to Engineering Boards</button>
+        <button class="secondary-button board-back-button" type="button">&larr; Back to ${escapeHtml(activeBoardCategory || activePost.category)}</button>
         ${postCard(activePost)}
       </section>
     `;
@@ -1990,43 +2047,33 @@ function renderBoards() {
         </div>
         <div class="meta-row"><span class="pill">${categoryPosts.length} ${categoryPosts.length === 1 ? "thread" : "threads"}</span><span class="pill ${boardBackendAvailable ? "good" : "warn"}">${escapeHtml(boardBackendMessage)}</span></div>
       </section>
-      ${renderBoardPostComposer(activeBoardCategory)}
       <section class="section-card section-cyan">
-        <div class="list-title"><div><h2>Discussion threads</h2><p>Open a thread to read replies or add your own.</p></div></div>
-        <div class="feed-list">${categoryPosts.length ? categoryPosts.map(postSummaryCard).join("") : `<div class="board-empty-state"><strong>No discussions yet.</strong><p>Start the first ${escapeHtml(activeBoardCategory)} thread above.</p></div>`}</div>
+        <div class="list-title"><div><h2>Threads</h2><p>Select a title to open the conversation and reply.</p></div></div>
+        <div class="board-thread-list">${categoryPosts.length ? categoryPosts.map(postThreadRow).join("") : `<div class="board-empty-state"><strong>No discussions yet.</strong><p>Start the first ${escapeHtml(activeBoardCategory)} thread below.</p></div>`}</div>
       </section>
+      ${renderBoardPostComposer(activeBoardCategory)}
     `;
   }
   return `
-    <section class="section-card section-cyan boards-launch-hero">
-      <div><p class="eyebrow">Main Hub feature</p><h2>Engineering Boards</h2><p class="muted">Choose a board to see its discussion threads, ask a question or share practical knowledge.</p></div>
-      <button class="primary-button open-general-chat" type="button">Open General Chat</button>
-      <div class="metrics-grid dashboard-metrics">
-        ${metric("Threads", posts.length)}
-        ${metric("Need replies", unanswered)}
-        ${metric("Need helpful answer", needsHelp)}
-        ${metric("Helpful replies", helpfulReplies)}
-      </div>
-    </section>
-    <section class="section-card section-cyan">
-      <div class="list-title"><div><h2>Choose a board</h2><p>Each board opens its own list of member-created threads.</p></div></div>
+    <section class="section-card section-cyan board-directory">
+      <div class="list-title"><div><h2>Choose a board</h2><p>Open a subject area to see its thread titles.</p></div><span class="pill">${posts.length} threads</span></div>
       <div class="board-grid">${boardCategories.map((category) => {
         const count = posts.filter((post) => post.category === category || (category === "General Chat" && post.category === "General Engineering Chat")).length;
-        return `<button class="board-card board-category-button" data-board-category="${escapeHtml(category)}" type="button"><span class="badge">${escapeHtml(category)}</span><h3>${escapeHtml(category)}</h3><p>${boardDescription(category)}</p><small class="board-card-count">${count} ${count === 1 ? "thread" : "threads"} &rarr;</small></button>`;
+        return `<button class="board-card board-category-button" data-board-category="${escapeHtml(category)}" type="button"><span class="board-card-icon" aria-hidden="true">&#128172;</span><h3>${escapeHtml(category)}</h3><p>${boardDescription(category)}</p><small class="board-card-count">${count} ${count === 1 ? "thread" : "threads"} &rarr;</small></button>`;
       }).join("")}</div>
     </section>
-    <section class="section-card section-cyan">
-      <div class="list-title"><div><h2>Latest discussions</h2><p>New approved threads from across every board.</p></div></div>
-      <div class="feed-list">${posts.length ? posts.slice(0, 8).map(postSummaryCard).join("") : `<div class="board-empty-state"><strong>No discussions yet.</strong><p>Open General Chat or choose a specialist board to start the first thread.</p></div>`}</div>
+    <section class="section-card board-overview-strip">
+      ${metric("Need replies", unanswered)}
+      ${metric("Need helpful answer", needsHelp)}
+      ${metric("Helpful replies", helpfulReplies)}
     </section>
   `;
 }
 
 function renderBoardPostComposer(selectedCategory = "General Chat") {
   return `
-    <section class="section-card section-cyan">
-      <h2>Start a discussion</h2>
-      <p class="muted">Posts are sent to JP Innovation for approval before other members see them.</p>
+    <details class="section-card section-cyan board-composer">
+      <summary><strong>+ Start a new thread</strong><span>Sent to JP Innovation for approval</span></summary>
       <form id="postForm" class="form-grid two">
         <label>Thread title <input name="title" required placeholder="What would you like help with?"></label>
         <label>Board <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === selectedCategory ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label>
@@ -2034,8 +2081,13 @@ function renderBoardPostComposer(selectedCategory = "General Chat") {
         <button class="primary-button wide" type="submit">Submit thread for approval</button>
         <p id="postStatus" class="form-status wide" aria-live="polite"></p>
       </form>
-    </section>
+    </details>
   `;
+}
+
+function postThreadRow(post) {
+  const replies = visibleBoardReplies(post);
+  return `<button class="board-thread-row open-board-post" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${escapeHtml(post.title)}</strong><small>${escapeHtml(post.author)} &middot; ${escapeHtml(post.created || "Today")}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>${post.moderationStatus !== "approved" ? `<span class="pill warn">Pending</span>` : ""}<span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
 function boardDescription(category) {
@@ -2402,7 +2454,7 @@ function renderNotificationsView() {
       <div class="list-title"><div><h2>Notifications</h2><p>Only genuine account activity and items requiring action appear here.</p></div><span class="pill ${items.length ? "warn" : "good"}">${items.length}</span></div>
       <div class="notification-page-list">
         ${items.length ? items.map((item) => `
-          <button class="notification-page-item dashboard-link" data-view-link="${escapeHtml(item.view)}" data-target-id="${escapeHtml(item.targetId || "")}" type="button">
+          <button class="notification-page-item dashboard-link" data-view-link="${escapeHtml(item.view)}" data-target-id="${escapeHtml(item.targetId || "")}" data-post-id="${escapeHtml(item.postId || "")}" data-reply-id="${escapeHtml(item.replyId || "")}" type="button">
             <strong>${escapeHtml(item.title)}</strong>
             <span>${escapeHtml(item.detail)}</span>
           </button>
@@ -2657,6 +2709,7 @@ function renderAdmin(user) {
   if (user.role !== "admin") return `<section class="section-card"><h2>Not available</h2><p class="muted">Admin review is only visible to JP Innovation admins.</p></section>`;
   const flagged = [...state.posts.filter((post) => post.flagged || post.reports > 0), ...state.flagged];
   const moderationPosts = state.posts.filter((post) => post.moderationStatus === "pending" || post.flagged || post.reports > 0);
+  const moderationReplies = state.posts.flatMap((post) => (post.responses || []).filter((reply) => reply.moderationStatus === "pending").map((reply) => ({ post, reply })));
   const moderationProjects = state.projects.filter((project) => project.moderationStatus === "pending");
   const applications = adminProfilesStatus === "ready"
     ? secureAdminProfiles.filter((profile) => profile.membership_status === "pending").map(secureProfileApplication)
@@ -2671,7 +2724,7 @@ function renderAdmin(user) {
       <p class="muted">Everything requiring admin attention is summarised here. Open a section only when you need its controls.</p>
       <div class="metrics-grid">
         ${metric("Access requests", pendingApplications)}
-        ${metric("Post reviews", moderationPosts.length)}
+        ${metric("Post reviews", moderationPosts.length + moderationReplies.length)}
         ${metric("Project reviews", moderationProjects.length)}
         ${metric("Quote reviews", state.quotes.filter((quote) => quote.status === "jp-review").length)}
         ${metric("Suspended", suspendedAccounts)}
@@ -2748,6 +2801,21 @@ function renderAdmin(user) {
             <button class="secondary-button post-moderation-action danger-action" data-post-action="rejected" data-post-id="${escapeHtml(item.id)}" type="button">Reject</button>
           </div>
         </article>`).join("") : `<p class="muted">No flagged content right now.</p>`}
+      </div>
+    </details>
+    <details id="adminReplyModeration" class="section-card admin-fold section-blue" ${moderationReplies.length ? "open" : ""}>
+      <summary class="list-title"><div><h2>Reply moderation</h2><p>Approve replies before they appear to other members.</p></div><span class="pill ${moderationReplies.length ? "warn" : "good"}">${moderationReplies.length}</span></summary>
+      <div class="feed-list">${moderationReplies.length ? moderationReplies.map(({ post, reply }) => `
+        <article class="feed-item">
+          <span class="pill warn">Awaiting approval</span>
+          <h3>${escapeHtml(post.title)}</h3>
+          <p><strong>${escapeHtml(reply.author)}:</strong> ${escapeHtml(reply.body)}</p>
+          <div class="admin-actions">
+            <button class="primary-button reply-moderation-action" data-reply-action="approved" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Approve</button>
+            <button class="secondary-button reply-moderation-action danger-action" data-reply-action="rejected" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Reject</button>
+            <button class="secondary-button open-admin-thread" data-post-id="${escapeHtml(post.id)}" type="button">Open thread</button>
+          </div>
+        </article>`).join("") : `<p class="muted">No replies waiting for approval.</p>`}
       </div>
     </details>
     <details id="adminProjectModeration" class="section-card admin-fold section-teal" ${moderationProjects.length ? "open" : ""}>
@@ -2837,7 +2905,7 @@ function renderAdmin(user) {
 function postCard(post) {
   const user = currentUser();
   const isOwner = user?.id === post.authorId || user?.email === post.authorEmail || user?.role === "admin";
-  const replies = post.responses || [];
+  const replies = visibleBoardReplies(post, user);
   const helpfulCount = countHelpfulReplies(post);
   return `
     <article class="feed-item thread-card" id="post-${escapeHtml(post.id)}">
@@ -2857,11 +2925,12 @@ function postCard(post) {
       ${replies.length ? `
         <div class="reply-list">
           ${replies.map((reply) => `
-            <div class="reply-card">
+            <div class="reply-card" id="reply-${escapeHtml(reply.id)}">
               <p><strong>${escapeHtml(reply.author)}</strong> ${escapeHtml(reply.body)}</p>
               <div class="meta-row">
-                <span class="pill ${reply.helpful ? "good" : ""}">${reply.helpful ? "Marked helpful" : "Feedback reply"}</span>
+                <span class="pill ${reply.moderationStatus === "approved" ? (reply.helpful ? "good" : "") : "warn"}">${reply.moderationStatus === "approved" ? (reply.helpful ? "Marked helpful" : "Published reply") : reply.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>
                 ${reply.helpful || !isOwner || reply.authorId === post.authorId || reply.authorEmail === post.authorEmail ? "" : `<button class="secondary-button helpful-button" data-post-id="${post.id}" data-reply-id="${reply.id}" type="button">Mark helpful</button>`}
+                ${user?.role === "admin" && reply.moderationStatus === "pending" ? `<button class="primary-button reply-moderation-action" data-reply-action="approved" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Approve reply</button><button class="secondary-button reply-moderation-action danger-action" data-reply-action="rejected" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Reject</button>` : ""}
                 ${(user?.id === reply.authorId || user?.email === reply.authorEmail || user?.role === "admin") ? `<details class="inline-edit"><summary>Edit reply</summary><form class="edit-reply-form" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}"><textarea name="body" rows="3" required>${escapeHtml(reply.body)}</textarea><div class="card-actions"><button class="secondary-button" type="submit">Save reply</button><button class="secondary-button delete-reply-button" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Delete reply</button></div></form></details>` : ""}
               </div>
             </div>
@@ -2872,7 +2941,7 @@ function postCard(post) {
         <label>Reply with advice, a recommendation or a question
           <textarea name="body" rows="3" required placeholder="Add useful feedback..."></textarea>
         </label>
-        <button class="secondary-button" type="submit">Post reply</button>
+        <button class="secondary-button" type="submit">Submit reply for approval</button>
       </form>` : `<p class="muted">Replies open after JP Innovation approves this post.</p>`}
       <button class="secondary-button report-button" data-id="${post.id}" type="button">Report post</button>
       ${isOwner ? `<details class="post-edit-panel"><summary>Edit post</summary><form class="edit-post-form form-grid two" data-post-id="${escapeHtml(post.id)}"><label>Title <input name="title" value="${escapeHtml(post.title)}" required></label><label>Category <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === post.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label><label class="wide">Description <textarea name="description" rows="4" required>${escapeHtml(post.description)}</textarea></label><button class="primary-button" type="submit">Save changes</button><button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button></form></details>` : ""}
@@ -2881,7 +2950,7 @@ function postCard(post) {
 }
 
 function postSummaryCard(post) {
-  const replies = post.responses || [];
+  const replies = visibleBoardReplies(post);
   const helpfulCount = countHelpfulReplies(post);
   return `
     <article class="feed-item thread-card thread-summary">
@@ -3147,6 +3216,7 @@ function bindViewHandlers(view) {
     bindReports();
     bindHelpfulButtons();
     bindReplyForms();
+    bindReplyModerationActions();
     bindBoardFilters();
     bindOpenBoardPosts();
     bindBoardCategoryButtons();
@@ -3382,6 +3452,7 @@ function bindViewHandlers(view) {
     bindApplicationActions();
     bindAdminActions();
     bindPostModerationActions();
+    bindReplyModerationActions();
     bindProjectModerationActions();
     bindQuoteActions();
     loadSiteAnalytics();
@@ -3511,6 +3582,30 @@ function bindPostModerationActions() {
       }
     });
   });
+}
+
+function bindReplyModerationActions() {
+  $all(".reply-moderation-action").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const post = state.posts.find((item) => item.id === button.dataset.postId);
+      const reply = post?.responses?.find((item) => item.id === button.dataset.replyId);
+      if (!post || !reply) return;
+      const moderationStatus = button.dataset.replyAction;
+      try {
+        if (boardBackendAvailable) {
+          const { error } = await portalBackend.from("board_replies").update({ moderation_status: moderationStatus }).eq("id", reply.id).eq("post_id", post.id);
+          if (error) throw error;
+        }
+        reply.moderationStatus = moderationStatus;
+        saveState();
+        renderNotifications();
+        renderView(currentView);
+      } catch (error) {
+        window.alert(error.message || "The reply moderation update failed.");
+      }
+    });
+  });
+  $all(".open-admin-thread").forEach((button) => button.addEventListener("click", () => openBoardNotification(button.dataset.postId)));
 }
 
 function bindProjectModerationActions() {
@@ -3763,6 +3858,10 @@ function bindResourceTools() {
 function bindDashboardLinks() {
   $all(".dashboard-link").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.dataset.postId) {
+        openBoardNotification(button.dataset.postId, button.dataset.replyId || "");
+        return;
+      }
       renderView(button.dataset.viewLink);
       const targetId = button.dataset.targetId;
       if (!targetId) return;
