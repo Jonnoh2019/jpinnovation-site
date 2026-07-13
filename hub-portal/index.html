@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=chat-summary-minimise-20260713">
+    <link rel="stylesheet" href="styles.css?v=board-purpose-profile-menu-20260713">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -135,14 +135,10 @@
         <button class="nav-link" data-view="onboarding"><span class="nav-icon" aria-hidden="true">&#10003;</span><span>Profile Setup</span></button>
         <button class="nav-link featured-nav" data-view="boards"><span class="nav-icon" aria-hidden="true">&#128172;</span><span>Engineering Boards</span></button>
         <button class="nav-link" data-view="projects"><span class="nav-icon" aria-hidden="true">&#9638;</span><span>Projects</span></button>
-        <button class="nav-link" data-view="quotes"><span class="nav-icon" aria-hidden="true">&#163;</span><span>Quote Requests</span></button>
         <button class="nav-link" data-view="directory"><span class="nav-icon" aria-hidden="true">&#9678;</span><span>Member Directory</span></button>
         <button class="nav-link" data-view="resources"><span class="nav-icon" aria-hidden="true">&#9881;</span><span>Resources &amp; Tools</span></button>
         <button class="nav-link" data-view="events"><span class="nav-icon" aria-hidden="true">&#9636;</span><span>Events</span></button>
-        <button class="nav-link" data-view="messages"><span class="nav-icon" aria-hidden="true">&#9993;</span><span>Messages</span></button>
         <button class="nav-link" data-view="rewards"><span class="nav-icon" aria-hidden="true">&#9733;</span><span>Rewards</span></button>
-        <button class="nav-link" data-view="profile"><span class="nav-icon" aria-hidden="true">&#9675;</span><span>My Profile</span></button>
-        <button class="nav-link" data-view="settings"><span class="nav-icon" aria-hidden="true">&#9881;</span><span>Settings</span></button>
       </nav>
       <a class="secondary-button site-return-button" href="../index.html">Back to JP Innovation Site</a>
     </aside>
@@ -184,13 +180,15 @@
               </span>
             </button>
             <div id="memberProfileMenu" class="member-profile-menu" aria-hidden="true">
-              <button class="profile-menu-link" data-profile-view="profile" type="button"><strong>My Profile</strong><small>View and edit your details</small></button>
-              <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications"><strong>Notifications</strong><small>Approvals and account updates</small><span id="notificationCount" class="menu-count hidden">0</span></button>
+              <button class="profile-menu-link" data-profile-view="profile" type="button"><span class="profile-menu-icon" aria-hidden="true">&#9675;</span><span><strong>My profile</strong><small>View and edit your details</small></span></button>
+              <button id="profileMyPosts" class="profile-menu-link" data-profile-action="my-posts" type="button"><span class="profile-menu-icon" aria-hidden="true">&#128172;</span><span><strong>My posts</strong><small>Your board threads and replies</small></span></button>
+              <button class="profile-menu-link" data-profile-action="my-quotes" type="button"><span class="profile-menu-icon" aria-hidden="true">&#163;</span><span><strong>My quotes</strong><small>Your requests and responses</small></span></button>
+              <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications"><span class="profile-menu-icon" aria-hidden="true">&#9679;</span><span><strong>Notifications</strong><small>Approvals and account updates</small></span><span id="notificationCount" class="menu-count hidden">0</span></button>
               <div id="profileChatNotifications" class="profile-chat-notifications" aria-live="polite"></div>
-              <button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><strong>Messages</strong><small>Open your private inbox</small><span id="messageCount" class="menu-count hidden">0</span></button>
-              <button class="profile-menu-link" data-profile-view="settings" type="button"><strong>Account settings</strong><small>Preferences and security</small></button>
-              <button id="profileAdminLink" class="profile-menu-link hidden" data-profile-view="admin" type="button"><strong>Admin review</strong><small>Approvals, moderation and account access</small></button>
-              <button id="logoutButton" class="profile-menu-link profile-menu-signout" type="button"><strong>Sign out</strong><small>Sign out on this device</small></button>
+              <button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><span class="profile-menu-icon" aria-hidden="true">&#9993;</span><span><strong>My messages</strong><small>Open your private inbox</small></span><span id="messageCount" class="menu-count hidden">0</span></button>
+              <button class="profile-menu-link" data-profile-view="settings" type="button"><span class="profile-menu-icon" aria-hidden="true">&#9881;</span><span><strong>Account settings</strong><small>Preferences and security</small></span></button>
+              <button id="profileAdminLink" class="profile-menu-link hidden" data-profile-view="admin" type="button"><span class="profile-menu-icon" aria-hidden="true">&#10003;</span><span><strong>Admin review</strong><small>Approvals, moderation and account access</small></span></button>
+              <button id="logoutButton" class="profile-menu-link profile-menu-signout" type="button"><span class="profile-menu-icon" aria-hidden="true">&#8594;</span><span><strong>Sign out</strong><small>Sign out on this device</small></span></button>
             </div>
           </div>
         </div>
@@ -201,6 +199,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=chat-summary-minimise-20260713"></script>
+  <script src="app.js?v=board-purpose-profile-menu-20260713"></script>
 </body>
 </html>
