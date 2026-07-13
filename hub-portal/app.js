@@ -2321,18 +2321,20 @@ function renderAdmin(user) {
   const flagged = [...state.posts.filter((post) => post.flagged || post.reports > 0), ...state.flagged];
   const applications = adminProfilesStatus === "ready"
     ? secureAdminProfiles.filter((profile) => profile.membership_status === "pending").map(secureProfileApplication)
-    : (state.applications || []);
+    : (state.applications || []).filter((application) => !application.example && application.created !== "Example");
   const pendingApplications = applications.filter((application) => application.status === "pending").length;
+  const suspendedAccounts = (adminProfilesStatus === "ready" ? secureAdminProfiles.map(secureProfileUser) : state.users).filter((item) => item.suspended).length;
+  const openAdminQuotes = state.quotes.filter((quote) => quote.status !== "closed").length;
   return `
     <section class="section-card section-violet admin-control-hero">
       <p class="eyebrow">Private administration</p>
       <h2>Admin control centre</h2>
-      <p class="muted">Manage access, accounts, moderation, analytics, launch readiness and private quote workflows. These controls are never shown on the member Dashboard.</p>
+      <p class="muted">Everything requiring admin attention is summarised here. Open a section only when you need its controls.</p>
       <div class="metrics-grid">
         ${metric("Access requests", pendingApplications)}
         ${metric("Flagged items", flagged.length)}
-        ${metric("Verified members", state.members.filter((item) => item.verified).length)}
-        ${metric("Suspended", state.users.filter((item) => item.suspended).length)}
+        ${metric("Open quotes", openAdminQuotes)}
+        ${metric("Suspended", suspendedAccounts)}
       </div>
     </section>
     <section class="section-card admin-live-status ${adminProfilesStatus === "ready" ? "section-lime" : "section-amber"}">
@@ -2342,14 +2344,14 @@ function renderAdmin(user) {
       </div>
       <button id="refreshAdminProfiles" class="secondary-button" type="button">Refresh registrations</button>
     </section>
-    <section class="section-card section-blue">
-      <div class="list-title"><div><h2>Private website analytics</h2><p>Only JP Innovation admins can see this. It records anonymous page views, daily visitors and device type.</p></div></div>
+    <details class="section-card admin-fold section-blue">
+      <summary class="list-title"><div><h2>Website analytics</h2><p>Private views, visitors and device information.</p></div></summary>
       <div id="analyticsPanel">
         <p class="muted">Loading private site analytics...</p>
       </div>
-    </section>
-    <section class="section-card section-violet">
-      <div class="list-title"><div><h2>Access applications</h2><p>Review people before creating a member login.</p></div><span class="pill warn">${pendingApplications} pending</span></div>
+    </details>
+    <details id="adminAccessRequests" class="section-card admin-fold section-violet" ${pendingApplications ? "open" : ""}>
+      <summary class="list-title"><div><h2>Access applications</h2><p>Approve or reject Innovation Hub access.</p></div><span class="pill warn">${pendingApplications} pending</span></summary>
       <div class="application-list">
         ${applications.length ? applications.map((application) => `
           <article class="application-card ${escapeHtml(application.status)}">
@@ -2393,18 +2395,9 @@ function renderAdmin(user) {
           </article>
         `).join("") : `<p class="muted">No access requests yet.</p>`}
       </div>
-    </section>
-    <section class="section-card admin-create-panel">
-      <div class="list-title"><div><h2>Safe account process</h2><p>Users create their own password through Register. Their Hub request then appears above for you to approve or reject.</p></div></div>
-      <ul class="compact-list">
-        <li>Client Portal registration creates a free customer account.</li>
-        <li>Innovation Hub registration creates an approval request.</li>
-        <li>Approve Hub access here; never create or share somebody else's password.</li>
-      </ul>
-      <a class="secondary-button" href="../hub/index.html?register=1">Open the Hub registration page</a>
-    </section>
-    <section class="section-card section-rose">
-      <h2>Flagged content</h2>
+    </details>
+    <details class="section-card admin-fold section-rose" ${flagged.length ? "open" : ""}>
+      <summary class="list-title"><div><h2>Flagged content</h2><p>Review reported posts and messages.</p></div><span class="pill ${flagged.length ? "warn" : "good"}">${flagged.length}</span></summary>
       <div class="feed-list">${flagged.length ? flagged.map((item) => `
         <article class="feed-item">
           <span class="pill warn">Review</span>
@@ -2412,9 +2405,9 @@ function renderAdmin(user) {
           <p>${escapeHtml(item.description || item.reason || "")}</p>
         </article>`).join("") : `<p class="muted">No flagged content right now.</p>`}
       </div>
-    </section>
-    <section class="section-card section-amber">
-      <div class="list-title"><div><h2>Launch checklist</h2><p>Use this to keep the portal honest before it is opened to paying members.</p></div></div>
+    </details>
+    <details class="section-card admin-fold section-amber">
+      <summary class="list-title"><div><h2>Launch checklist</h2><p>Track remaining launch work.</p></div></summary>
       <div class="launch-checklist">
         ${(state.launchChecklist || []).map((item) => `
           <article class="launch-item">
@@ -2432,9 +2425,9 @@ function renderAdmin(user) {
           </article>
         `).join("")}
       </div>
-    </section>
-    <section class="section-card section-violet">
-      <div class="list-title"><div><h2>Quote Hub queue</h2><p>Control when requests move from JP review to verified member quoting.</p></div></div>
+    </details>
+    <details class="section-card admin-fold section-violet">
+      <summary class="list-title"><div><h2>Quote queue</h2><p>Review and control private quote requests.</p></div><span class="pill">${openAdminQuotes} open</span></summary>
       <div class="quote-admin-queue">
         ${state.quotes.map((quote) => `
           <article class="quote-queue-row">
@@ -2452,9 +2445,9 @@ function renderAdmin(user) {
           </article>
         `).join("") || `<p class="muted">No quote requests yet.</p>`}
       </div>
-    </section>
-    <section class="section-card section-lime">
-      <div class="list-title"><div><h2>Client Portal and Innovation Hub accounts</h2><p>Create Client Portal accounts, upgrade them to Innovation Hub members, or move members back to Client Portal access.</p></div></div>
+    </details>
+    <details class="section-card admin-fold section-lime">
+      <summary class="list-title"><div><h2>Account management</h2><p>Upgrade, verify or suspend registered accounts.</p></div></summary>
       <div class="feed-list">
         ${(adminProfilesStatus === "ready" ? secureAdminProfiles.map(secureProfileUser) : state.users).map((member) => `
           <article class="feed-item admin-member-row">
@@ -2479,7 +2472,7 @@ function renderAdmin(user) {
           </article>
         `).join("") || `<p class="muted">No member accounts have been created yet.</p>`}
       </div>
-    </section>
+    </details>
   `;
 }
 
