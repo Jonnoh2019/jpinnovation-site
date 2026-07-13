@@ -148,8 +148,9 @@ async function signInToHub(data) {
     .single();
   if (profileError) throw profileError;
   if ((profile.account_type || "client") === "client") {
+    await hubBackend.rpc("request_hub_access");
     await hubBackend.auth.signOut();
-    throw new Error("Your Client Portal account is active. Innovation Hub access unlocks after JP Innovation upgrades it to paid membership.");
+    throw new Error("Your Innovation Hub access request has been sent to JP Innovation. Your free Client Portal remains available while approval is pending.");
   }
   window.location.href = "../hub-portal/index.html?entry=hub";
 }
@@ -157,18 +158,20 @@ async function signInToHub(data) {
 async function registerHubAccount(data) {
   if (!hubBackend) throw new Error("Secure registration is temporarily unavailable. Please try again.");
   const email = validateEmail(data.email);
-  const { error } = await hubBackend.auth.signUp({
+  const { data: result, error } = await hubBackend.auth.signUp({
     email,
     password: data.password,
     options: {
       emailRedirectTo: `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1`,
       data: {
         full_name: String(data.fullName || "").trim(),
-        account_type: "client"
+        account_type: "client",
+        requested_access: "hub"
       }
     }
   });
   if (error) throw error;
+  if (result.session) await hubBackend.rpc("request_hub_access");
 }
 
 function buildInterestEmail(data) {
@@ -254,7 +257,7 @@ function hubAuthHandler() {
       await registerHubAccount(formData(registerForm));
       registerForm.reset();
       if (status) {
-        status.textContent = "Account created. Check your email to verify it, then sign in. Hub access unlocks after a paid membership upgrade.";
+        status.textContent = "Account created. Check your email to verify it, then sign in once to submit your Innovation Hub access request for admin approval.";
       }
     } catch (error) {
       if (status) status.textContent = error.message;
@@ -287,3 +290,4 @@ async function bootHubLanding() {
 }
 
 bootHubLanding();
+
