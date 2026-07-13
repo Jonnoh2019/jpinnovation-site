@@ -796,18 +796,6 @@ input:focus, textarea:focus, select:focus {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, .35) transparent;
 }
-.app-nav .featured-nav {
-  border-color: rgba(47,141,255,.48);
-  background: linear-gradient(135deg, rgba(0,111,230,.2), rgba(255,255,255,.045));
-  color: #f4f8fc;
-  font-weight: 900;
-}
-.app-nav .featured-nav .nav-icon { margin-right: 0; }
-.app-nav .featured-nav.active {
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
-}
-
 .boards-launch-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
