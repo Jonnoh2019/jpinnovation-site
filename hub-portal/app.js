@@ -107,6 +107,49 @@ function escapeHtml(value = "") {
   })[char]);
 }
 
+function renderFormattedPostText(value = "") {
+  const normalised = String(value || "").replace(/\r\n?/g, "\n");
+  return `<div class="formatted-post-content">${escapeHtml(normalised)}</div>`;
+}
+
+function formattingToolbar(label = "Format message") {
+  return `
+    <div class="text-format-tools" role="toolbar" aria-label="${escapeHtml(label)}">
+      <button type="button" data-text-format="bullets" title="Turn the selected lines into bullet points">&#8226; Bullets</button>
+      <button type="button" data-text-format="numbers" title="Turn the selected lines into a numbered list">1. Numbered</button>
+      <button type="button" data-text-format="quote" title="Format the selected lines as a quote">&#10095; Quote</button>
+      <small>Paragraphs, spacing and lists are kept when posted.</small>
+    </div>`;
+}
+
+function bindTextFormattingTools() {
+  $all(".text-format-tools button[data-text-format]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const editor = button.closest(".formatted-text-editor");
+      const textarea = editor?.querySelector("textarea");
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const before = textarea.value.slice(0, start);
+      const selected = textarea.value.slice(start, end);
+      const after = textarea.value.slice(end);
+      const source = selected || (button.dataset.textFormat === "numbers" ? "First item\nSecond item" : "List item");
+      let counter = 0;
+      const formatted = source.split("\n").map((line) => {
+        const clean = line.replace(/^\s*(?:[•*-]|\d+[.)]|>)\s*/, "");
+        if (!clean && selected) return "";
+        if (button.dataset.textFormat === "numbers") return `${++counter}. ${clean}`;
+        if (button.dataset.textFormat === "quote") return `> ${clean}`;
+        return `• ${clean}`;
+      }).join("\n");
+      textarea.value = `${before}${formatted}${after}`;
+      textarea.focus();
+      textarea.setSelectionRange(start, start + formatted.length);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+}
+
 function formObject(form) {
   const data = Object.fromEntries(new FormData(form).entries());
   $all("input[type='checkbox']", form).forEach((input) => {
@@ -2391,7 +2434,7 @@ function renderBoardPostComposer(selectedCategory = "General Chat") {
         <label>Thread title <input name="title" required placeholder="Add a clear title"></label>
         <label>Board <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === selectedCategory ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label>
         <label>Post type <select name="postType">${boardPostTypeOptions("information")}</select></label>
-        <label class="wide">First message <textarea name="description" rows="4" required placeholder="Add the important dimensions, constraints or context..."></textarea></label>
+        <div class="wide formatted-text-editor"><label for="newThreadDescription">First message</label>${formattingToolbar("Format first message")}<textarea id="newThreadDescription" name="description" rows="6" required placeholder="Add the important dimensions, constraints or context..."></textarea></div>
         <button class="primary-button wide" type="submit">Submit thread for approval</button>
         <p id="postStatus" class="form-status wide" aria-live="polite"></p>
       </form>
@@ -3340,7 +3383,7 @@ function postCard(post) {
         ${postPurposeBadge(post, helpfulCount)}
       </div>
       <h3>${escapeHtml(post.title)}</h3>
-      <p>${escapeHtml(post.description)}</p>
+      ${renderFormattedPostText(post.description)}
       <div class="meta-row">
         <span class="pill">${escapeHtml(post.author)}</span>
         <span class="pill">${escapeHtml(post.created || "Today")}</span>
@@ -3352,25 +3395,24 @@ function postCard(post) {
         <div class="reply-list">
           ${replies.map((reply) => `
             <div class="reply-card" id="reply-${escapeHtml(reply.id)}">
-              <p><strong>${escapeHtml(reply.author)}</strong> ${escapeHtml(reply.body)}</p>
+              <div class="reply-author"><strong>${escapeHtml(reply.author)}</strong></div>
+              ${renderFormattedPostText(reply.body)}
               <div class="meta-row">
                 <span class="pill ${reply.moderationStatus === "approved" ? (reply.helpful ? "good" : "") : "warn"}">${reply.moderationStatus === "approved" ? (reply.helpful ? "Marked helpful" : "Published reply") : reply.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>
                 ${reply.helpful || !isOwner || reply.authorId === post.authorId || reply.authorEmail === post.authorEmail ? "" : `<button class="secondary-button helpful-button" data-post-id="${post.id}" data-reply-id="${reply.id}" type="button">Mark helpful</button>`}
                 ${user?.role === "admin" && reply.moderationStatus === "pending" ? `<button class="primary-button reply-moderation-action" data-reply-action="approved" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Approve reply</button><button class="secondary-button reply-moderation-action danger-action" data-reply-action="rejected" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Reject</button>` : ""}
-                ${(user?.id === reply.authorId || user?.email === reply.authorEmail || user?.role === "admin") ? `<details class="inline-edit"><summary>Edit reply</summary><form class="edit-reply-form" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}"><textarea name="body" rows="3" required>${escapeHtml(reply.body)}</textarea><div class="card-actions"><button class="secondary-button" type="submit">Save reply</button><button class="secondary-button delete-reply-button" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Delete reply</button></div></form></details>` : ""}
+                ${(user?.id === reply.authorId || user?.email === reply.authorEmail || user?.role === "admin") ? `<details class="inline-edit"><summary>Edit reply</summary><form class="edit-reply-form" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}"><div class="formatted-text-editor">${formattingToolbar("Format reply")}<textarea name="body" rows="4" required>${escapeHtml(reply.body)}</textarea></div><div class="card-actions"><button class="secondary-button" type="submit">Save reply</button><button class="secondary-button delete-reply-button" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Delete reply</button></div></form></details>` : ""}
               </div>
             </div>
           `).join("")}
         </div>
       ` : ""}
       ${post.moderationStatus === "approved" || user?.role === "admin" ? `<form class="reply-form" data-post-id="${post.id}">
-        <label>Reply with advice, a recommendation or a question
-          <textarea name="body" rows="3" required placeholder="Add useful feedback..."></textarea>
-        </label>
+        <div class="formatted-text-editor"><label>Reply with advice, a recommendation or a question</label>${formattingToolbar("Format reply")}<textarea name="body" rows="4" required placeholder="Add useful feedback..."></textarea></div>
         <button class="secondary-button" type="submit">Submit reply for approval</button>
       </form>` : `<p class="muted">Replies open after JP Innovation approves this post.</p>`}
       <button class="secondary-button report-button" data-id="${post.id}" type="button">Report post</button>
-      ${isOwner ? `<details class="post-edit-panel"><summary>Edit post</summary><form class="edit-post-form form-grid two" data-post-id="${escapeHtml(post.id)}"><label>Title <input name="title" value="${escapeHtml(post.title)}" required></label><label>Category <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === post.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label><label>Post type <select name="postType">${boardPostTypeOptions(post.postType)}</select></label><label class="wide">Description <textarea name="description" rows="4" required>${escapeHtml(post.description)}</textarea></label><button class="primary-button" type="submit">Save changes</button><button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button></form></details>` : ""}
+      ${isOwner ? `<details class="post-edit-panel"><summary>Edit post</summary><form class="edit-post-form form-grid two" data-post-id="${escapeHtml(post.id)}"><label>Title <input name="title" value="${escapeHtml(post.title)}" required></label><label>Category <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === post.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label><label>Post type <select name="postType">${boardPostTypeOptions(post.postType)}</select></label><div class="wide formatted-text-editor"><label>Description</label>${formattingToolbar("Format post")}<textarea name="description" rows="6" required>${escapeHtml(post.description)}</textarea></div><button class="primary-button" type="submit">Save changes</button><button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button></form></details>` : ""}
     </article>
   `;
 }
@@ -3652,6 +3694,7 @@ function bindViewHandlers(view) {
     bindOpenBoardPosts();
     bindBoardCategoryButtons();
     bindBoardEditForms();
+    bindTextFormattingTools();
     $(".board-back-button")?.addEventListener("click", () => {
       activeBoardPostId = "";
       renderView("boards");
