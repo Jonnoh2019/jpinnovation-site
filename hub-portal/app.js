@@ -1189,32 +1189,44 @@ const clientFeaturePreviews = {
     label: "Quotes",
     title: "Clear requests and private quotations.",
     copy: "Send JP Innovation the scope, timing and technical information, then keep the quotation and response together in your account.",
-    image: "../assets/case-study-fixture-bracket.png",
-    imageAlt: "Manufacture-ready engineering part for a quotation",
+    preview: `<div class="feature-ui" aria-label="Example client quotation">
+      <div class="feature-ui-toolbar"><strong>Quotation JP-1042</strong><span class="feature-ui-status">Ready to review</span></div>
+      <div class="feature-ui-summary"><span><small>PROJECT</small><b>Prototype mounting bracket</b></span><span><small>TOTAL</small><b>&pound;1,250</b></span><span><small>LEAD TIME</small><b>3 weeks</b></span></div>
+      <div class="feature-ui-file"><span>&#128196;</span><span><b>JP-1042-quotation.pdf</b><small>Scope, deliverables and terms</small></span><em>View</em></div>
+    </div>`,
     points: ["Submit a new request", "Review quotation details", "Keep decisions with the project"]
   },
   projects: {
     label: "Project updates",
     title: "See progress and the next action.",
     copy: "Use one private project view for agreed work, progress notes and the information JP Innovation needs from you.",
-    image: "../assets/case-study-linkage-assembly.png",
-    imageAlt: "Mechanical linkage project assembly",
+    preview: `<div class="feature-ui" aria-label="Example client project progress">
+      <div class="feature-ui-toolbar"><strong>Mounting bracket development</strong><span class="feature-ui-status">In progress</span></div>
+      <div class="feature-ui-timeline"><span class="complete"><b>1</b><small>Brief agreed</small></span><span class="complete"><b>2</b><small>CAD design</small></span><span class="current"><b>3</b><small>Client review</small></span><span><b>4</b><small>Final files</small></span></div>
+      <div class="feature-ui-note"><small>NEXT ACTION</small><b>Review revision B and confirm the hole positions</b></div>
+    </div>`,
     points: ["Current project status", "Next steps and milestones", "Technical notes in one place"]
   },
   messages: {
     label: "Direct messages",
     title: "Keep project communication easy to find.",
     copy: "Ask a question or reply to JP Innovation without losing an important decision across separate conversations.",
-    image: "../assets/mechanical-assembly.jpg",
-    imageAlt: "Engineering assembly discussed with JP Innovation",
+    preview: `<div class="feature-ui feature-ui-messages" aria-label="Example client messages">
+      <div class="feature-ui-toolbar"><strong>Messages with JP Innovation</strong><span>Project JP-1042</span></div>
+      <div class="feature-ui-message"><span class="feature-ui-avatar">JP</span><p><b>JP Innovation</b><small>Revision B is ready. I have increased the corner radius and added the requested mounting slot.</small></p><em>10:24</em></div>
+      <div class="feature-ui-message is-client"><span class="feature-ui-avatar">YOU</span><p><b>You</b><small>Thanks. I will check the hole positions this afternoon.</small></p><em>10:31</em></div>
+    </div>`,
     points: ["Quote questions", "Project updates", "A clear record of decisions"]
   },
   repeat: {
     label: "Repeat work",
     title: "Start revisions and follow-on work faster.",
     copy: "Return to the same account when a component changes, another version is needed or a completed job needs extending.",
-    image: "../assets/retaining-bracket.jpg",
-    imageAlt: "Engineered retaining bracket for repeat manufacture",
+    preview: `<div class="feature-ui" aria-label="Example repeat work request">
+      <div class="feature-ui-toolbar"><strong>Previous work</strong><span>2 completed projects</span></div>
+      <div class="feature-ui-file"><span>&#8635;</span><span><b>Mounting bracket &middot; JP-1042</b><small>Completed 14 June &middot; Revision B</small></span><em>Request update</em></div>
+      <div class="feature-ui-note"><small>NEW REQUEST</small><b>Use the previous files and describe only what has changed.</b></div>
+    </div>`,
     points: ["Reference earlier work", "Request a revision", "Keep the new scope connected"]
   }
 };
@@ -1225,7 +1237,8 @@ function openClientFeature(key) {
   if (!feature || !dialog) return;
   $("#clientFeatureLabel").textContent = feature.label;
   $("#clientFeatureTitle").textContent = feature.title;
-  $("#clientFeatureBody").innerHTML = `<div class="feature-preview-content"><img src="${feature.image}" alt="${feature.imageAlt}"><p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
+  const visual = feature.preview || (feature.image ? `<img src="${feature.image}" alt="${feature.imageAlt || "Client Portal feature preview"}">` : "");
+  $("#clientFeatureBody").innerHTML = `<div class="feature-preview-content">${visual}<p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
   dialog.classList.add("open");
   dialog.setAttribute("aria-hidden", "false");
 }
