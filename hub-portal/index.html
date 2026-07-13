@@ -7,6 +7,13 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#05070a">
   <meta name="apple-mobile-web-app-title" content="Client Portal">
+  <script>
+    try {
+      if (new URLSearchParams(location.search).get("entry") === "hub") {
+        document.documentElement.classList.add("restoring-portal-session");
+      }
+    } catch (error) {}
+  </script>
   <link rel="icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711">
   <link rel="manifest" href="../site.webmanifest?v=jp-logo-20260711">
@@ -116,7 +123,7 @@
       <nav class="app-nav" aria-label="Portal navigation">
         <button class="nav-link active" data-view="dashboard">Dashboard</button>
         <button class="nav-link" data-view="onboarding">Profile Setup</button>
-        <button class="nav-link" data-view="boards">Engineering Boards</button>
+        <button class="nav-link featured-nav" data-view="boards"><span aria-hidden="true">&#128172;</span> Engineering Boards</button>
         <button class="nav-link" data-view="projects">Projects</button>
         <button class="nav-link" data-view="quotes">Quote Requests</button>
         <button class="nav-link" data-view="directory">Member Directory</button>
@@ -183,6 +190,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=real-content-moderation-20260713"></script>
+  <script src="app.js?v=boards-launch-ready-20260713"></script>
 </body>
 </html>
