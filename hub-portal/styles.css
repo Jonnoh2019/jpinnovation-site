@@ -1144,6 +1144,25 @@ input:focus, textarea:focus, select:focus {
   padding: 7px 0;
 }
 .profile-chat-notifications:empty { display: none; }
+.profile-chat-summary { min-width: 0; }
+.profile-chat-summary > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  color: var(--blue-soft);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+.profile-chat-summary > summary::-webkit-details-marker { display: none; }
+.profile-chat-summary > summary b::after { content: "+"; font-size: 16px; line-height: 1; }
+.profile-chat-summary[open] > summary b::after { content: "−"; }
+.profile-chat-alerts { display: grid; gap: 5px; padding-top: 3px; }
 .profile-menu-label {
   margin: 0 8px 2px;
   color: var(--blue-soft);
