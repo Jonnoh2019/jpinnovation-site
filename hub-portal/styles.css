@@ -24,6 +24,25 @@
   --shadow: 0 24px 80px rgba(0,0,0,.34);
 }
 
+/* Keep access dialogs centred on every screen size. */
+.auth-dialog {
+  align-items: center;
+  justify-items: center;
+}
+@media (max-width: 560px) {
+  .auth-dialog {
+    min-height: 100dvh;
+    align-items: center;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  .auth-card {
+    margin-block: auto;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
+}
+
 /* Compact public landing page */
 .landing-title {
   margin: 0 0 8px;
@@ -2900,4 +2919,23 @@ input:focus, textarea:focus, select:focus {
   .quote-rule-grid article { min-height: 0; padding: 8px; }
   .notification-page-item,
   .empty-state { padding: 9px; }
+}
+
+/* Final mobile position override. */
+.auth-dialog {
+  align-items: center;
+  justify-items: center;
+}
+@media (max-width: 560px) {
+  .auth-dialog {
+    min-height: 100dvh;
+    align-items: center;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  .auth-card {
+    margin-block: auto;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
 }
