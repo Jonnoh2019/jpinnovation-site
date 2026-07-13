@@ -137,40 +137,58 @@ const featurePreviews = {
     label: "Engineering boards",
     title: "Useful answers from real engineering discussions.",
     copy: "Open a board, browse its discussion threads or start a focused question for other approved members.",
-    image: "../assets/mechanical-assembly.jpg",
-    imageAlt: "Engineering assembly used for a member discussion",
+    preview: `<div class="feature-ui feature-ui-boards" aria-label="Example Engineering Boards discussion list">
+      <div class="feature-ui-toolbar"><strong>General Chat</strong><span>12 discussions</span></div>
+      <div class="feature-ui-row"><span class="feature-ui-icon">&#128172;</span><span><b>Welcome to the Innovation Hub</b><small>Introductions, updates and member news</small></span><em>8 replies</em></div>
+      <div class="feature-ui-row"><span class="feature-ui-icon">&#128172;</span><span><b>Reliable UK prototype suppliers</b><small>Recommendations and recent experience</small></span><em>5 replies</em></div>
+      <div class="feature-ui-row"><span class="feature-ui-icon">&#128172;</span><span><b>What are you building this month?</b><small>Share progress with other members</small></span><em>14 replies</em></div>
+    </div>`,
     points: ["General Chat", "CAD & Design", "3D Printing", "CNC & Machining", "Jobs & Collaboration"]
   },
   quotes: {
     label: "Private quotes",
     title: "Share requirements without a public price race.",
     copy: "Approved requests can be reviewed by suitable members, with each response kept private.",
-    image: "../assets/case-study-fixture-bracket.png",
-    imageAlt: "Manufacture-ready component for a private quote request",
+    preview: `<div class="feature-ui" aria-label="Example private quote request">
+      <div class="feature-ui-toolbar"><strong>Private quote request</strong><span class="feature-ui-status">Open</span></div>
+      <div class="feature-ui-summary"><span><small>REQUEST</small><b>Prototype enclosure machining</b></span><span><small>QUANTITY</small><b>5 units</b></span><span><small>NEEDED BY</small><b>28 August</b></span></div>
+      <div class="feature-ui-file"><span>&#128196;</span><span><b>enclosure-rev-b.step</b><small>STEP file &middot; 4.8 MB</small></span><em>Private</em></div>
+    </div>`,
     points: ["Clear scope and files", "Private supplier responses", "JP Innovation moderation"]
   },
   directory: {
     label: "Member directory",
     title: "Find the right capability faster.",
     copy: "Search approved profiles by skill, location, equipment and current capacity.",
-    image: "../assets/retaining-bracket.jpg",
-    imageAlt: "Engineering component representing specialist capability",
+    preview: `<div class="feature-ui" aria-label="Example member directory list">
+      <div class="feature-ui-toolbar"><strong>Member directory</strong><span>Search skills or location</span></div>
+      <div class="feature-ui-member"><span class="feature-ui-avatar">SC</span><span><b>Sarah Collins</b><small>CAD design &middot; SolidWorks &middot; Bristol</small></span><em>Available</em></div>
+      <div class="feature-ui-member"><span class="feature-ui-avatar">DM</span><span><b>Dan Morgan</b><small>CNC machining &middot; 5-axis &middot; Birmingham</small></span><em>Verified</em></div>
+      <div class="feature-ui-member"><span class="feature-ui-avatar">AP</span><span><b>Aisha Patel</b><small>3D printing &middot; SLS/FDM &middot; Manchester</small></span><em>Available</em></div>
+    </div>`,
     points: ["Verified profiles", "Local specialists", "Supplier and workshop capability"]
   },
   calculators: {
     label: "Engineering calculators",
     title: "Quick checks without leaving the Hub.",
     copy: "Use focused tools for common workshop and early design calculations.",
-    image: "../assets/case-study-linkage-assembly.png",
-    imageAlt: "Mechanical linkage assembly for engineering calculations",
+    preview: `<div class="feature-ui feature-ui-calculator" aria-label="Example engineering calculator">
+      <div class="feature-ui-toolbar"><strong>Cutting speed calculator</strong><span>Metric</span></div>
+      <div class="feature-ui-fields"><label>Tool diameter<b>10 mm</b></label><label>Cutting speed<b>120 m/min</b></label></div>
+      <div class="feature-ui-result"><small>RECOMMENDED SPINDLE SPEED</small><strong>3,820 RPM</strong></div>
+    </div>`,
     points: ["Speed, feed and cutting checks", "Weight and material estimates", "Unit conversions"]
   },
   templates: {
     label: "Templates and guides",
     title: "Start with the right information.",
     copy: "Practical templates make quotes, project briefs and design reviews clearer.",
-    image: "../assets/cad-machined-bracket.png",
-    imageAlt: "CAD component used in an engineering design review",
+    preview: `<div class="feature-ui" aria-label="Example engineering templates list">
+      <div class="feature-ui-toolbar"><strong>Templates &amp; guides</strong><span>Member resources</span></div>
+      <div class="feature-ui-file"><span>&#128196;</span><span><b>Engineering project brief</b><small>Editable DOCX template</small></span><em>Open</em></div>
+      <div class="feature-ui-file"><span>&#9745;</span><span><b>Design review checklist</b><small>24 practical checks</small></span><em>Open</em></div>
+      <div class="feature-ui-file"><span>&#128203;</span><span><b>Supplier quote checklist</b><small>Files, tolerances and quantities</small></span><em>Open</em></div>
+    </div>`,
     points: ["Quote request checklist", "Project brief template", "Design and prototype checks"]
   },
   projects: {
@@ -188,9 +206,10 @@ function openFeaturePreview(key) {
   const dialog = $("#featurePreviewDialog");
   if (!feature || !dialog) return;
   const imageSource = feature.image || (feature.imageSelector ? document.querySelector(feature.imageSelector)?.src : "") || "";
+  const visual = feature.preview || (imageSource ? `<img src="${imageSource}" alt="${feature.imageAlt || "Innovation Hub feature preview"}">` : "");
   $("#featurePreviewLabel").textContent = feature.label;
   $("#featurePreviewTitle").textContent = feature.title;
-  $("#featurePreviewBody").innerHTML = `<div class="feature-preview-content">${imageSource ? `<img src="${imageSource}" alt="${feature.imageAlt || "Innovation Hub feature preview"}">` : ""}<p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
+  $("#featurePreviewBody").innerHTML = `<div class="feature-preview-content">${visual}<p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
   dialog.classList.add("open");
   dialog.setAttribute("aria-hidden", "false");
 }
