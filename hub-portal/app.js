@@ -3238,7 +3238,7 @@ function renderAdmin(user) {
         <article class="feed-item">
           <span class="pill warn">${item.moderationStatus === "pending" ? "Awaiting approval" : "Reported"}</span>
           <h3>${escapeHtml(item.title || "Flagged content")}</h3>
-          <p>${escapeHtml(item.description || item.reason || "")}</p>
+          ${renderFormattedPostText(item.description || item.reason || "")}
           <div class="admin-actions">
             <button class="primary-button post-moderation-action" data-post-action="approved" data-post-id="${escapeHtml(item.id)}" type="button">Approve</button>
             <button class="secondary-button post-moderation-action danger-action" data-post-action="rejected" data-post-id="${escapeHtml(item.id)}" type="button">Reject</button>
@@ -3271,7 +3271,8 @@ function renderAdmin(user) {
         <article class="feed-item">
           <span class="pill warn">Awaiting approval</span>
           <h3>${escapeHtml(post.title)}</h3>
-          <p><strong>${escapeHtml(reply.author)}:</strong> ${escapeHtml(reply.body)}</p>
+          <div class="reply-author"><strong>${escapeHtml(reply.author)}</strong></div>
+          ${renderFormattedPostText(reply.body)}
           <div class="admin-actions">
             <button class="primary-button reply-moderation-action" data-reply-action="approved" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Approve</button>
             <button class="secondary-button reply-moderation-action danger-action" data-reply-action="rejected" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Reject</button>
