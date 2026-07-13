@@ -57,6 +57,7 @@ let activeMessageConversationKey = "";
 let boardBackendAvailable = false;
 let contentBackendAvailable = false;
 let sharedWorkspaceBackendAvailable = false;
+let reputationBackendAvailable = false;
 let secureAdminProfiles = [];
 let adminProfilesStatus = "idle";
 let adminProfilesMessage = "Connecting to live account records...";
@@ -312,6 +313,7 @@ function emptySeedState() {
     quotes: [],
     members: [],
     messages: [],
+    memberReviews: [],
     events: [],
     applications: [],
     resources: defaultResources(),
@@ -339,6 +341,7 @@ function normaliseState() {
   state.rewardPrize ||= "GBP 50 workshop voucher";
   state.rewardPrize = String(state.rewardPrize).replace(/\u00A3/g, "GBP ").replace(/[^\x20-\x7E]+/g, "").replace(/GBP\s*GBP/g, "GBP").trim();
   state.helpfulAwards ||= [];
+  state.memberReviews ||= [];
   state.seenBoardReplyIds ||= [];
   state.chatSummaryMinimised = state.chatSummaryMinimised === true;
   state.resources ||= defaultResources();
@@ -887,6 +890,53 @@ function currentUser() {
   return state.users.find((user) => user.email === state.sessionEmail) || null;
 }
 
+const goldPointsTarget = 100;
+const goldPositiveReviewsTarget = 3;
+
+function approvedReviewsFor(member) {
+  if (!member) return [];
+  return (state.memberReviews || []).filter((review) =>
+    review.reviewedUserId === member.id && review.moderationStatus === "approved"
+  );
+}
+
+function memberReputationTier(member) {
+  if (!member || member.role === "client") return "none";
+  if (["blue", "gold"].includes(member.badgeTier)) return member.badgeTier;
+  const active = member.role === "admin" || member.membershipStatus === "active";
+  const vetted = member.role === "admin" || member.vetted === true || member.verified === true;
+  if (!active || !vetted) return "none";
+  const positiveReviews = Number(member.approvedPositiveReviews || approvedReviewsFor(member).filter((review) => review.rating >= 4).length);
+  const points = Number(member.reputationPoints ?? member.points ?? 0);
+  return points >= goldPointsTarget || positiveReviews >= goldPositiveReviewsTarget ? "gold" : "blue";
+}
+
+function reputationBadge(member, options = {}) {
+  const tier = memberReputationTier(member);
+  if (tier === "none") return "";
+  const compact = options.compact === true;
+  const label = tier === "gold" ? "Gold Trusted" : "Blue Verified";
+  return `<span class="reputation-badge ${tier}" title="${label}: paid Hub member vetted by JP Innovation" aria-label="${label}"><span aria-hidden="true">&#9733;</span>${compact ? "" : `<b>${label}</b>`}</span>`;
+}
+
+function memberForIdentity({ id = "", email = "", name = "" } = {}) {
+  const cleanEmail = cleanEmailValue(email || "");
+  return state.members.find((member) => member.id === id || (cleanEmail && member.email === cleanEmail))
+    || state.users.find((member) => member.id === id || (cleanEmail && member.email === cleanEmail))
+    || state.members.find((member) => member.name === name)
+    || state.users.find((member) => member.name === name)
+    || null;
+}
+
+function reputationStatusCopy(member) {
+  const tier = memberReputationTier(member);
+  const points = Number(member?.reputationPoints ?? member?.points ?? 0);
+  const positive = Number(member?.approvedPositiveReviews || approvedReviewsFor(member).filter((review) => review.rating >= 4).length);
+  if (tier === "gold") return { tier, title: "Gold Trusted member", detail: "Gold status is active through approved community reputation.", points, positive };
+  if (tier === "blue") return { tier, title: "Blue Verified member", detail: `Reach Gold with ${goldPointsTarget} points or ${goldPositiveReviewsTarget} approved positive reviews.`, points, positive };
+  return { tier, title: "Member verification in progress", detail: "Blue Verified appears after paid membership is active and JP Innovation has completed vetting.", points, positive };
+}
+
 function decodeBoardBody(value = "") {
   const body = String(value || "");
   const match = body.match(/^\[\[jp-post-type:([a-z-]+)\]\]\s*/i);
@@ -1057,11 +1107,29 @@ function secureDirectoryMember(row) {
     name: row.full_name || row.email || "Hub member",
     business: row.business || "",
     role,
+    membershipStatus: "active",
     level: role === "admin" ? "JP Admin" : (role === "member" ? "Innovation Hub member" : "Client Portal"),
     approved: true,
     verified: role === "admin",
     directoryVisible: true,
     example: false
+  };
+}
+
+function mapMemberReview(row) {
+  return {
+    id: row.id,
+    reviewerId: row.reviewer_id,
+    reviewedUserId: row.reviewed_user_id,
+    reviewerName: row.reviewer_name || "Hub member",
+    reviewedName: row.reviewed_name || "Hub member",
+    rating: Number(row.rating || 0),
+    comment: row.comment || "",
+    moderationStatus: row.moderation_status || "pending",
+    approvedAt: row.approved_at || "",
+    approvedBy: row.approved_by_name || "",
+    created: formatBoardDate(row.created_at),
+    createdAt: row.created_at
   };
 }
 
@@ -1087,7 +1155,7 @@ function mapSecureMessage(row, user = currentUser()) {
 async function loadSecureWorkspace() {
   const user = currentUser();
   if (!portalBackend || !user) return false;
-  const [messagesResult, directoryResult, resourcesResult, eventsResult, interestsResult, updatesResult, partsResult, commentsResult] = await Promise.all([
+  const [messagesResult, directoryResult, resourcesResult, eventsResult, interestsResult, updatesResult, partsResult, commentsResult, reputationResult, reviewsResult] = await Promise.all([
     portalBackend.from("hub_messages").select("*").order("created_at", { ascending: false }),
     portalBackend.rpc("hub_message_directory"),
     portalBackend.from("hub_resources").select("*").order("created_at", { ascending: false }),
@@ -1095,7 +1163,9 @@ async function loadSecureWorkspace() {
     portalBackend.from("hub_event_interests").select("event_id,user_id,created_at"),
     portalBackend.from("hub_project_updates").select("*").order("created_at", { ascending: false }),
     portalBackend.from("hub_project_parts").select("*").order("created_at", { ascending: true }),
-    portalBackend.from("hub_project_comments").select("*").order("created_at", { ascending: false })
+    portalBackend.from("hub_project_comments").select("*").order("created_at", { ascending: false }),
+    portalBackend.rpc("hub_member_reputation"),
+    portalBackend.from("member_reviews").select("*").order("created_at", { ascending: false })
   ]);
   const results = [messagesResult, directoryResult, resourcesResult, eventsResult, interestsResult, updatesResult, partsResult, commentsResult];
   if (results.some((result) => result.error)) {
@@ -1104,11 +1174,41 @@ async function loadSecureWorkspace() {
   }
 
   sharedWorkspaceBackendAvailable = true;
+  reputationBackendAvailable = !reputationResult.error && !reviewsResult.error;
+  if (!reviewsResult.error) state.memberReviews = (reviewsResult.data || []).map(mapMemberReview);
+  const reputationByUser = new Map((reputationResult.data || []).map((item) => [item.user_id, item]));
+  (reputationResult.data || []).forEach((reputation) => {
+    const reputationData = {
+      reputationPoints: Number(reputation.reputation_points || 0),
+      approvedPositiveReviews: Number(reputation.approved_positive_reviews || 0),
+      approvedReviewCount: Number(reputation.approved_review_count || 0),
+      averageRating: Number(reputation.average_rating || 0),
+      badgeTier: reputation.badge_tier || "none",
+      vetted: reputation.badge_tier === "blue" || reputation.badge_tier === "gold",
+      verified: reputation.badge_tier === "blue" || reputation.badge_tier === "gold"
+    };
+    const userRecord = state.users.find((item) => item.id === reputation.user_id);
+    const memberRecord = state.members.find((item) => item.id === reputation.user_id);
+    if (userRecord) Object.assign(userRecord, reputationData);
+    if (memberRecord) Object.assign(memberRecord, reputationData);
+  });
   const directory = (directoryResult.data || []).map(secureDirectoryMember).filter((member) => member.email);
   directory.forEach((member) => {
+    const reputation = reputationByUser.get(member.id);
+    if (reputation) Object.assign(member, {
+      reputationPoints: Number(reputation.reputation_points || 0),
+      approvedPositiveReviews: Number(reputation.approved_positive_reviews || 0),
+      approvedReviewCount: Number(reputation.approved_review_count || 0),
+      averageRating: Number(reputation.average_rating || 0),
+      badgeTier: reputation.badge_tier || "none",
+      vetted: reputation.badge_tier === "blue" || reputation.badge_tier === "gold",
+      verified: reputation.badge_tier === "blue" || reputation.badge_tier === "gold"
+    });
     const existing = state.members.find((item) => item.email === member.email);
     if (existing) Object.assign(existing, member);
     else state.members.push(member);
+    const userRecord = state.users.find((item) => item.id === member.id || item.email === member.email);
+    if (userRecord) Object.assign(userRecord, member);
   });
   state.messages = (messagesResult.data || []).map((row) => mapSecureMessage(row, user));
   state.resources = (resourcesResult.data || []).map((row) => ({
@@ -1197,6 +1297,33 @@ async function markSecureMessagesRead() {
   const { error } = await portalBackend.rpc("mark_hub_messages_read");
   if (error) throw error;
   return true;
+}
+
+async function submitMemberReview(reviewedUserId, rating, comment) {
+  if (!reputationBackendAvailable) throw new Error("Member reviews are temporarily unavailable. Please try again shortly.");
+  const { data, error } = await portalBackend.rpc("submit_member_review", {
+    reviewed_user: reviewedUserId,
+    review_rating: Number(rating),
+    review_comment: comment.trim()
+  });
+  if (error) throw error;
+  const review = mapMemberReview(Array.isArray(data) ? data[0] : data);
+  state.memberReviews = (state.memberReviews || []).filter((item) => !(item.reviewerId === review.reviewerId && item.reviewedUserId === review.reviewedUserId));
+  state.memberReviews.unshift(review);
+  return review;
+}
+
+async function moderateMemberReview(reviewId, nextStatus) {
+  if (!reputationBackendAvailable) throw new Error("Member review moderation is temporarily unavailable.");
+  const { data, error } = await portalBackend.rpc("moderate_member_review", {
+    review_uuid: reviewId,
+    next_status: nextStatus
+  });
+  if (error) throw error;
+  const updated = mapMemberReview(Array.isArray(data) ? data[0] : data);
+  const existing = state.memberReviews.find((review) => review.id === reviewId);
+  if (existing) Object.assign(existing, updated);
+  return updated;
 }
 
 async function createSecureProjectUpdate(project, data, user) {
@@ -1352,7 +1479,7 @@ async function syncSecureSession() {
   }
   const { data: profile, error: profileError } = await portalBackend
     .from("profiles")
-    .select("user_id,email,full_name,business,account_type,membership_status")
+    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points")
     .eq("user_id", authUser.id)
     .single();
   if (profileError && profileError.code !== "PGRST116") throw profileError;
@@ -1396,6 +1523,9 @@ async function syncSecureSession() {
     role: accountType,
     level: accountType === "admin" ? "JP Admin" : (accountType === "member" ? "Innovation Hub member" : "Client Portal"),
     membershipStatus: profileData.membership_status || "free",
+    vetted: Boolean(profileData.vetted_at),
+    reputationPoints: Number(profileData.reputation_points || 0),
+    verified: accountType === "admin" || (accountType === "member" && profileData.membership_status === "active" && Boolean(profileData.vetted_at)),
     approved: true,
     suspended: false
   });
@@ -1604,6 +1734,28 @@ function closeUpgradeDialog() {
   dialog.setAttribute("aria-hidden", "true");
 }
 
+function openReputationStatusDialog() {
+  const user = currentUser();
+  const dialog = $("#reputationStatusDialog");
+  const body = $("#reputationStatusBody");
+  if (!user || !dialog || !body) return;
+  const status = reputationStatusCopy(user);
+  body.innerHTML = `
+    <div class="reputation-dialog-heading">${reputationBadge(user)}<p class="eyebrow">Your Hub status</p><h2 id="reputationStatusTitle">${escapeHtml(status.title)}</h2><p>${escapeHtml(status.detail)}</p></div>
+    <div class="reputation-dialog-metrics"><article><strong>${status.points}</strong><span>Contribution points</span></article><article><strong>${status.positive}</strong><span>Approved positive reviews</span></article></div>
+    <div class="reputation-tier-guide"><article class="blue"><span class="reputation-badge blue"><span aria-hidden="true">&#9733;</span><b>Blue Verified</b></span><p>Active paid membership plus JP Innovation vetting.</p></article><article class="gold"><span class="reputation-badge gold"><span aria-hidden="true">&#9733;</span><b>Gold Trusted</b></span><p>Blue Verified plus ${goldPointsTarget} points or ${goldPositiveReviewsTarget} approved 4–5 star reviews.</p></article></div>
+    <button class="primary-button reputation-open-profile" type="button">View my reputation</button>`;
+  dialog.classList.add("open");
+  dialog.setAttribute("aria-hidden", "false");
+}
+
+function closeReputationStatusDialog() {
+  const dialog = $("#reputationStatusDialog");
+  if (!dialog) return;
+  dialog.classList.remove("open");
+  dialog.setAttribute("aria-hidden", "true");
+}
+
 function setLoggedInView() {
   const user = currentUser();
   const loggedIn = Boolean(user);
@@ -1622,6 +1774,14 @@ function setLoggedInView() {
   $("#memberInitials").textContent = userInitials(user);
   $("#memberName").textContent = user.name;
   $("#memberRole").textContent = isClient ? "Client Portal" : roleLabel(user);
+  const reputationButton = $("#reputationStatusButton");
+  const reputationTier = memberReputationTier(user);
+  if (reputationButton) {
+    reputationButton.classList.toggle("hidden", isClient || reputationTier === "none");
+    reputationButton.classList.toggle("blue", reputationTier === "blue");
+    reputationButton.classList.toggle("gold", reputationTier === "gold");
+    reputationButton.setAttribute("aria-label", reputationTier === "gold" ? "Open Gold Trusted member status" : "Open Blue Verified member status");
+  }
   $("#profileAdminLink")?.classList.toggle("hidden", user.role !== "admin" || isClient);
   $("#profileMyPosts")?.classList.toggle("hidden", isClient);
   $all(".nav-link").forEach((button) => {
@@ -1847,6 +2007,7 @@ function notificationItems(user = currentUser()) {
     const pendingReplies = state.posts.flatMap((post) => (post.responses || []).filter((reply) => reply.moderationStatus === "pending").map((reply) => ({ post, reply })));
     const pendingProjects = state.projects.filter((project) => project.moderationStatus === "pending").length;
     const pendingQuotes = state.quotes.filter((quote) => quote.status === "jp-review").length;
+    const pendingReviews = (state.memberReviews || []).filter((review) => review.moderationStatus === "pending").length;
     if (pendingAccess) items.push({ title: `${pendingAccess} access request${pendingAccess === 1 ? "" : "s"}`, detail: "Approve or reject access in Admin Review.", isNew: true, view: "admin", targetId: "adminAccessRequests" });
     if (pendingPosts) items.push({ title: `${pendingPosts} post${pendingPosts === 1 ? "" : "s"} awaiting moderation`, detail: "Review posts before publication.", isNew: true, view: "admin", targetId: "adminPostModeration" });
     pendingReplies.slice(0, 5).forEach(({ post, reply }) => items.push({
@@ -1856,6 +2017,7 @@ function notificationItems(user = currentUser()) {
     }));
     if (pendingProjects) items.push({ title: `${pendingProjects} project${pendingProjects === 1 ? "" : "s"} awaiting moderation`, detail: "Review member projects before publication.", isNew: true, view: "admin", targetId: "adminProjectModeration" });
     if (pendingQuotes) items.push({ title: `${pendingQuotes} quote request${pendingQuotes === 1 ? "" : "s"} awaiting review`, detail: "Review them in the admin quote queue.", isNew: true, view: "admin", targetId: "adminQuoteQueue" });
+    if (pendingReviews) items.push({ title: `${pendingReviews} member review${pendingReviews === 1 ? "" : "s"} awaiting approval`, detail: "Approve both the rating and written comment.", isNew: true, view: "admin", targetId: "adminMemberReviews" });
   } else {
     const pendingPosts = state.posts.filter((post) => post.authorEmail === user.email && post.moderationStatus === "pending").length;
     const pendingProjects = state.projects.filter((project) => project.authorEmail === user.email && project.moderationStatus === "pending").length;
@@ -2446,7 +2608,8 @@ function renderBoardPostComposer(selectedCategory = "General Chat") {
 function postThreadRow(post) {
   const replies = visibleBoardReplies(post);
   const preview = String(post.description || "").replace(/\s+/g, " ").trim().slice(0, 110);
-  return `<button class="board-thread-row open-board-post" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${escapeHtml(post.title)}</strong><span class="thread-row-preview">${escapeHtml(preview)}${String(post.description || "").length > 110 ? "&hellip;" : ""}</span><small>${escapeHtml(post.author)} &middot; ${escapeHtml(post.created || "Today")} &middot; ${escapeHtml(boardPostTypeLabel(post.postType))}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span><span class="pill ${post.moderationStatus === "approved" ? "good" : "warn"}">${post.moderationStatus === "approved" ? "Published" : "Pending"}</span><span aria-hidden="true">&rsaquo;</span></button>`;
+  const postAuthor = memberForIdentity({ id: post.authorId, email: post.authorEmail, name: post.author });
+  return `<button class="board-thread-row open-board-post" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${escapeHtml(post.title)}</strong><span class="thread-row-preview">${escapeHtml(preview)}${String(post.description || "").length > 110 ? "&hellip;" : ""}</span><small>${escapeHtml(post.author)} ${reputationBadge(postAuthor, { compact: true })} &middot; ${escapeHtml(post.created || "Today")} &middot; ${escapeHtml(boardPostTypeLabel(post.postType))}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span><span class="pill ${post.moderationStatus === "approved" ? "good" : "warn"}">${post.moderationStatus === "approved" ? "Published" : "Pending"}</span><span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
 function boardDescription(category) {
@@ -3043,7 +3206,7 @@ function renderRewards() {
           <article class="leader-row">
             <span>${index + 1}</span>
             <div>
-              <strong>${escapeHtml(member.name)}</strong>
+              <strong>${escapeHtml(member.name)} ${reputationBadge(member, { compact: true })}</strong>
               <small>${escapeHtml(member.business || member.skill || "Innovation Hub member")}</small>
             </div>
             <b>${member.helpfulPoints || 0} pts</b>
@@ -3055,7 +3218,17 @@ function renderRewards() {
 }
 
 function renderProfile(user) {
+  const reputation = reputationStatusCopy(user);
+  const reviews = approvedReviewsFor(user);
   return `
+    <section class="section-card section-blue profile-reputation-card ${escapeHtml(reputation.tier)}">
+      <div class="profile-reputation-heading"><div>${reputationBadge(user)}<p class="eyebrow">Member reputation</p><h2>${escapeHtml(reputation.title)}</h2><p>${escapeHtml(reputation.detail)}</p></div></div>
+      <div class="reputation-progress-grid">
+        <article><div><strong>Contribution points</strong><span>${reputation.points} / ${goldPointsTarget}</span></div><progress value="${reputation.points}" max="${goldPointsTarget}"></progress></article>
+        <article><div><strong>Approved positive reviews</strong><span>${reputation.positive} / ${goldPositiveReviewsTarget}</span></div><progress value="${reputation.positive}" max="${goldPositiveReviewsTarget}"></progress></article>
+      </div>
+      <p class="muted reputation-rule">Blue Verified requires active paid membership and JP Innovation vetting. Gold requires Blue status plus either ${goldPointsTarget} points or ${goldPositiveReviewsTarget} approved reviews rated 4–5 stars.</p>
+    </section>
     <section class="section-card section-silver">
       <div class="list-title">
         <div><h2>My profile</h2><p>Keep this complete for verification and quote opportunities.</p></div>
@@ -3081,7 +3254,8 @@ function renderProfile(user) {
       <div class="metrics-grid">
         ${metric("Status", user.level)}
         ${metric("Points", user.points)}
-        ${metric("Badges", user.verified ? "Verified" : "Member")}
+        ${metric("Badge", reputation.tier === "gold" ? "Gold Trusted" : reputation.tier === "blue" ? "Blue Verified" : "Member")}
+        ${metric("Reviews", reviews.length)}
         ${metric("Profile", `${profileCompletion(user)}%`)}
         ${metric("Warnings", user.warning ? "1" : "0")}
       </div>
@@ -3145,7 +3319,9 @@ function secureProfileUser(profile) {
     role,
     membershipStatus: profile.membership_status || (role === "client" ? "free" : "active"),
     level: role === "admin" ? "JP Admin" : (role === "member" ? "Innovation Hub member" : "Client Portal"),
-    verified: role === "admin" || profile.membership_status === "active",
+    vetted: Boolean(profile.vetted_at),
+    reputationPoints: Number(profile.reputation_points || 0),
+    verified: role === "admin" || (role === "member" && profile.membership_status === "active" && Boolean(profile.vetted_at)),
     suspended: profile.membership_status === "suspended",
     onboardingComplete: role !== "member"
   };
@@ -3178,7 +3354,7 @@ async function loadSecureAdminProfiles(force = false) {
   adminProfilesMessage = "Loading registrations and account access from the secure database...";
   const { data, error } = await portalBackend
     .from("profiles")
-    .select("user_id,email,full_name,business,account_type,membership_status")
+    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points")
     .order("email", { ascending: true });
   if (error) {
     adminProfilesStatus = "error";
@@ -3214,6 +3390,7 @@ function renderAdmin(user) {
     .sort((a, b) => String(b.approvedAt || b.createdAt || "").localeCompare(String(a.approvedAt || a.createdAt || "")));
   const moderationReplies = state.posts.flatMap((post) => (post.responses || []).filter((reply) => reply.moderationStatus === "pending").map((reply) => ({ post, reply })));
   const moderationProjects = state.projects.filter((project) => project.moderationStatus === "pending");
+  const pendingMemberReviews = (state.memberReviews || []).filter((review) => review.moderationStatus === "pending");
   const applications = adminProfilesStatus === "ready"
     ? secureAdminProfiles.filter((profile) => profile.membership_status === "pending").map(secureProfileApplication)
     : (state.applications || []).filter((application) => !application.example && application.created !== "Example");
@@ -3229,6 +3406,7 @@ function renderAdmin(user) {
         ${metric("Access requests", pendingApplications)}
         ${metric("Post reviews", moderationPosts.length + moderationReplies.length)}
         ${metric("Project reviews", moderationProjects.length)}
+        ${metric("Member reviews", pendingMemberReviews.length)}
         ${metric("Quote reviews", state.quotes.filter((quote) => quote.status === "jp-review").length)}
         ${metric("Suspended", suspendedAccounts)}
       </div>
@@ -3291,6 +3469,14 @@ function renderAdmin(user) {
           </article>
         `).join("") : `<p class="muted">No access requests yet.</p>`}
       </div>
+    </details>
+    <details id="adminMemberReviews" class="section-card admin-fold section-blue" ${pendingMemberReviews.length ? "open" : ""}>
+      <summary class="list-title"><div><h2>Member reviews</h2><p>Approve both the rating and written comment before it affects reputation.</p></div><span class="pill ${pendingMemberReviews.length ? "warn" : "good"}">${pendingMemberReviews.length}</span></summary>
+      <div class="member-review-admin-list">${pendingMemberReviews.length ? pendingMemberReviews.map((review) => `
+        <article class="member-review-admin-card">
+          <div><span class="review-stars" aria-label="${review.rating} out of 5 stars">${"&#9733;".repeat(review.rating)}${"&#9734;".repeat(5 - review.rating)}</span><h3>${escapeHtml(review.reviewerName)} reviewed ${escapeHtml(review.reviewedName)}</h3><p>${escapeHtml(review.comment)}</p><small>Submitted ${escapeHtml(review.created)}</small></div>
+          <div class="admin-actions"><button class="primary-button review-moderation-action" data-review-action="approved" data-review-id="${escapeHtml(review.id)}" type="button">Approve review</button><button class="secondary-button review-moderation-action danger-action" data-review-action="rejected" data-review-id="${escapeHtml(review.id)}" type="button">Reject</button></div>
+        </article>`).join("") : `<p class="muted">No member reviews are waiting for approval.</p>`}</div>
     </details>
     <details id="adminPostModeration" class="section-card admin-fold section-rose" ${moderationPosts.length ? "open" : ""}>
       <summary class="list-title"><div><h2>Post moderation</h2><p>Approve, reject or review reported posts.</p></div><span class="pill ${moderationPosts.length ? "warn" : "good"}">${moderationPosts.length}</span></summary>
@@ -3402,10 +3588,10 @@ function renderAdmin(user) {
           <article class="feed-item admin-member-row">
             <div>
               <span class="badge">${escapeHtml(roleLabel(member))}</span>
-              <h3>${escapeHtml(member.name)}</h3>
+              <div class="member-name-with-badge"><h3>${escapeHtml(member.name)}</h3>${reputationBadge(member)}</div>
               <p>${escapeHtml(member.business || "Independent member")} - ${escapeHtml(member.email)}</p>
               <div class="meta-row">
-                <span class="pill ${member.verified ? "good" : "warn"}">${member.verified ? "Verified" : "Pending"}</span>
+                <span class="pill ${memberReputationTier(member) !== "none" ? "good" : "warn"}">${memberReputationTier(member) === "gold" ? "Gold Trusted" : memberReputationTier(member) === "blue" ? "Blue Verified" : "Pending vetting"}</span>
                 <span class="pill ${member.suspended ? "danger" : ""}">${member.suspended ? "Suspended" : "Active"}</span>
                 <span class="pill ${member.warning ? "warn" : ""}">${member.warning ? "Warned" : "No warning"}</span>
               </div>
@@ -3433,6 +3619,7 @@ function postPurposeBadge(post, helpfulCount = 0) {
 
 function postCard(post) {
   const user = currentUser();
+  const postAuthor = memberForIdentity({ id: post.authorId, email: post.authorEmail, name: post.author });
   const isOwner = user?.id === post.authorId || user?.email === post.authorEmail || user?.role === "admin";
   const replies = visibleBoardReplies(post, user);
   const helpfulCount = countHelpfulReplies(post);
@@ -3446,7 +3633,7 @@ function postCard(post) {
       <h3>${escapeHtml(post.title)}</h3>
       ${renderFormattedPostText(post.description)}
       <div class="meta-row">
-        <span class="pill">${escapeHtml(post.author)}</span>
+        <span class="pill author-reputation">${escapeHtml(post.author)} ${reputationBadge(postAuthor, { compact: true })}</span>
         <span class="pill">${escapeHtml(post.created || "Today")}</span>
         <span class="pill">${replies.length} replies</span>
         ${post.flagged ? `<span class="pill warn">Flagged</span>` : ""}
@@ -3454,9 +3641,11 @@ function postCard(post) {
       ${user?.role === "admin" && post.moderationStatus !== "approved" ? `<div class="admin-actions thread-moderation-actions"><button class="primary-button post-moderation-action" data-post-action="approved" data-post-id="${escapeHtml(post.id)}" type="button">Approve and publish</button><button class="secondary-button post-moderation-action danger-action" data-post-action="rejected" data-post-id="${escapeHtml(post.id)}" type="button">Reject</button></div>` : ""}
       ${replies.length ? `
         <div class="reply-list">
-          ${replies.map((reply) => `
+          ${replies.map((reply) => {
+            const replyAuthor = memberForIdentity({ id: reply.authorId, email: reply.authorEmail, name: reply.author });
+            return `
             <div class="reply-card" id="reply-${escapeHtml(reply.id)}">
-              <div class="reply-author"><strong>${escapeHtml(reply.author)}</strong></div>
+              <div class="reply-author"><strong>${escapeHtml(reply.author)}</strong>${reputationBadge(replyAuthor, { compact: true })}</div>
               ${renderFormattedPostText(reply.body)}
               <div class="meta-row">
                 <span class="pill ${reply.moderationStatus === "approved" ? (reply.helpful ? "good" : "") : "warn"}">${reply.moderationStatus === "approved" ? (reply.helpful ? "Marked helpful" : "Published reply") : reply.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>
@@ -3464,8 +3653,8 @@ function postCard(post) {
                 ${user?.role === "admin" && reply.moderationStatus === "pending" ? `<button class="primary-button reply-moderation-action" data-reply-action="approved" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Approve reply</button><button class="secondary-button reply-moderation-action danger-action" data-reply-action="rejected" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Reject</button>` : ""}
                 ${(user?.id === reply.authorId || user?.email === reply.authorEmail || user?.role === "admin") ? `<details class="inline-edit"><summary>Edit reply</summary><form class="edit-reply-form" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}"><div class="formatted-text-editor">${formattingToolbar("Format reply")}<textarea name="body" rows="4" required>${escapeHtml(reply.body)}</textarea></div><div class="card-actions"><button class="secondary-button" type="submit">Save reply</button><button class="secondary-button delete-reply-button" data-post-id="${escapeHtml(post.id)}" data-reply-id="${escapeHtml(reply.id)}" type="button">Delete reply</button></div></form></details>` : ""}
               </div>
-            </div>
-          `).join("")}
+            </div>`;
+          }).join("")}
         </div>
       ` : ""}
       ${post.moderationStatus === "approved" || user?.role === "admin" ? `<form class="reply-form" data-post-id="${post.id}">
@@ -3481,6 +3670,7 @@ function postCard(post) {
 function postSummaryCard(post) {
   const replies = visibleBoardReplies(post);
   const helpfulCount = countHelpfulReplies(post);
+  const postAuthor = memberForIdentity({ id: post.authorId, email: post.authorEmail, name: post.author });
   return `
     <article class="feed-item thread-card thread-summary">
       <div class="thread-topline">
@@ -3491,7 +3681,7 @@ function postSummaryCard(post) {
       <h3>${escapeHtml(post.title)}</h3>
       <p>${escapeHtml(post.description)}</p>
       <div class="meta-row">
-        <span class="pill">${escapeHtml(post.author)}</span>
+        <span class="pill author-reputation">${escapeHtml(post.author)} ${reputationBadge(postAuthor, { compact: true })}</span>
         <span class="pill">${escapeHtml(post.created || "Today")}</span>
         <span class="pill">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>
       </div>
@@ -3679,10 +3869,16 @@ function applicationStatusPill(status) {
 }
 
 function memberCard(member) {
+  const viewer = currentUser();
+  const reviews = approvedReviewsFor(member);
+  const canReview = viewer?.id && member.id && viewer.id !== member.id && ["member", "admin"].includes(viewer.role);
+  const reviewSummary = reviews.length
+    ? `${Number(member.averageRating || (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length)).toFixed(1)} / 5 from ${reviews.length} approved review${reviews.length === 1 ? "" : "s"}`
+    : "No approved reviews yet";
   return `
     <article class="member-card">
       <span class="badge">${escapeHtml(member.level)}</span>
-      <h3>${escapeHtml(member.name)}</h3>
+      <div class="member-name-with-badge"><h3>${escapeHtml(member.name)}</h3>${reputationBadge(member)}</div>
       <p><strong>${escapeHtml(member.business || "Independent member")}</strong></p>
       <p>${escapeHtml(member.bio || "")}</p>
       <div class="tag-row">
@@ -3691,10 +3887,13 @@ function memberCard(member) {
         <span class="pill">${escapeHtml(member.equipment || "Equipment TBC")}</span>
         <span class="pill">${escapeHtml(member.preferredWork || "Open to help")}</span>
         <span class="pill">${escapeHtml(member.capacity || "Capacity TBC")}</span>
-        <span class="pill ${member.verified ? "good" : ""}">${member.verified ? "Verified" : "Member"}</span>
-        <span class="pill">${member.points} pts</span>
+        <span class="pill ${memberReputationTier(member) !== "none" ? "good" : ""}">${memberReputationTier(member) === "gold" ? "Gold Trusted" : memberReputationTier(member) === "blue" ? "Blue Verified" : "Member"}</span>
+        <span class="pill">${Number(member.reputationPoints ?? member.points ?? 0)} pts</span>
+        <span class="pill">${escapeHtml(reviewSummary)}</span>
       </div>
-      <button class="secondary-button message-member-button" data-member-email="${escapeHtml(member.email || "")}" type="button">Message</button>
+      <div class="card-actions"><button class="secondary-button message-member-button" data-member-email="${escapeHtml(member.email || "")}" type="button">Message</button></div>
+      ${reviews.length ? `<details class="member-review-history"><summary>Approved reviews (${reviews.length})</summary><div class="member-review-list">${reviews.map((review) => `<article><span class="review-stars" aria-label="${review.rating} out of 5 stars">${"&#9733;".repeat(review.rating)}${"&#9734;".repeat(5 - review.rating)}</span><p>${escapeHtml(review.comment)}</p><small>${escapeHtml(review.reviewerName)} &middot; ${escapeHtml(review.created)}</small></article>`).join("")}</div></details>` : ""}
+      ${canReview ? `<details class="member-review-panel"><summary>Leave or update a review</summary><form class="member-review-form" data-reviewed-id="${escapeHtml(member.id)}"><label>Rating <select name="rating" required><option value="">Choose</option><option value="5">5 - Excellent</option><option value="4">4 - Positive</option><option value="3">3 - Satisfactory</option><option value="2">2 - Needs improvement</option><option value="1">1 - Poor</option></select></label><label>Review comment <textarea name="comment" minlength="20" maxlength="2000" rows="3" required placeholder="Describe the work, communication and outcome..."></textarea></label><button class="secondary-button" type="submit">Submit for approval</button><p class="form-status review-form-status" aria-live="polite"></p></form></details>` : ""}
     </article>
   `;
 }
@@ -4139,9 +4338,9 @@ function bindAdminActions() {
       const action = button.dataset.adminAction;
       try {
         if (member.id && adminProfilesStatus === "ready") {
-          if (action === "upgrade") await updateSecureProfileAccess(member.id, { account_type: "member", membership_status: "active" });
-          if (action === "downgrade") await updateSecureProfileAccess(member.id, { account_type: "client", membership_status: "free" });
-          if (action === "verify") await updateSecureProfileAccess(member.id, { membership_status: "active" });
+          if (action === "upgrade") await updateSecureProfileAccess(member.id, { account_type: "member", membership_status: "active", vetted_at: new Date().toISOString() });
+          if (action === "downgrade") await updateSecureProfileAccess(member.id, { account_type: "client", membership_status: "free", vetted_at: null });
+          if (action === "verify") await updateSecureProfileAccess(member.id, { membership_status: "active", vetted_at: new Date().toISOString() });
           if (action === "suspend") await updateSecureProfileAccess(member.id, { membership_status: "suspended" });
           if (action === "restore") await updateSecureProfileAccess(member.id, { membership_status: member.role === "client" ? "free" : "active" });
           if (action === "remove") await updateSecureProfileAccess(member.id, { account_type: "client", membership_status: "suspended" });
@@ -4156,16 +4355,23 @@ function bindAdminActions() {
         member.level = "Innovation Hub member";
         member.onboardingComplete = false;
         member.points ||= 25;
+        member.vetted = true;
+        member.verified = true;
+        member.badgeTier = "blue";
       }
       if (action === "downgrade") {
         member.role = "client";
         member.level = "Client Portal";
         member.verified = false;
+        member.vetted = false;
+        member.badgeTier = "none";
         member.directoryVisible = false;
         member.onboardingComplete = true;
       }
       if (action === "verify") {
         member.verified = true;
+        member.vetted = true;
+        member.badgeTier = memberReputationTier(member) === "gold" ? "gold" : "blue";
         member.level = member.role === "admin" ? "JP Trusted Partner" : "Verified Professional";
         member.suspended = false;
       }
@@ -4190,6 +4396,22 @@ function bindAdminActions() {
       renderView("admin");
     });
   });
+  $all(".review-moderation-action").forEach((button) => button.addEventListener("click", async () => {
+    const nextStatus = button.dataset.reviewAction;
+    try {
+      await moderateMemberReview(button.dataset.reviewId, nextStatus);
+      await loadSecureWorkspace();
+      showSuccessToast(
+        nextStatus === "approved" ? "Member review approved." : "Member review rejected.",
+        nextStatus === "approved" ? "The rating and comment now contribute to the member's public reputation." : "The review remains hidden from member profiles."
+      );
+      renderNotifications();
+      renderView("admin");
+    } catch (error) {
+      adminProfilesMessage = `Review moderation failed: ${error.message}`;
+      renderView("admin");
+    }
+  }));
 }
 
 function bindPostModerationActions() {
@@ -4288,8 +4510,8 @@ function bindApplicationActions() {
       const action = button.dataset.applicationAction;
       if (application.secure) {
         try {
-          if (action === "approve") await updateSecureProfileAccess(application.userId, { account_type: "member", membership_status: "active" });
-          if (action === "reject") await updateSecureProfileAccess(application.userId, { account_type: "client", membership_status: "rejected" });
+          if (action === "approve") await updateSecureProfileAccess(application.userId, { account_type: "member", membership_status: "active", vetted_at: new Date().toISOString() });
+          if (action === "reject") await updateSecureProfileAccess(application.userId, { account_type: "client", membership_status: "rejected", vetted_at: null });
           adminProfilesMessage = action === "approve" ? `${application.fullName} now has paid Innovation Hub access.` : `${application.fullName}'s Hub request was rejected; Client Portal access remains available.`;
           renderView("admin");
         } catch (error) {
@@ -4332,7 +4554,9 @@ function bindApplicationActions() {
           quoteAlerts: application.wantsQuotes !== false,
           messageAlerts: true,
           eventAlerts: application.events === true,
-          verified: application.partner === true || application.wantsDirectory === true
+          verified: true,
+          vetted: true,
+          badgeTier: "blue"
         });
         application.status = "approved";
         application.generatedPassword = existingUser ? "Existing login already created" : password;
@@ -4772,13 +4996,18 @@ function bindHelpfulButtons() {
       if (member) {
         member.helpfulPoints = (member.helpfulPoints || 0) + 1;
         member.points = (member.points || 0) + 1;
+        member.reputationPoints = (member.reputationPoints || 0) + 10;
+        member.badgeTier = memberReputationTier(member);
       }
       const user = state.users.find((item) => item.email === reply.authorEmail);
       if (user) {
         user.helpfulPoints = (user.helpfulPoints || 0) + 1;
         user.points = (user.points || 0) + 1;
+        user.reputationPoints = (user.reputationPoints || 0) + 10;
+        user.badgeTier = memberReputationTier(user);
       }
       saveState();
+      if (reputationBackendAvailable) await loadSecureWorkspace();
       renderView(currentView);
     });
   });
@@ -4867,7 +5096,7 @@ function bindDirectory() {
       const visibleMatch = member.directoryVisible !== false;
       const skillMatch = !skillTerm || member.skill.toLowerCase().includes(skillTerm);
       const locationMatch = !locationTerm || member.location.toLowerCase().includes(locationTerm);
-      const verifiedMatch = !verifiedOnly || member.verified;
+      const verifiedMatch = !verifiedOnly || memberReputationTier(member) !== "none";
       return visibleMatch && skillMatch && locationMatch && verifiedMatch;
     });
     $("#directoryResults").innerHTML = results.length ? results.map(memberCard).join("") : `<p class="muted">No matching members found.</p>`;
@@ -4876,10 +5105,31 @@ function bindDirectory() {
       activeMessageConversationKey = "";
       renderView("messages");
     }));
+    bindMemberReviewForms($("#directoryResults"));
   };
   [skill, location, verified].forEach((input) => input.addEventListener("input", render));
   verified.addEventListener("change", render);
   render();
+}
+
+function bindMemberReviewForms(root = document) {
+  $all(".member-review-form", root).forEach((form) => form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = $(".review-form-status", form);
+    const data = formObject(form);
+    if (status) status.textContent = "Submitting review for approval...";
+    try {
+      await submitMemberReview(form.dataset.reviewedId, data.rating, data.comment);
+      if (status) {
+        status.classList.add("success");
+        status.textContent = "Review submitted. JP Innovation will approve the rating and comment before it appears.";
+      }
+      form.reset();
+      renderNotifications();
+    } catch (error) {
+      if (status) status.textContent = error.message || "The review could not be submitted.";
+    }
+  }));
 }
 
 function syncMember(user) {
@@ -4892,6 +5142,12 @@ function syncMember(user) {
     skill: user.skill || "General Engineering",
     equipment: user.equipment || "Not listed",
     verified: user.verified,
+    vetted: user.vetted,
+    badgeTier: user.badgeTier,
+    reputationPoints: user.reputationPoints || 0,
+    approvedPositiveReviews: user.approvedPositiveReviews || 0,
+    approvedReviewCount: user.approvedReviewCount || 0,
+    averageRating: user.averageRating || 0,
     level: user.level,
     points: user.points,
     helpfulPoints: user.helpfulPoints || 0,
@@ -5061,6 +5317,20 @@ async function boot() {
     if (willOpen) setMobileDashboardMenuOpen(false);
     setMemberProfileMenuOpen(willOpen);
   });
+  $("#reputationStatusButton")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setMemberProfileMenuOpen(false);
+    setMobileDashboardMenuOpen(false);
+    openReputationStatusDialog();
+  });
+  $("#closeReputationStatus")?.addEventListener("click", closeReputationStatusDialog);
+  $("#reputationStatusDialog")?.addEventListener("click", (event) => {
+    if (event.target === $("#reputationStatusDialog")) closeReputationStatusDialog();
+    if (event.target.closest?.(".reputation-open-profile")) {
+      closeReputationStatusDialog();
+      renderView("profile");
+    }
+  });
   $("#memberProfileMenu")?.addEventListener("click", (event) => event.stopPropagation());
   $all("[data-profile-view]").forEach((button) => button.addEventListener("click", () => {
     personalBoardMode = false;
@@ -5112,6 +5382,7 @@ async function boot() {
       setNotificationsOpen(false);
       setMemberProfileMenuOpen(false);
       setMobileDashboardMenuOpen(false);
+      closeReputationStatusDialog();
     }
   });
   $all(".nav-link").forEach((button) => button.addEventListener("click", (event) => {
