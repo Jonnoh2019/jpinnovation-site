@@ -24,6 +24,124 @@
   --shadow: 0 24px 80px rgba(0,0,0,.34);
 }
 
+/* Compact public landing page */
+.landing-title {
+  margin: 0 0 8px;
+  color: var(--blue-soft);
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.portal-hero .hero-copy h1 {
+  max-width: 620px;
+  margin-bottom: 9px;
+  font-size: clamp(27px, 3.2vw, 42px);
+  line-height: 1.02;
+}
+.portal-hero .lead { margin-bottom: 14px; }
+.hero-tick-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--silver);
+  font-size: 13px;
+  font-weight: 800;
+}
+.hero-tick-list li::before {
+  content: "\2713";
+  margin-right: 7px;
+  color: var(--blue-soft);
+}
+#client-features { padding-top: 16px; }
+#client-features .section-heading h2 {
+  margin-bottom: 0;
+  font-size: clamp(21px, 2.2vw, 28px);
+}
+.landing-points {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.landing-points article {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 82px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.042);
+}
+.landing-point-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border: 1px solid rgba(47,141,255,.35);
+  border-radius: 12px;
+  background: rgba(0,111,230,.12);
+  color: var(--blue-soft);
+}
+.landing-point-icon svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.landing-points h3 {
+  margin: 0 0 3px;
+  font-size: 16px;
+}
+.landing-points p {
+  margin: 0;
+  color: var(--soft);
+  font-size: 13px;
+  line-height: 1.32;
+}
+.portal-hero .hero-panel { padding: 18px; }
+.portal-hero .hero-panel strong {
+  margin: 9px 0 6px;
+  font-size: clamp(20px, 2vw, 26px);
+}
+.portal-hero .hero-panel p { margin-bottom: 10px; }
+.portal-hero .hero-panel ul {
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+@media (max-width: 560px) {
+  .portal-hero .hero-copy h1 { font-size: 27px; }
+  .portal-hero .lead { font-size: 14px; }
+  .portal-hero .hero-panel { display: none; }
+  .hero-tick-list { display: grid; gap: 5px; }
+  #client-features { padding-top: 8px; }
+  .landing-points { gap: 8px; }
+  .landing-points article {
+    align-items: flex-start;
+    gap: 9px;
+    min-height: 94px;
+    padding: 11px 9px;
+  }
+  .landing-point-icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    border-radius: 9px;
+  }
+  .landing-point-icon svg { width: 19px; height: 19px; }
+  .landing-points h3 { font-size: 14px; }
+  .landing-points p { font-size: 12px; }
+}
+
 @media (max-width: 560px) {
   .auth-dialog { align-items: start; padding: 10px; overflow-y: auto; }
   .auth-card { width: 100%; max-height: calc(100dvh - 20px); padding: 14px; }
