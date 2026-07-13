@@ -49,6 +49,7 @@ normaliseState();
 let currentView = "dashboard";
 let activeBoardPostId = "";
 let activeBoardCategory = "";
+let boardListScrollY = 0;
 let personalBoardMode = false;
 let personalQuotesMode = false;
 let messageDraftRecipientEmail = "";
@@ -113,6 +114,22 @@ function formObject(form) {
   });
   if ("email" in data) data.email = cleanEmailValue(data.email);
   return data;
+}
+
+function showSuccessToast(title, detail = "") {
+  let toast = $("#appSuccessToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "appSuccessToast";
+    toast.className = "app-toast success";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<span aria-hidden="true">&#10003;</span><div><strong>${escapeHtml(title)}</strong>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</div>`;
+  toast.classList.add("show");
+  window.clearTimeout(showSuccessToast.timer);
+  showSuccessToast.timer = window.setTimeout(() => toast.classList.remove("show"), 4200);
 }
 
 function cleanEmailValue(value = "") {
@@ -864,6 +881,8 @@ function mapBoardPost(row) {
     reports: row.reports || 0,
     flagged: row.flagged === true,
     moderationStatus: row.moderation_status || "pending",
+    approvedAt: row.approved_at || "",
+    approvedBy: row.approved_by_name || "",
     responses: (row.board_replies || []).map((reply) => ({
       id: reply.id,
       author: reply.author_name || "Hub member",
@@ -899,7 +918,7 @@ async function loadSecureBoards() {
   if (!portalBackend || !user || isClientPortalContext(user)) return false;
   const { data, error } = await portalBackend
     .from("board_posts")
-    .select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,moderation_status,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful,moderation_status)")
+    .select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,moderation_status,approved_at,approved_by_name,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful,moderation_status)")
     .order("created_at", { ascending: false });
   if (error) {
     boardBackendAvailable = false;
@@ -1518,9 +1537,8 @@ function isClientBlockedFromHub(user) {
 }
 
 function isClientPortalContext(user = currentUser()) {
-  // Admins always need the full Hub workspace, even when their saved session
-  // was restored from the Client Portal entry URL on mobile.
-  if (user?.role === "admin") return false;
+  // The selected portal always wins. A paid member or admin can deliberately
+  // open the Client Portal without being redirected back into the Hub.
   return entryMode === "client" || user?.role === "client";
 }
 
@@ -2190,13 +2208,19 @@ async function loadSiteAnalytics() {
     const since = new Date();
     since.setDate(since.getDate() - 13);
     since.setHours(0, 0, 0, 0);
-    const { data, error } = await portalBackend
-      .from("page_views")
-      .select("created_at,visitor_id,page_path,device_type")
-      .gte("created_at", since.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    if (error) throw error;
+    const [viewsResult, totalsResult] = await Promise.all([
+      portalBackend
+        .from("page_views")
+        .select("created_at,visitor_id,page_path,device_type")
+        .gte("created_at", since.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(5000),
+      portalBackend.rpc("admin_dashboard_metrics")
+    ]);
+    if (viewsResult.error) throw viewsResult.error;
+    if (totalsResult.error) throw totalsResult.error;
+    const data = viewsResult.data;
+    const totals = totalsResult.data || {};
     const rows = data || [];
     const todayKey = new Date().toISOString().slice(0, 10);
     const todayRows = rows.filter((row) => String(row.created_at || "").slice(0, 10) === todayKey);
@@ -2219,10 +2243,14 @@ async function loadSiteAnalytics() {
     });
     mount.innerHTML = `
       <div class="metrics-grid">
-        ${analyticsMetric("Today", todayRows.length, "page views")}
-        ${analyticsMetric("Visitors today", uniqueToday, "anonymous devices")}
+        ${analyticsMetric("Total website visits", totals.total_website_visits || 0, "all recorded page views")}
+        ${analyticsMetric("Unique visitors", totals.unique_visitors || 0, "anonymous browser IDs")}
+        ${analyticsMetric("Member registrations", totals.member_registrations || 0, "paid Hub accounts")}
+        ${analyticsMetric("Client registrations", totals.client_registrations || 0, "free Client Portal accounts")}
+        ${analyticsMetric("Posts created", totals.posts_created || 0, "all submitted threads")}
+        ${analyticsMetric("Active members", totals.active_members || 0, "approved paid members")}
+        ${analyticsMetric("Visits today", todayRows.length, `${uniqueToday} unique visitors`)}
         ${analyticsMetric("Mobile views", mobileToday, "today")}
-        ${analyticsMetric("Last 14 days", rows.length, "page views")}
       </div>
       <div class="feed-list analytics-feed">
         ${dailyRows.length ? renderAnalyticsRows(dailyRows) : `<p class="muted">No page views have been recorded yet.</p>`}
@@ -2230,8 +2258,8 @@ async function loadSiteAnalytics() {
     `;
   } catch (error) {
     mount.innerHTML = `
-      <p class="muted">Analytics are ready in the website code, but the Supabase page_views table still needs adding.</p>
-      <p class="form-status">${escapeHtml(error.message || "Database table not available yet.")}</p>
+      <p class="muted">Live metrics are unavailable. No placeholder totals are being shown.</p>
+      <p class="form-status">${escapeHtml(error.message || "Database metrics are not available yet.")}</p>
     `;
   }
 }
@@ -2300,7 +2328,7 @@ function renderBoards() {
   if (activePost) {
     return `
       <section class="section-card section-cyan board-thread-detail">
-        <button class="secondary-button board-back-button" type="button">&larr; Back to ${escapeHtml(activeBoardCategory || activePost.category)}</button>
+        <button class="secondary-button board-back-button" type="button">&larr; Back to Posts</button>
         ${postCard(activePost)}
       </section>
     `;
@@ -2373,7 +2401,8 @@ function renderBoardPostComposer(selectedCategory = "General Chat") {
 
 function postThreadRow(post) {
   const replies = visibleBoardReplies(post);
-  return `<button class="board-thread-row open-board-post" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${escapeHtml(post.title)}</strong><small>${escapeHtml(boardPostTypeLabel(post.postType))} &middot; ${escapeHtml(post.author)} &middot; ${escapeHtml(post.created || "Today")}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>${post.moderationStatus !== "approved" ? `<span class="pill warn">Pending</span>` : ""}<span aria-hidden="true">&rsaquo;</span></button>`;
+  const preview = String(post.description || "").replace(/\s+/g, " ").trim().slice(0, 110);
+  return `<button class="board-thread-row open-board-post" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${escapeHtml(post.title)}</strong><span class="thread-row-preview">${escapeHtml(preview)}${String(post.description || "").length > 110 ? "&hellip;" : ""}</span><small>${escapeHtml(post.author)} &middot; ${escapeHtml(post.created || "Today")} &middot; ${escapeHtml(boardPostTypeLabel(post.postType))}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span><span class="pill ${post.moderationStatus === "approved" ? "good" : "warn"}">${post.moderationStatus === "approved" ? "Published" : "Pending"}</span><span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
 function boardDescription(category) {
@@ -3078,6 +3107,8 @@ function renderAdmin(user) {
   if (user.role !== "admin") return `<section class="section-card"><h2>Not available</h2><p class="muted">Admin review is only visible to JP Innovation admins.</p></section>`;
   const flagged = [...state.posts.filter((post) => post.flagged || post.reports > 0), ...state.flagged];
   const moderationPosts = state.posts.filter((post) => post.moderationStatus === "pending" || post.flagged || post.reports > 0);
+  const approvedPosts = state.posts.filter((post) => post.moderationStatus === "approved")
+    .sort((a, b) => String(b.approvedAt || b.createdAt || "").localeCompare(String(a.approvedAt || a.createdAt || "")));
   const moderationReplies = state.posts.flatMap((post) => (post.responses || []).filter((reply) => reply.moderationStatus === "pending").map((reply) => ({ post, reply })));
   const moderationProjects = state.projects.filter((project) => project.moderationStatus === "pending");
   const applications = adminProfilesStatus === "ready"
@@ -3170,6 +3201,25 @@ function renderAdmin(user) {
             <button class="secondary-button post-moderation-action danger-action" data-post-action="rejected" data-post-id="${escapeHtml(item.id)}" type="button">Reject</button>
           </div>
         </article>`).join("") : `<p class="muted">No flagged content right now.</p>`}
+      </div>
+    </details>
+    <details id="adminApprovedPosts" class="section-card admin-fold section-lime">
+      <summary class="list-title"><div><h2>Approved Posts</h2><p>Published discussion history, kept separate from pending moderation.</p></div><span class="pill good">${approvedPosts.length}</span></summary>
+      <div class="approved-post-list">
+        ${approvedPosts.length ? approvedPosts.map((post) => `
+          <article class="approved-post-row">
+            <div>
+              <span class="badge">Published</span>
+              <h3>${escapeHtml(post.title)}</h3>
+              <p>${escapeHtml(post.author)} &middot; submitted ${escapeHtml(post.created || "Date unavailable")}</p>
+            </div>
+            <div class="approved-post-meta">
+              <span><small>Approved</small><strong>${escapeHtml(post.approvedAt ? formatBoardDate(post.approvedAt) : "Previously approved")}</strong></span>
+              <span><small>Approved by</small><strong>${escapeHtml(post.approvedBy || "JP Innovation admin")}</strong></span>
+              <span><small>Status</small><strong>Approved / Published</strong></span>
+            </div>
+            <button class="secondary-button open-board-post" data-post-id="${escapeHtml(post.id)}" type="button">Open live discussion</button>
+          </article>`).join("") : `<p class="muted">No approved posts yet.</p>`}
       </div>
     </details>
     <details id="adminReplyModeration" class="section-card admin-fold section-blue" ${moderationReplies.length ? "open" : ""}>
@@ -3297,6 +3347,7 @@ function postCard(post) {
         <span class="pill">${replies.length} replies</span>
         ${post.flagged ? `<span class="pill warn">Flagged</span>` : ""}
       </div>
+      ${user?.role === "admin" && post.moderationStatus !== "approved" ? `<div class="admin-actions thread-moderation-actions"><button class="primary-button post-moderation-action" data-post-action="approved" data-post-id="${escapeHtml(post.id)}" type="button">Approve and publish</button><button class="secondary-button post-moderation-action danger-action" data-post-action="rejected" data-post-id="${escapeHtml(post.id)}" type="button">Reject</button></div>` : ""}
       ${replies.length ? `
         <div class="reply-list">
           ${replies.map((reply) => `
@@ -3578,12 +3629,16 @@ function bindViewHandlers(view) {
         if (newPost.flagged) state.flagged.unshift({ title: data.title, description: data.description, reason: "Automatic moderation keyword flag" });
         saveState();
         event.currentTarget.reset();
-        if (status) status.textContent = "Post submitted for JP Innovation approval.";
+        if (status) {
+          status.classList.add("success");
+          status.innerHTML = "<strong>Post submitted successfully.</strong><br>Your post is now awaiting admin approval.";
+        }
+        showSuccessToast("Post submitted successfully.", "Your post is now awaiting admin approval.");
         renderNotifications();
         window.setTimeout(() => {
           activeBoardCategory = data.category;
           renderView("boards");
-        }, 550);
+        }, 1400);
       } catch (error) {
         if (status) status.textContent = error.message || "The post could not be published.";
       }
@@ -3591,6 +3646,7 @@ function bindViewHandlers(view) {
     bindReports();
     bindHelpfulButtons();
     bindReplyForms();
+    bindPostModerationActions();
     bindReplyModerationActions();
     bindBoardFilters();
     bindOpenBoardPosts();
@@ -3599,6 +3655,7 @@ function bindViewHandlers(view) {
     $(".board-back-button")?.addEventListener("click", () => {
       activeBoardPostId = "";
       renderView("boards");
+      window.setTimeout(() => window.scrollTo({ top: boardListScrollY, left: 0, behavior: "auto" }), 0);
     });
     $(".board-all-button")?.addEventListener("click", () => {
       activeBoardCategory = "";
@@ -3733,6 +3790,7 @@ function bindViewHandlers(view) {
       renderView("quotes");
     });
     bindQuoteActions();
+    bindOpenBoardPosts();
     bindQuoteJumps();
     bindRepeatWorkActions();
   }
@@ -3864,6 +3922,7 @@ function bindViewHandlers(view) {
     bindReplyModerationActions();
     bindProjectModerationActions();
     bindQuoteActions();
+    bindOpenBoardPosts();
     loadSiteAnalytics();
     $("#refreshAdminProfiles")?.addEventListener("click", () => loadSecureAdminProfiles(true));
     if (adminProfilesStatus === "idle") loadSecureAdminProfiles();
@@ -4024,19 +4083,29 @@ function bindPostModerationActions() {
       const post = state.posts.find((item) => item.id === button.dataset.postId);
       if (!post) return;
       const moderationStatus = button.dataset.postAction;
+      const returnView = currentView;
       try {
         if (boardBackendAvailable) {
-          const { error } = await portalBackend.from("board_posts").update({
-            moderation_status: moderationStatus,
-            flagged: moderationStatus === "approved" ? false : post.flagged
-          }).eq("id", post.id);
+          const { data, error } = await portalBackend.rpc("moderate_board_post", {
+            p_post_id: post.id,
+            p_status: moderationStatus
+          });
           if (error) throw error;
+          const updated = Array.isArray(data) ? data[0] : data;
+          if (updated) {
+            post.approvedAt = updated.approved_at || "";
+            post.approvedBy = updated.approved_by_name || "";
+          }
         }
         post.moderationStatus = moderationStatus;
         if (moderationStatus === "approved") post.flagged = false;
         saveState();
         renderNotifications();
-        renderView("admin");
+        showSuccessToast(
+          moderationStatus === "approved" ? "Post approved and published." : "Post status updated.",
+          moderationStatus === "approved" ? "It is now visible in the live discussion feed." : "The moderation queue has refreshed."
+        );
+        renderView(returnView === "boards" ? "boards" : "admin");
       } catch (error) {
         adminProfilesMessage = `Post moderation failed: ${error.message}`;
         renderView("admin");
@@ -4475,6 +4544,7 @@ function bindBoardFilters() {
 function bindOpenBoardPosts() {
   $all(".open-board-post").forEach((button) => {
     button.addEventListener("click", () => {
+      boardListScrollY = window.scrollY;
       activeBoardPostId = button.dataset.postId;
       renderView("boards");
       window.scrollTo({ top: 0, behavior: "smooth" });
