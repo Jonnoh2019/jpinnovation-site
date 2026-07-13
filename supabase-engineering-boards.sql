@@ -64,10 +64,15 @@ create table if not exists public.board_replies (
   updated_at timestamptz not null default now()
 );
 
+alter table public.board_replies
+  add column if not exists moderation_status text not null default 'pending'
+  check (moderation_status in ('pending', 'approved', 'rejected'));
+
 create index if not exists board_posts_created_at_idx on public.board_posts(created_at desc);
 create index if not exists board_posts_category_idx on public.board_posts(category);
 create index if not exists board_posts_moderation_idx on public.board_posts(moderation_status, created_at desc);
 create index if not exists board_replies_post_id_idx on public.board_replies(post_id, created_at);
+create index if not exists board_replies_moderation_idx on public.board_replies(moderation_status, created_at desc);
 
 create or replace function public.set_board_updated_at()
 returns trigger
@@ -115,17 +120,22 @@ for delete to authenticated using (author_id = auth.uid() or public.is_hub_admin
 
 drop policy if exists "Hub members read board replies" on public.board_replies;
 create policy "Hub members read board replies" on public.board_replies
-for select to authenticated using (public.is_hub_member());
+for select to authenticated using (
+  public.is_hub_member()
+  and (moderation_status = 'approved' or author_id = auth.uid() or public.is_hub_admin())
+);
 
 drop policy if exists "Hub members create own board replies" on public.board_replies;
 create policy "Hub members create own board replies" on public.board_replies
-for insert to authenticated with check (public.is_hub_member() and author_id = auth.uid());
+for insert to authenticated with check (
+  public.is_hub_member() and author_id = auth.uid() and moderation_status = 'pending'
+);
 
 drop policy if exists "Owners update board replies" on public.board_replies;
 create policy "Owners update board replies" on public.board_replies
 for update to authenticated
 using (author_id = auth.uid() or public.is_hub_admin())
-with check (author_id = auth.uid() or public.is_hub_admin());
+with check (public.is_hub_admin() or (author_id = auth.uid() and moderation_status = 'pending'));
 
 drop policy if exists "Owners delete board replies" on public.board_replies;
 create policy "Owners delete board replies" on public.board_replies
@@ -145,6 +155,7 @@ begin
     where r.id = reply_uuid
       and (p.author_id = auth.uid() or public.is_hub_admin())
       and r.author_id <> p.author_id
+      and r.moderation_status = 'approved'
   ) then
     raise exception 'Only the post owner can mark another member reply as helpful';
   end if;
