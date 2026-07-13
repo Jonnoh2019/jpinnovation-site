@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=visual-refresh-20260713">
+    <link rel="stylesheet" href="styles.css?v=compact-landing-20260713">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -31,62 +31,37 @@
     <main>
       <section class="portal-hero">
         <div class="hero-copy">
-          <div class="page-identity-badge" id="entryIdentityBadge">
-            <span>Client Portal</span>
-            <strong>Free customer account area</strong>
-          </div>
+          <p class="landing-title" id="entryIdentityBadge">Client Portal</p>
           <p class="eyebrow" id="entryEyebrow" hidden>Client Portal access</p>
-          <h1 id="entryTitle">Manage quotes, project updates and messages.</h1>
-          <p class="lead" id="entryLead">Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area.</p>
+          <h1 id="entryTitle">Quotes. Updates. Messages.</h1>
+          <p class="lead" id="entryLead">Your free, private workspace for working with JP Innovation.</p>
+          <ul class="hero-tick-list" aria-label="Client Portal overview">
+            <li>Request and review quotes</li>
+            <li>Follow project progress</li>
+            <li>Keep messages in one place</li>
+          </ul>
         </div>
         <aside class="hero-panel" aria-label="Membership summary">
-          <span id="entryPanelLabel">Account access</span>
-          <strong id="entryPanelTitle">Private account access</strong>
-          <p id="entryPanelCopy">Client Portal accounts are free and separate from the paid Innovation Hub. Secure account access is active while the remaining collaboration tools complete launch testing.</p>
+          <span id="entryPanelLabel">Free client access</span>
+          <strong id="entryPanelTitle">One secure account</strong>
+          <p id="entryPanelCopy">Use the same login if JP Innovation later upgrades you to paid Hub membership.</p>
           <ul>
-            <li id="entryPanelPointOne">Secure login is active; some project tools remain in launch testing.</li>
-            <li id="entryPanelPointTwo">Paid Innovation Hub registration stays on the Innovation Hub page.</li>
+            <li id="entryPanelPointOne">Private customer workspace</li>
+            <li id="entryPanelPointTwo">Innovation Hub access stays separate until approved</li>
           </ul>
         </aside>
       </section>
 
       <section class="section" id="client-features">
         <div class="section-heading">
-          <p class="eyebrow">Client Portal features</p>
-          <h2>A simple private area for JP Innovation customers.</h2>
-          <p>Use the Client Portal for the customer side of the business: quotes, project updates, repeat requests and direct messages. This is separate from the paid Innovation Hub.</p>
+          <p class="eyebrow">Everything together</p>
+          <h2>Simple tools for your project.</h2>
         </div>
-        <div class="feature-grid" aria-label="Client Portal feature list">
-          <article>
-            <span class="badge">Quotes</span>
-            <h3>View quote requests</h3>
-            <p>Keep quotation details, project notes and follow-up requests in one private customer area.</p>
-          </article>
-          <article>
-            <span class="badge">Projects</span>
-            <h3>Track project updates</h3>
-            <p>See what is active, what information is needed next and what has already been discussed.</p>
-          </article>
-          <article>
-            <span class="badge">Messages</span>
-            <h3>Communicate directly</h3>
-            <p>Keep project communication with JP Innovation tidy instead of losing decisions in separate email chains.</p>
-          </article>
-          <article>
-            <span class="badge">Repeat work</span>
-            <h3>Request things faster</h3>
-            <p>Use saved project context to make repeat orders, revisions and extra tasks easier to scope.</p>
-          </article>
-          <article>
-            <span class="badge">Free account</span>
-            <h3>No paid membership needed</h3>
-            <p>Client Portal access is for customers. Paid Innovation Hub features only unlock after an account upgrade.</p>
-          </article>
-          <article>
-            <span class="badge">Upgrade option</span>
-            <h3>Upgrade the same login</h3>
-            <p>If a client later becomes a paid member, JP Innovation can upgrade the same account for Hub access.</p>
-          </article>
+        <div class="landing-points" aria-label="Client Portal feature list">
+          <article><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 9h8M8 13h8M8 17h5"/></svg></span><div><h3>Quotes</h3><p>Request, review and respond.</p></div></article>
+          <article><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V6h6l2 2h8v11zM8 13h8M8 16h5"/></svg></span><div><h3>Projects</h3><p>See progress and next steps.</p></div></article>
+          <article><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4zM8 9h8M8 12h5"/></svg></span><div><h3>Messages</h3><p>Keep decisions easy to find.</p></div></article>
+          <article><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 1 1-6.2 3.8M4 3v5h5"/></svg></span><div><h3>Repeat work</h3><p>Send revisions and new requests faster.</p></div></article>
         </div>
       </section>
     </main>
