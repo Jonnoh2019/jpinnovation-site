@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=launch-admin-auth-unify-20260713">
+    <link rel="stylesheet" href="styles.css?v=compact-mobile-admin-auth-20260713">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -105,15 +105,12 @@
         <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
         <button class="primary-button" type="submit">Sign in</button>
         <button id="forgotPasswordButton" class="secondary-button" type="button">Forgot password? Reset it</button>
-        <button id="resendVerificationButton" class="secondary-button" type="button">Resend verification email</button>
-        <p class="muted">Your browser or password manager can save and autofill your own login on this device. JP Innovation does not add a shared saved password here.</p>
       </form>
       <form id="registerForm" class="auth-form hidden">
-        <p class="muted">Create a free Client Portal account. JP Innovation can upgrade the same login to paid Innovation Hub membership later.</p>
         <label>Full name <input name="fullName" required autocomplete="name"></label>
         <label>Email <input name="email" type="text" inputmode="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
         <label>Password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
-        <button class="primary-button" type="submit">Create Client Portal account</button>
+        <button class="primary-button" type="submit">Create account</button>
       </form>
       <form id="resetPasswordForm" class="auth-form hidden">
         <p class="muted">Enter a new password for your JP Innovation account.</p>
@@ -220,6 +217,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=launch-admin-auth-unify-20260713"></script>
+  <script src="app.js?v=compact-mobile-admin-auth-20260713"></script>
 </body>
 </html>
