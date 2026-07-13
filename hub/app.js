@@ -168,6 +168,19 @@ const featurePreviews = {
     </div>`,
     points: ["Verified profiles", "Local specialists", "Supplier and workshop capability"]
   },
+  reputation: {
+    label: "Verified member reputation",
+    title: "Blue Verified. Gold Trusted.",
+    copy: "Badges show paid membership, JP Innovation vetting and approved community reputation. Reviews never appear automatically: every rating must include a written comment and pass admin moderation.",
+    preview: `<div class="feature-ui feature-ui-reputation" aria-label="Example verified member status and review">
+      <div class="feature-ui-toolbar"><strong>Member reputation</strong><span>Admin moderated</span></div>
+      <div class="reputation-preview-profile"><span class="feature-ui-avatar">DM</span><span><b>Dan Morgan <em class="preview-verified-star blue">&#9733;</em></b><small>CNC machining &middot; Birmingham</small></span><em class="preview-status-badge blue">Blue Verified</em></div>
+      <div class="reputation-preview-progress"><span><small>CONTRIBUTION POINTS</small><b>74 / 100</b></span><progress value="74" max="100"></progress></div>
+      <div class="reputation-preview-review"><span class="preview-review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span><p>&ldquo;Clear communication, accurate work and a helpful delivery update.&rdquo;</p><small>Approved member review &middot; rating and comment checked by JP Innovation</small></div>
+      <div class="reputation-preview-profile gold-example"><span class="feature-ui-avatar">SC</span><span><b>Sarah Collins <em class="preview-verified-star gold">&#9733;</em></b><small>100+ points or 3 approved positive reviews</small></span><em class="preview-status-badge gold">Gold Trusted</em></div>
+    </div>`,
+    points: ["Blue: active paid membership plus JP Innovation vetting", "Gold: 100 points or 3 approved 4–5 star reviews", "Every review requires a rating and written comment", "All reviews require admin approval"]
+  },
   calculators: {
     label: "Engineering calculators",
     title: "Quick checks without leaving the Hub.",
