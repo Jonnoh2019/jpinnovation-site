@@ -36,6 +36,11 @@
   .view-mount .board-thread-row .pill { grid-column: 2; width: fit-content; }
   .view-mount .board-thread-row > span:last-child { grid-column: 3; grid-row: 1 / span 2; }
   .view-mount .board-overview-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .view-mount .board-category-compact .board-category-header { grid-template-columns: minmax(0, 1fr) auto; }
+  .view-mount .board-category-compact .board-category-header > div { grid-column: 1 / -1; }
+  .view-mount .board-category-compact p { max-width: 100%; }
+  .view-mount .board-personal-header { align-items: flex-start; }
+  .member-profile-menu .profile-menu-link { padding-block: 8px; }
 }
 
 /* Keep access dialogs centred on every screen size. */
@@ -724,6 +729,42 @@ input:focus, textarea:focus, select:focus {
 }
 .board-category-header h2 { margin-bottom: 3px; }
 .board-category-header p { margin-bottom: 0; }
+.board-category-compact {
+  padding: 10px 12px;
+  gap: 0;
+}
+.board-category-compact .board-category-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  margin: 0;
+  gap: 10px;
+}
+.board-category-compact h2 { font-size: 18px; }
+.board-category-compact p {
+  overflow: hidden;
+  max-width: 620px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.board-category-compact .secondary-button { min-height: 34px; padding: 7px 11px; }
+.board-thread-panel { margin-top: -4px; }
+.board-personal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+}
+.board-personal-header h2,
+.board-personal-header p { margin: 0; }
+.quote-personal-hero {
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  padding: 13px;
+}
+.quote-personal-hero h2 { font-size: 21px; }
 .board-empty-state {
   border: 1px dashed rgba(47,141,255,.32);
   border-radius: var(--radius);
@@ -1109,7 +1150,10 @@ input:focus, textarea:focus, select:focus {
 }
 .profile-menu-link {
   position: relative;
-  display: block;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
   width: 100%;
   padding: 10px 42px 10px 11px;
   border: 1px solid transparent;
@@ -1118,6 +1162,19 @@ input:focus, textarea:focus, select:focus {
   color: var(--ink);
   text-align: left;
 }
+.profile-menu-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(47,141,255,.28);
+  border-radius: 8px;
+  background: rgba(0,111,230,.1);
+  color: var(--blue-soft);
+  font-size: 12px;
+  line-height: 1;
+}
+.profile-menu-link > span:nth-child(2) { min-width: 0; }
 .profile-menu-link:hover,
 .profile-menu-link:focus-visible {
   border-color: rgba(47,141,255,.32);
