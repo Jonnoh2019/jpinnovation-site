@@ -38,6 +38,25 @@ button { cursor: pointer; }
 [hidden] {
   display: none !important;
 }
+
+/* Keep access dialogs centred on every screen size. */
+.auth-dialog {
+  align-items: center;
+  justify-items: center;
+}
+@media (max-width: 560px) {
+  .auth-dialog {
+    min-height: 100dvh;
+    align-items: center;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  .auth-card {
+    margin-block: auto;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
+}
 html.restoring-hub-session body {
   opacity: 0;
   pointer-events: none;
@@ -246,6 +265,25 @@ html.restoring-hub-session body {
   .auth-form .secondary-button { min-height: 38px; padding: 7px 10px; font-size: 12px; }
   .close-button { top: 10px; right: 10px; width: 30px; height: 30px; font-size: 18px; }
   .form-status { min-height: 16px; margin-top: 8px; font-size: 12px; }
+}
+
+/* Final mobile position override. */
+.auth-dialog {
+  align-items: center;
+  justify-items: center;
+}
+@media (max-width: 560px) {
+  .auth-dialog {
+    min-height: 100dvh;
+    align-items: center;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  .auth-card {
+    margin-block: auto;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
 }
 
 .hub-header {
