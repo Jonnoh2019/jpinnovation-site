@@ -2508,6 +2508,67 @@ input:focus, textarea:focus, select:focus {
   min-height: 36px;
   padding: 8px 12px;
 }
+.formatted-text-editor {
+  display: grid;
+  gap: 7px;
+}
+.formatted-text-editor > label {
+  color: var(--ink);
+  font-weight: 800;
+}
+.text-format-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.text-format-tools button {
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid rgba(60,151,255,.28);
+  border-radius: 7px;
+  background: rgba(60,151,255,.07);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.text-format-tools button:hover,
+.text-format-tools button:focus-visible {
+  border-color: rgba(60,151,255,.65);
+  background: rgba(60,151,255,.15);
+  outline: none;
+}
+.text-format-tools small {
+  margin-left: auto;
+  color: var(--soft);
+  font-size: 10px;
+}
+.formatted-post-content {
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.reply-card .formatted-post-content {
+  margin: 5px 0 9px;
+}
+.reply-author {
+  margin-bottom: 3px;
+  color: var(--ink);
+}
+@media (max-width: 640px) {
+  .text-format-tools small {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+  .formatted-post-content {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
 .notice {
   position: relative;
   overflow: hidden;
