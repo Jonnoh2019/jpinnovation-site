@@ -1119,17 +1119,15 @@ function configureEntryPage() {
   document.title = isHubEntry ? "JP Innovation Hub Sign In" : "JP Innovation Client Portal";
   const identityBadge = $("#entryIdentityBadge");
   if (identityBadge) {
-    identityBadge.innerHTML = isHubEntry
-      ? "<span>Innovation Hub</span><strong>Paid member area</strong>"
-      : "<span>Client Portal</span><strong>Free customer account area</strong>";
+    identityBadge.textContent = isHubEntry ? "Innovation Hub" : "Client Portal";
   }
   setText("#entryEyebrow", isHubEntry ? "Innovation Hub member access" : "Client Portal access");
-  setText("#entryTitle", isHubEntry ? "Access paid member tools, contacts and private opportunities." : "Manage quotes, project updates and messages.");
+  setText("#entryTitle", isHubEntry ? "Connect. Collaborate. Build." : "Quotes. Updates. Messages.");
   setText(
     "#entryLead",
     isHubEntry
-      ? "Sign in to access paid member features. Client Portal accounts can use the same login, but Hub features require an upgraded paid account."
-      : "Sign in to manage quote requests, project updates and direct messages with JP Innovation. Innovation Hub members can use the same sign-in for the paid Hub area."
+      ? "A private paid workspace for approved engineering members."
+      : "Your free, private workspace for working with JP Innovation."
   );
   const signInButton = $("#entrySignInButton");
   if (signInButton) signInButton.textContent = "Sign in";
@@ -1138,16 +1136,16 @@ function configureEntryPage() {
     requestLink.textContent = "Register for access";
     requestLink.dataset.openAuth = "register";
   }
-  setText("#entryPanelLabel", isHubEntry ? "Paid member access" : "Account access");
-  setText("#entryPanelTitle", isHubEntry ? "Paid features require upgrade" : "Private account access");
+  setText("#entryPanelLabel", isHubEntry ? "Paid member access" : "Free client access");
+  setText("#entryPanelTitle", isHubEntry ? "Approved members only" : "One secure account");
   setText(
     "#entryPanelCopy",
     isHubEntry
-      ? "The Innovation Hub is for paid members. Free Client Portal users can sign in with the same account but will be asked to upgrade before paid features open."
-      : "Client Portal accounts are free and separate from the paid Innovation Hub. Secure account access is active while the remaining collaboration tools complete launch testing."
+      ? "Register once, then enter when JP Innovation approves your membership."
+      : "Use the same login if JP Innovation later upgrades you to paid Hub membership."
   );
-  setText("#entryPanelPointOne", isHubEntry ? "One login can be upgraded from Client Portal to Innovation Hub." : "Secure login is active; some project tools remain in launch testing.");
-  setText("#entryPanelPointTwo", isHubEntry ? "Client Portal remains available for quotes, projects and messages." : "Paid Innovation Hub registration stays on the Innovation Hub page.");
+  setText("#entryPanelPointOne", isHubEntry ? "Paid features unlock after approval" : "Private customer workspace");
+  setText("#entryPanelPointTwo", isHubEntry ? "Client Portal access remains included" : "Innovation Hub access stays separate until approved");
 }
 
 function isClientBlockedFromHub(user) {
