@@ -54,6 +54,7 @@ let personalQuotesMode = false;
 let messageDraftRecipientEmail = "";
 let boardBackendAvailable = false;
 let contentBackendAvailable = false;
+let sharedWorkspaceBackendAvailable = false;
 let secureAdminProfiles = [];
 let adminProfilesStatus = "idle";
 let adminProfilesMessage = "Connecting to live account records...";
@@ -963,6 +964,177 @@ async function loadSecureSubmissions() {
   state.activeProjectId = state.projects[0]?.id || "";
   saveState();
   return true;
+}
+
+function secureDirectoryMember(row) {
+  const role = row.account_type || "member";
+  return {
+    id: row.user_id,
+    email: cleanEmailValue(row.email || ""),
+    name: row.full_name || row.email || "Hub member",
+    business: row.business || "",
+    role,
+    level: role === "admin" ? "JP Admin" : (role === "member" ? "Innovation Hub member" : "Client Portal"),
+    approved: true,
+    verified: role === "admin",
+    directoryVisible: true,
+    example: false
+  };
+}
+
+function mapSecureMessage(row, user = currentUser()) {
+  return {
+    id: row.id,
+    from: row.sender_name || row.sender_email || "Member",
+    subject: row.subject,
+    body: row.body,
+    unread: !row.read_at && row.recipient_id === user?.id,
+    ownerEmail: user?.role === "client" ? user.email : "",
+    senderId: row.sender_id,
+    senderEmail: cleanEmailValue(row.sender_email || ""),
+    recipientId: row.recipient_id,
+    recipientEmail: cleanEmailValue(row.recipient_email || ""),
+    recipientName: row.recipient_name || row.recipient_email || "Member",
+    created: formatBoardDate(row.created_at),
+    createdAt: row.created_at,
+    example: false
+  };
+}
+
+async function loadSecureWorkspace() {
+  const user = currentUser();
+  if (!portalBackend || !user) return false;
+  const [messagesResult, directoryResult, resourcesResult, eventsResult, interestsResult, updatesResult, partsResult, commentsResult] = await Promise.all([
+    portalBackend.from("hub_messages").select("*").order("created_at", { ascending: false }),
+    portalBackend.rpc("hub_message_directory"),
+    portalBackend.from("hub_resources").select("*").order("created_at", { ascending: false }),
+    portalBackend.from("hub_events").select("*").order("event_date", { ascending: true }),
+    portalBackend.from("hub_event_interests").select("event_id,user_id,created_at"),
+    portalBackend.from("hub_project_updates").select("*").order("created_at", { ascending: false }),
+    portalBackend.from("hub_project_parts").select("*").order("created_at", { ascending: true }),
+    portalBackend.from("hub_project_comments").select("*").order("created_at", { ascending: false })
+  ]);
+  const results = [messagesResult, directoryResult, resourcesResult, eventsResult, interestsResult, updatesResult, partsResult, commentsResult];
+  if (results.some((result) => result.error)) {
+    sharedWorkspaceBackendAvailable = false;
+    return false;
+  }
+
+  sharedWorkspaceBackendAvailable = true;
+  const directory = (directoryResult.data || []).map(secureDirectoryMember).filter((member) => member.email);
+  directory.forEach((member) => {
+    const existing = state.members.find((item) => item.email === member.email);
+    if (existing) Object.assign(existing, member);
+    else state.members.push(member);
+  });
+  state.messages = (messagesResult.data || []).map((row) => mapSecureMessage(row, user));
+  state.resources = (resourcesResult.data || []).map((row) => ({
+    id: row.id, type: row.resource_type, title: row.title, detail: row.detail,
+    created: formatBoardDate(row.created_at), example: false
+  }));
+  const interestsByEvent = new Map();
+  (interestsResult.data || []).forEach((interest) => {
+    const entries = interestsByEvent.get(interest.event_id) || [];
+    entries.push(interest.user_id);
+    interestsByEvent.set(interest.event_id, entries);
+  });
+  state.events = (eventsResult.data || []).map((row) => ({
+    id: row.id, title: row.title, date: row.event_date, location: row.location,
+    type: row.event_type, interested: interestsByEvent.get(row.id) || [], example: false
+  }));
+  state.projects.forEach((project) => {
+    project.updates = (updatesResult.data || []).filter((item) => item.project_id === project.id).map((item) => ({
+      id: item.id, title: item.title, body: item.body, created: formatBoardDate(item.created_at)
+    }));
+    project.parts = (partsResult.data || []).filter((item) => item.project_id === project.id).map((item) => ({
+      id: item.id, name: item.name, material: item.material || "TBC", status: item.part_status || "Open"
+    }));
+    project.discussion = (commentsResult.data || []).filter((item) => item.project_id === project.id).map((item) => ({
+      id: item.id, author: item.author_name || "Hub member", authorId: item.author_id,
+      body: item.body, helpful: false, created: formatBoardDate(item.created_at)
+    }));
+    project.comments = project.discussion.length;
+    project.nextStep = project.updates[0]?.title || "Add the first project milestone";
+  });
+  saveState();
+  return true;
+}
+
+async function createSecureResource(data, user) {
+  if (!sharedWorkspaceBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.from("hub_resources").insert({
+    resource_type: data.type, title: data.title.trim(), detail: data.detail.trim(), created_by: user.id
+  }).select("*").single();
+  if (error) throw error;
+  return { id: row.id, type: row.resource_type, title: row.title, detail: row.detail, created: formatBoardDate(row.created_at), example: false };
+}
+
+async function createSecureEvent(data, user) {
+  if (!sharedWorkspaceBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.from("hub_events").insert({
+    title: data.title.trim(), event_type: data.type, event_date: data.date,
+    location: data.location.trim(), created_by: user.id
+  }).select("*").single();
+  if (error) throw error;
+  return { id: row.id, title: row.title, type: row.event_type, date: row.event_date, location: row.location, interested: [], example: false };
+}
+
+async function toggleSecureEventInterest(event, user) {
+  if (!sharedWorkspaceBackendAvailable) return false;
+  const joined = (event.interested || []).includes(user.id);
+  const query = joined
+    ? portalBackend.from("hub_event_interests").delete().eq("event_id", event.id).eq("user_id", user.id)
+    : portalBackend.from("hub_event_interests").insert({ event_id: event.id, user_id: user.id });
+  const { error } = await query;
+  if (error) throw error;
+  event.interested = joined ? event.interested.filter((id) => id !== user.id) : [...(event.interested || []), user.id];
+  return true;
+}
+
+async function createSecureMessage(data, user, recipientEmail) {
+  if (!sharedWorkspaceBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.rpc("send_hub_message", {
+    recipient_email: recipientEmail,
+    message_subject: data.subject.trim(),
+    message_body: data.body.trim()
+  });
+  if (error) throw error;
+  return mapSecureMessage(row, user);
+}
+
+async function markSecureMessagesRead() {
+  if (!sharedWorkspaceBackendAvailable) return false;
+  const { error } = await portalBackend.rpc("mark_hub_messages_read");
+  if (error) throw error;
+  return true;
+}
+
+async function createSecureProjectUpdate(project, data, user) {
+  if (!sharedWorkspaceBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.from("hub_project_updates").insert({
+    project_id: project.id, title: data.title.trim(), body: data.body.trim(), created_by: user.id
+  }).select("*").single();
+  if (error) throw error;
+  return { id: row.id, title: row.title, body: row.body, created: formatBoardDate(row.created_at) };
+}
+
+async function createSecureProjectPart(project, data, user) {
+  if (!sharedWorkspaceBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.from("hub_project_parts").insert({
+    project_id: project.id, name: data.name.trim(), material: data.material || "TBC",
+    part_status: data.status || "Open", created_by: user.id
+  }).select("*").single();
+  if (error) throw error;
+  return { id: row.id, name: row.name, material: row.material || "TBC", status: row.part_status || "Open" };
+}
+
+async function createSecureProjectComment(project, data, user) {
+  if (!sharedWorkspaceBackendAvailable) return null;
+  const { data: row, error } = await portalBackend.from("hub_project_comments").insert({
+    project_id: project.id, author_id: user.id, author_name: user.name, body: data.body.trim()
+  }).select("*").single();
+  if (error) throw error;
+  return { id: row.id, author: row.author_name, authorId: row.author_id, body: row.body, helpful: false, created: formatBoardDate(row.created_at) };
 }
 
 async function createSecureProject(data, user) {
@@ -2526,7 +2698,7 @@ function renderEvents() {
       </form>` : ""}
       <div class="cards-grid">${state.events.map((event) => {
         const interested = event.interested || [];
-        const joined = interested.includes(currentUser()?.email);
+        const joined = interested.includes(currentUser()?.id);
         return `
         <article class="event-card">
           <span class="badge">${escapeHtml(event.type)}</span>
@@ -2701,7 +2873,7 @@ function renderSettings(user) {
   return `
     <section class="section-card section-silver">
       <h2>Settings</h2>
-      <p class="muted">Your secure account, board posts, projects and quote requests use the shared service. Personal display preferences remain on this device.</p>
+      <p class="muted">Your account, messages, board posts, projects, events, resources and quote requests use the secure shared service. Personal display preferences remain on this device.</p>
       <div class="cards-grid">
         <article class="card"><span class="badge">Account plan</span><h3>${isClient ? "Client Portal" : "Innovation Hub"}</h3><p>${isClient ? "Free access for quotes, requests and direct communication with JP Innovation." : "GBP 19/month Innovation Hub membership. Billing begins only when JP Innovation confirms activation."}</p></article>
         <article class="card"><span class="badge">Alerts</span><h3>Notifications</h3><p>Choose which Hub activity appears in your notification centre using the preferences below.</p></article>
@@ -3476,51 +3648,70 @@ function bindViewHandlers(view) {
   if (view === "directory") bindDirectory();
   if (view === "resources") {
     bindResourceTools();
-    $("#resourceForm")?.addEventListener("submit", (event) => {
+    $("#resourceForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = formObject(event.currentTarget);
-      state.resources.unshift({
-        id: uid("resource"),
-        type: data.type,
-        title: data.title.trim(),
-        detail: data.detail.trim(),
-        example: false
-      });
+      const user = currentUser();
+      try {
+        const secureResource = await createSecureResource(data, user);
+        state.resources.unshift(secureResource || {
+          id: uid("resource"), type: data.type, title: data.title.trim(), detail: data.detail.trim(), example: false
+        });
+      } catch (error) {
+        window.alert(error.message || "The resource could not be added.");
+        return;
+      }
       saveState();
       renderView("resources");
     });
   }
   if (view === "events") {
-    $("#eventForm")?.addEventListener("submit", (event) => {
+    $("#eventForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = formObject(event.currentTarget);
-      state.events.unshift({
-        id: uid("event"),
-        title: data.title.trim(),
-        date: data.date.trim(),
-        location: data.location.trim(),
-        type: data.type,
-        interested: [],
-        example: false
-      });
+      const user = currentUser();
+      try {
+        const secureEvent = await createSecureEvent(data, user);
+        state.events.unshift(secureEvent || {
+          id: uid("event"), title: data.title.trim(), date: data.date.trim(),
+          location: data.location.trim(), type: data.type, interested: [], example: false
+        });
+      } catch (error) {
+        window.alert(error.message || "The event could not be added.");
+        return;
+      }
       saveState();
       renderView("events");
     });
-    $all(".event-interest-button").forEach((button) => button.addEventListener("click", () => {
+    $all(".event-interest-button").forEach((button) => button.addEventListener("click", async () => {
       const item = state.events.find((event) => event.id === button.dataset.eventId);
-      const email = currentUser()?.email;
-      if (!item || !email) return;
+      const user = currentUser();
+      if (!item || !user) return;
       item.interested = item.interested || [];
-      item.interested = item.interested.includes(email)
-        ? item.interested.filter((entry) => entry !== email)
-        : [...item.interested, email];
+      try {
+        const synced = await toggleSecureEventInterest(item, user);
+        if (!synced) {
+          item.interested = item.interested.includes(user.id)
+            ? item.interested.filter((entry) => entry !== user.id)
+            : [...item.interested, user.id];
+        }
+      } catch (error) {
+        window.alert(error.message || "Your event interest could not be updated.");
+        return;
+      }
       saveState();
       renderView("events");
     }));
   }
   if (view === "messages") {
-    $(".mark-messages-read")?.addEventListener("click", () => {
+    $(".mark-messages-read")?.addEventListener("click", async () => {
       const user = currentUser();
+      try {
+        await markSecureMessagesRead();
+      } catch (error) {
+        window.alert(error.message || "Messages could not be marked as read.");
+        return;
+      }
       state.messages.forEach((message) => {
         if (user?.role === "client") {
           if (message.ownerEmail === user.email) message.unread = false;
@@ -3533,24 +3724,23 @@ function bindViewHandlers(view) {
       saveState();
       renderView("messages");
     });
-    $("#messageForm")?.addEventListener("submit", (event) => {
+    $("#messageForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = formObject(event.currentTarget);
       const user = currentUser();
       const recipientEmail = user?.role === "client" ? adminEmail : cleanEmailValue(data.toEmail || "");
       const recipient = state.members.find((member) => member.email === recipientEmail);
-      state.messages.unshift({
-        id: uid("msg"),
-        from: data.from.trim(),
-        subject: data.subject.trim(),
-        body: data.body.trim(),
-        unread: true,
-        ownerEmail: user?.role === "client" ? user.email : "",
-        senderEmail: user?.email || "",
-        recipientEmail,
-        recipientName: user?.role === "client" ? "JP Innovation" : (recipient?.name || recipientEmail),
-        example: false
-      });
+      try {
+        const secureMessage = await createSecureMessage(data, user, recipientEmail);
+        state.messages.unshift(secureMessage || {
+          id: uid("msg"), from: data.from.trim(), subject: data.subject.trim(), body: data.body.trim(), unread: true,
+          ownerEmail: user?.role === "client" ? user.email : "", senderEmail: user?.email || "", recipientEmail,
+          recipientName: user?.role === "client" ? "JP Innovation" : (recipient?.name || recipientEmail), example: false
+        });
+      } catch (error) {
+        window.alert(error.message || "The message could not be sent.");
+        return;
+      }
       messageDraftRecipientEmail = "";
       saveState();
       renderView("messages");
@@ -3962,13 +4152,19 @@ function bindProjectDetail() {
     });
   });
   $all(".project-update-form").forEach((form) => {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const project = state.projects.find((item) => item.id === form.dataset.projectId);
       if (!project) return;
       const data = formObject(form);
       project.updates ||= [];
-      project.updates.unshift({ id: uid("update"), title: data.title, body: data.body, created: "Just now" });
+      try {
+        const secureUpdate = await createSecureProjectUpdate(project, data, currentUser());
+        project.updates.unshift(secureUpdate || { id: uid("update"), title: data.title, body: data.body, created: "Just now" });
+      } catch (error) {
+        window.alert(error.message || "The project update could not be added.");
+        return;
+      }
       project.nextStep = data.title;
       project.points = (project.points || 0) + 3;
       saveState();
@@ -3976,26 +4172,38 @@ function bindProjectDetail() {
     });
   });
   $all(".project-part-form").forEach((form) => {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const project = state.projects.find((item) => item.id === form.dataset.projectId);
       if (!project) return;
       const data = formObject(form);
       project.parts ||= [];
-      project.parts.push({ id: uid("part"), name: data.name, material: data.material || "TBC", status: data.status || "Open" });
+      try {
+        const securePart = await createSecureProjectPart(project, data, currentUser());
+        project.parts.push(securePart || { id: uid("part"), name: data.name, material: data.material || "TBC", status: data.status || "Open" });
+      } catch (error) {
+        window.alert(error.message || "The project part could not be added.");
+        return;
+      }
       saveState();
       renderView("projects");
     });
   });
   $all(".project-comment-form").forEach((form) => {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = currentUser();
       const project = state.projects.find((item) => item.id === form.dataset.projectId);
       if (!project || !user) return;
       const data = formObject(form);
       project.discussion ||= [];
-      project.discussion.unshift({ id: uid("comment"), author: user.name, body: data.body, helpful: false, created: "Just now" });
+      try {
+        const secureComment = await createSecureProjectComment(project, data, user);
+        project.discussion.unshift(secureComment || { id: uid("comment"), author: user.name, body: data.body, helpful: false, created: "Just now" });
+      } catch (error) {
+        window.alert(error.message || "The project comment could not be added.");
+        return;
+      }
       project.comments = project.discussion.length;
       user.points += 1;
       syncMember(user);
@@ -4128,6 +4336,18 @@ function bindDeleteButtons() {
           }
           if (contentBackendAvailable && button.dataset.deleteType === "quote") {
             const { error } = await portalBackend.from("quote_requests").delete().eq("id", button.dataset.id);
+            if (error) throw error;
+          }
+          if (sharedWorkspaceBackendAvailable && button.dataset.deleteType === "resource") {
+            const { error } = await portalBackend.from("hub_resources").delete().eq("id", button.dataset.id);
+            if (error) throw error;
+          }
+          if (sharedWorkspaceBackendAvailable && button.dataset.deleteType === "event") {
+            const { error } = await portalBackend.from("hub_events").delete().eq("id", button.dataset.id);
+            if (error) throw error;
+          }
+          if (sharedWorkspaceBackendAvailable && button.dataset.deleteType === "message") {
+            const { error } = await portalBackend.from("hub_messages").delete().eq("id", button.dataset.id);
             if (error) throw error;
           }
           deleteItem(button.dataset.deleteType, button.dataset.id);
@@ -4341,6 +4561,7 @@ async function boot() {
     await clearKnownPretendSecureContent();
     await loadSecureBoards();
     await loadSecureSubmissions();
+    await loadSecureWorkspace();
   } catch (error) {
     state.sessionEmail = "";
     saveState();
