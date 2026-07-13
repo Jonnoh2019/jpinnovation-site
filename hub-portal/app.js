@@ -53,6 +53,7 @@ let boardListScrollY = 0;
 let personalBoardMode = false;
 let personalQuotesMode = false;
 let messageDraftRecipientEmail = "";
+let activeMessageConversationKey = "";
 let boardBackendAvailable = false;
 let contentBackendAvailable = false;
 let sharedWorkspaceBackendAvailable = false;
@@ -2894,54 +2895,113 @@ function renderNotificationsView() {
   `;
 }
 
+function messageCounterparty(message, user = currentUser()) {
+  if (user?.role === "client") {
+    return { key: adminEmail, name: "JP Innovation", email: adminEmail };
+  }
+  const outgoing = cleanEmailValue(message.senderEmail || "") === cleanEmailValue(user?.email || "");
+  const email = cleanEmailValue(outgoing ? message.recipientEmail : message.senderEmail);
+  const name = outgoing ? (message.recipientName || email || "Hub member") : (message.from || email || "Hub member");
+  return { key: email || String(name).toLowerCase(), name, email };
+}
+
+function messageConversations(messages, user = currentUser()) {
+  const grouped = new Map();
+  messages.forEach((message) => {
+    const person = messageCounterparty(message, user);
+    if (!grouped.has(person.key)) grouped.set(person.key, { ...person, messages: [] });
+    grouped.get(person.key).messages.push(message);
+  });
+  return Array.from(grouped.values()).map((conversation) => {
+    conversation.messages.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    conversation.latest = conversation.messages[conversation.messages.length - 1];
+    conversation.unread = conversation.messages.filter((message) => message.unread).length;
+    return conversation;
+  }).sort((a, b) => new Date(b.latest?.createdAt || 0) - new Date(a.latest?.createdAt || 0));
+}
+
+function markMessagesReadLocally(user = currentUser()) {
+  state.messages.forEach((message) => {
+    if (user?.role === "client") {
+      if (message.ownerEmail === user.email) message.unread = false;
+    } else if (user?.role === "admin") {
+      message.unread = false;
+    } else if (message.recipientEmail === user?.email) {
+      message.unread = false;
+    }
+  });
+}
+
+function messageComposer(user, recipients, selectedEmail = "") {
+  const isClient = user?.role === "client";
+  return `
+    <details id="newMessageComposer" class="section-card section-cyan message-compose-panel" ${messageDraftRecipientEmail ? "open" : ""}>
+      <summary class="list-title"><div><h2>New message</h2><p>${isClient ? "Send a private message to JP Innovation." : "Start a private conversation with an approved member."}</p></div><span class="pill">Compose</span></summary>
+      <form id="messageForm" class="form-grid two">
+        <input name="from" type="hidden" value="${escapeHtml(user?.name || "Hub member")}">
+        ${isClient ? "" : `<label>To <select name="toEmail" required><option value="">Choose a member</option>${recipients.map((member) => `<option value="${escapeHtml(member.email)}" ${member.email === selectedEmail ? "selected" : ""}>${escapeHtml(member.name)}${member.business ? ` - ${escapeHtml(member.business)}` : ""}</option>`).join("")}</select></label>`}
+        <label class="${isClient ? "" : ""}">Subject <input name="subject" required></label>
+        <label class="wide">Message <textarea name="body" rows="4" required></textarea></label>
+        <button class="primary-button wide" type="submit" ${!isClient && !recipients.length ? "disabled" : ""}>Send message</button>
+      </form>
+    </details>`;
+}
+
+function messageThread(conversation, user = currentUser()) {
+  const latestSubject = conversation.latest?.subject || "Message";
+  return `
+    <section class="section-card section-blue message-thread-view">
+      <div class="message-thread-header">
+        <button class="secondary-button back-to-message-inbox" type="button">&larr; Inbox</button>
+        <div><p class="eyebrow">Private conversation</p><h2>${escapeHtml(conversation.name)}</h2></div>
+      </div>
+      <div class="message-feed">
+        ${conversation.messages.map((message) => {
+          const outgoing = cleanEmailValue(message.senderEmail || "") === cleanEmailValue(user?.email || "") || (user?.role === "client" && message.ownerEmail === user.email && message.from === user.name);
+          return `<article class="message-bubble ${outgoing ? "outgoing" : "incoming"}">
+            <div class="message-bubble-meta"><strong>${escapeHtml(message.from || (outgoing ? user?.name : conversation.name))}</strong><span>${escapeHtml(message.created || "Recently")}</span></div>
+            <small>${escapeHtml(message.subject || "Message")}</small>
+            ${renderFormattedPostText(message.body)}
+            <button class="message-delete-button delete-item-button" data-delete-type="message" data-id="${escapeHtml(message.id)}" type="button" aria-label="Delete message">Delete</button>
+          </article>`;
+        }).join("")}
+      </div>
+      <form id="messageForm" class="message-reply-form">
+        <input name="from" type="hidden" value="${escapeHtml(user?.name || "Hub member")}">
+        ${user?.role === "client" ? "" : `<input name="toEmail" type="hidden" value="${escapeHtml(conversation.email)}">`}
+        <input name="subject" type="hidden" value="${escapeHtml(/^re:/i.test(latestSubject) ? latestSubject : `Re: ${latestSubject}`)}">
+        <label>Reply <textarea name="body" rows="3" required placeholder="Write a reply..."></textarea></label>
+        <button class="primary-button" type="submit">Send reply</button>
+      </form>
+    </section>`;
+}
+
 function renderMessages() {
   const user = currentUser();
-  if (user?.role === "client") {
-    const messages = state.messages.filter((message) => message.ownerEmail === user.email);
-    const unread = messages.filter((message) => message.unread).length;
-    return `
-      <section class="section-card section-blue">
-        <div class="list-title"><div><h2>Messages with JP Innovation</h2><p>Use this area for quote questions, project updates and anything JP Innovation needs to review.</p></div>${unread ? `<button class="secondary-button mark-messages-read" type="button">Mark all read</button>` : ""}</div>
-        <form id="messageForm" class="form-grid two">
-          <input name="from" type="hidden" value="${escapeHtml(user.name)}">
-          <label>Subject <input name="subject" required></label>
-          <label class="wide">Message <textarea name="body" rows="4" required></textarea></label>
-          <button class="primary-button wide" type="submit">Send message</button>
-        </form>
-        <div class="feed-list">${messages.map((message) => `
-          <article class="feed-item">
-            <span class="badge">${message.unread ? "Awaiting review" : "Seen"}</span>
-            <h3>${escapeHtml(message.subject)}</h3>
-            <p>${escapeHtml(message.body)}</p>
-          </article>`).join("") || `<p class="muted">No messages yet.</p>`}
-        </div>
-      </section>
-    `;
-  }
-  const memberMessages = user?.role === "admin"
+  const memberMessages = user?.role === "client"
+    ? state.messages.filter((message) => message.ownerEmail === user.email)
+    : user?.role === "admin"
     ? state.messages
     : state.messages.filter((message) => message.senderEmail === user?.email || message.recipientEmail === user?.email);
   const unread = memberMessages.filter((message) => message.unread && (!message.recipientEmail || message.recipientEmail === user?.email)).length;
-  const recipients = state.members.filter((member) => member.email && member.email !== user?.email && member.directoryVisible !== false);
+  const recipients = user?.role === "client" ? [] : state.members.filter((member) => member.email && member.email !== user?.email && member.directoryVisible !== false);
+  const conversations = messageConversations(memberMessages, user);
+  const activeConversation = conversations.find((conversation) => conversation.key === activeMessageConversationKey);
+  if (activeConversation) return messageThread(activeConversation, user);
   return `
-    <section class="section-card section-blue">
-      <div class="list-title"><div><h2>Messages</h2><p>Send a direct message to an approved member and keep project follow-ups together.</p></div>${unread ? `<button class="secondary-button mark-messages-read" type="button">Mark all read</button>` : ""}</div>
-      <form id="messageForm" class="form-grid two">
-        <input name="from" type="hidden" value="${escapeHtml(user?.name || "Hub member")}">
-        <label>To <select name="toEmail" required><option value="">Choose a member</option>${recipients.map((member) => `<option value="${escapeHtml(member.email)}" ${member.email === messageDraftRecipientEmail ? "selected" : ""}>${escapeHtml(member.name)}${member.business ? ` - ${escapeHtml(member.business)}` : ""}</option>`).join("")}</select></label>
-        <label>Subject <input name="subject" required></label>
-        <label class="wide">Message <textarea name="body" rows="3" required></textarea></label>
-        <button class="primary-button wide" type="submit" ${recipients.length ? "" : "disabled"}>Send message</button>
-      </form>
-      <div class="feed-list">${memberMessages.map((message) => `
-        <article class="feed-item">
-          <span class="badge">${message.unread ? "Unread" : "Read"}</span>
-          <h3>${escapeHtml(message.subject)}</h3>
-          <p><strong>${escapeHtml(message.from)}</strong>${message.recipientName ? ` to ${escapeHtml(message.recipientName)}` : ""}</p>
-          <p>${escapeHtml(message.body)}</p>
-          <button class="secondary-button delete-item-button" data-delete-type="message" data-id="${escapeHtml(message.id)}" type="button">Delete</button>
-        </article>`).join("") || `<p class="muted">No messages yet.</p>`}
-      </div>
+    ${messageComposer(user, recipients, messageDraftRecipientEmail)}
+    <section class="section-card section-blue message-inbox-panel">
+      <div class="list-title"><div><h2>Inbox</h2><p>Select a person to open the full message feed.</p></div>${unread ? `<button class="secondary-button mark-messages-read" type="button">Mark all read</button>` : ""}</div>
+      <div class="message-inbox-list">${conversations.length ? conversations.map((conversation) => {
+        const latest = conversation.latest;
+        const preview = String(latest?.body || "").replace(/\s+/g, " ").trim();
+        return `<button class="message-inbox-row open-message-thread" data-conversation-key="${escapeHtml(conversation.key)}" type="button">
+          <span class="message-inbox-person"><strong>${escapeHtml(conversation.name)}</strong><small>${escapeHtml(latest?.subject || "Message")}</small></span>
+          <span class="message-inbox-preview">${escapeHtml(preview.slice(0, 90))}${preview.length > 90 ? "&hellip;" : ""}</span>
+          <span class="message-inbox-time">${escapeHtml(latest?.created || "Recently")}</span>
+          ${conversation.unread ? `<b class="message-unread-count">${conversation.unread}</b>` : ""}
+        </button>`;
+      }).join("") : `<div class="empty-state"><strong>No messages yet</strong><span>Your private conversations will appear here.</span></div>`}</div>
     </section>
   `;
 }
@@ -3898,6 +3958,22 @@ function bindViewHandlers(view) {
     }));
   }
   if (view === "messages") {
+    $all(".open-message-thread").forEach((button) => button.addEventListener("click", async () => {
+      activeMessageConversationKey = button.dataset.conversationKey || "";
+      try {
+        await markSecureMessagesRead();
+      } catch (error) {
+        window.alert(error.message || "The conversation could not be marked as read.");
+        return;
+      }
+      markMessagesReadLocally(currentUser());
+      saveState();
+      renderView("messages");
+    }));
+    $(".back-to-message-inbox")?.addEventListener("click", () => {
+      activeMessageConversationKey = "";
+      renderView("messages");
+    });
     $(".mark-messages-read")?.addEventListener("click", async () => {
       const user = currentUser();
       try {
@@ -3906,15 +3982,7 @@ function bindViewHandlers(view) {
         window.alert(error.message || "Messages could not be marked as read.");
         return;
       }
-      state.messages.forEach((message) => {
-        if (user?.role === "client") {
-          if (message.ownerEmail === user.email) message.unread = false;
-        } else if (user?.role === "admin") {
-          message.unread = false;
-        } else {
-          if (message.recipientEmail === user?.email) message.unread = false;
-        }
-      });
+      markMessagesReadLocally(user);
       saveState();
       renderView("messages");
     });
@@ -3926,11 +3994,14 @@ function bindViewHandlers(view) {
       const recipient = state.members.find((member) => member.email === recipientEmail);
       try {
         const secureMessage = await createSecureMessage(data, user, recipientEmail);
-        state.messages.unshift(secureMessage || {
+        const createdMessage = secureMessage || {
           id: uid("msg"), from: data.from.trim(), subject: data.subject.trim(), body: data.body.trim(), unread: true,
           ownerEmail: user?.role === "client" ? user.email : "", senderEmail: user?.email || "", recipientEmail,
-          recipientName: user?.role === "client" ? "JP Innovation" : (recipient?.name || recipientEmail), example: false
-        });
+          recipientName: user?.role === "client" ? "JP Innovation" : (recipient?.name || recipientEmail),
+          created: "Just now", createdAt: new Date().toISOString(), example: false
+        };
+        state.messages.unshift(createdMessage);
+        activeMessageConversationKey = messageCounterparty(createdMessage, user).key;
       } catch (error) {
         window.alert(error.message || "The message could not be sent.");
         return;
@@ -4802,6 +4873,7 @@ function bindDirectory() {
     $("#directoryResults").innerHTML = results.length ? results.map(memberCard).join("") : `<p class="muted">No matching members found.</p>`;
     $all(".message-member-button", $("#directoryResults")).forEach((button) => button.addEventListener("click", () => {
       messageDraftRecipientEmail = button.dataset.memberEmail || "";
+      activeMessageConversationKey = "";
       renderView("messages");
     }));
   };
@@ -5013,6 +5085,7 @@ async function boot() {
     setNotificationsOpen(false);
     personalBoardMode = false;
     personalQuotesMode = false;
+    activeMessageConversationKey = "";
     renderView("messages");
     setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
@@ -5050,6 +5123,7 @@ async function boot() {
     activeBoardCategory = "";
     personalBoardMode = false;
     personalQuotesMode = false;
+    if (destination === "messages") activeMessageConversationKey = "";
     renderView(destination);
     button.blur();
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
