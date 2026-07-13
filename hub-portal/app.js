@@ -19,6 +19,15 @@ const boardCategories = [
   "Jobs & Collaboration"
 ];
 
+const boardPostTypes = [
+  { value: "information", label: "Information" },
+  { value: "welcome", label: "Welcome / introduction" },
+  { value: "question", label: "Question" },
+  { value: "needs-help", label: "Needs help" },
+  { value: "project-update", label: "Project update" },
+  { value: "recommendation", label: "Recommendation" }
+];
+
 const knownPretendBoardTitles = [
   "Best way to jig a small aluminium bracket",
   "Classic Mini rear subframe repair approach"
@@ -40,9 +49,10 @@ normaliseState();
 let currentView = "dashboard";
 let activeBoardPostId = "";
 let activeBoardCategory = "";
+let personalBoardMode = false;
+let personalQuotesMode = false;
 let messageDraftRecipientEmail = "";
 let boardBackendAvailable = false;
-let boardBackendMessage = "Checking secure board storage...";
 let contentBackendAvailable = false;
 let secureAdminProfiles = [];
 let adminProfilesStatus = "idle";
@@ -182,6 +192,7 @@ function boardMatches(post, term, category, mode) {
   const haystack = [
     post.title,
     post.category,
+    boardPostTypeLabel(post.postType),
     post.description,
     post.author,
     ...(post.responses || []).flatMap((reply) => [reply.author, reply.body])
@@ -192,7 +203,7 @@ function boardMatches(post, term, category, mode) {
     mode === "all" ||
     (mode === "unanswered" && !(post.responses || []).length) ||
     (mode === "helpful" && countHelpfulReplies(post) > 0) ||
-    (mode === "needs-help" && !countHelpfulReplies(post));
+    (mode === "needs-help" && post.postType === "needs-help" && !countHelpfulReplies(post));
   return termMatch && categoryMatch && modeMatch;
 }
 
@@ -202,8 +213,8 @@ function buildSearchResults(term) {
   const contains = (value) => String(value || "").toLowerCase().includes(query);
   return [
     ...state.posts
-      .filter((post) => [post.title, post.category, post.description, post.author, ...(post.responses || []).map((reply) => reply.body)].some(contains))
-      .map((post) => ({ type: "Board thread", title: post.title, detail: `${post.category} - ${post.responses?.length || 0} replies`, view: "boards" })),
+      .filter((post) => [post.title, post.category, boardPostTypeLabel(post.postType), post.description, post.author, ...(post.responses || []).map((reply) => reply.body)].some(contains))
+      .map((post) => ({ type: boardPostTypeLabel(post.postType), title: post.title, detail: `${post.category} - ${post.responses?.length || 0} replies`, view: "boards" })),
     ...state.projects
       .filter((project) => [project.title, project.category, project.description, project.location, project.author].some(contains))
       .map((project) => ({ type: "Project", title: project.title, detail: `${project.category} - ${project.location}`, view: "projects" })),
@@ -329,6 +340,7 @@ function normaliseState() {
   state.posts.forEach((post) => {
     post.example = post.example === true;
     post.moderationStatus ||= post.authorEmail === adminEmail ? "approved" : "pending";
+    post.postType ||= "information";
     post.responses ||= [
       {
         id: uid("reply"),
@@ -793,12 +805,36 @@ function currentUser() {
   return state.users.find((user) => user.email === state.sessionEmail) || null;
 }
 
+function decodeBoardBody(value = "") {
+  const body = String(value || "");
+  const match = body.match(/^\[\[jp-post-type:([a-z-]+)\]\]\s*/i);
+  return {
+    postType: match ? match[1].toLowerCase() : "information",
+    description: match ? body.slice(match[0].length) : body
+  };
+}
+
+function encodeBoardBody(description, postType = "information") {
+  const validType = boardPostTypes.some((item) => item.value === postType) ? postType : "information";
+  return `[[jp-post-type:${validType}]]\n${String(description || "").trim()}`;
+}
+
+function boardPostTypeLabel(value = "information") {
+  return boardPostTypes.find((item) => item.value === value)?.label || "Information";
+}
+
+function boardPostTypeOptions(selected = "information") {
+  return boardPostTypes.map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === selected ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("");
+}
+
 function mapBoardPost(row) {
+  const decodedBody = decodeBoardBody(row.body);
   return {
     id: row.id,
     title: row.title,
     category: row.category,
-    description: row.body,
+    description: decodedBody.description,
+    postType: decodedBody.postType,
     author: row.author_name || "Hub member",
     authorId: row.author_id,
     created: formatBoardDate(row.created_at),
@@ -846,11 +882,9 @@ async function loadSecureBoards() {
     .order("created_at", { ascending: false });
   if (error) {
     boardBackendAvailable = false;
-    boardBackendMessage = "Device-only mode until the secure Boards database is installed.";
     return false;
   }
   boardBackendAvailable = true;
-  boardBackendMessage = "Live member posts are securely shared across devices.";
   state.posts = (data || []).filter((row) => !knownPretendBoardTitles.includes(row.title)).map(mapBoardPost);
   saveState();
   return true;
@@ -977,7 +1011,7 @@ async function createBoardPostRecord(data, user) {
     const { data: row, error } = await portalBackend.from("board_posts").insert({
       title: data.title.trim(),
       category: data.category,
-      body: data.description.trim(),
+      body: encodeBoardBody(data.description, data.postType),
       author_id: user.id,
       author_name: user.name,
       flagged,
@@ -987,7 +1021,7 @@ async function createBoardPostRecord(data, user) {
     return mapBoardPost({ ...row, board_replies: [] });
   }
   return {
-    id: uid("post"), title: data.title, category: data.category, description: data.description,
+    id: uid("post"), title: data.title, category: data.category, description: data.description, postType: data.postType || "information",
     author: user.name, authorEmail: user.email, authorId: user.id, created: "Just now",
     reports: 0, flagged, moderationStatus: "pending", responses: []
   };
@@ -996,11 +1030,11 @@ async function createBoardPostRecord(data, user) {
 async function updateBoardPostRecord(post, data) {
   if (boardBackendAvailable) {
     const { error } = await portalBackend.from("board_posts").update({
-      title: data.title.trim(), category: data.category, body: data.description.trim()
+      title: data.title.trim(), category: data.category, body: encodeBoardBody(data.description, data.postType)
     }).eq("id", post.id);
     if (error) throw error;
   }
-  Object.assign(post, { title: data.title.trim(), category: data.category, description: data.description.trim() });
+  Object.assign(post, { title: data.title.trim(), category: data.category, description: data.description.trim(), postType: data.postType || "information" });
 }
 
 async function deleteBoardPostRecord(postId) {
@@ -1315,6 +1349,7 @@ function setLoggedInView() {
   $("#memberName").textContent = user.name;
   $("#memberRole").textContent = isClient ? "Client Portal" : roleLabel(user);
   $("#profileAdminLink")?.classList.toggle("hidden", user.role !== "admin" || isClient);
+  $("#profileMyPosts")?.classList.toggle("hidden", isClient);
   $all(".nav-link").forEach((button) => {
     button.classList.toggle("hidden", isClient && !clientViews.has(button.dataset.view));
   });
@@ -1589,6 +1624,8 @@ function renderProfileChatNotifications(items = notificationItems(currentUser())
 function openBoardNotification(postId, replyId = "") {
   const post = state.posts.find((item) => item.id === postId);
   if (!post) return;
+  personalBoardMode = false;
+  personalQuotesMode = false;
   if (replyId && !state.seenBoardReplyIds.includes(replyId)) state.seenBoardReplyIds.push(replyId);
   activeBoardCategory = post.category === "General Engineering Chat" ? "General Chat" : post.category;
   activeBoardPostId = post.id;
@@ -2045,19 +2082,33 @@ function renderBoards() {
     `;
   }
   const unanswered = posts.filter((post) => !(post.responses || []).length).length;
-  const needsHelp = posts.filter((post) => !countHelpfulReplies(post)).length;
+  const needsHelp = posts.filter((post) => post.postType === "needs-help" && !countHelpfulReplies(post)).length;
   const helpfulReplies = posts.reduce((total, post) => total + countHelpfulReplies(post), 0);
+  if (personalBoardMode) {
+    const user = currentUser();
+    const myPosts = posts.filter((post) => post.authorId === user?.id || post.authorEmail === user?.email);
+    return `
+      <section class="section-card section-cyan board-personal-header">
+        <div><h2>My posts</h2><p class="muted">Your submitted board threads and their approval status.</p></div>
+        <button class="secondary-button board-all-posts" type="button">Browse all boards</button>
+      </section>
+      <section class="section-card section-cyan board-thread-panel">
+        <div class="board-thread-list">${myPosts.length ? myPosts.map(postThreadRow).join("") : `<div class="board-empty-state"><strong>No posts yet.</strong><p>Start your first post below.</p></div>`}</div>
+      </section>
+      ${renderBoardPostComposer("General Chat")}
+    `;
+  }
   if (activeBoardCategory) {
     const categoryPosts = posts.filter((post) => post.category === activeBoardCategory || (activeBoardCategory === "General Chat" && post.category === "General Engineering Chat"));
     return `
-      <section class="section-card section-cyan">
+      <section class="section-card section-cyan board-category-compact">
         <div class="board-category-header">
-          <div><p class="eyebrow">Engineering Boards</p><h2>${escapeHtml(activeBoardCategory)}</h2><p class="muted">${escapeHtml(boardDescription(activeBoardCategory))}</p></div>
+          <div><h2>${escapeHtml(activeBoardCategory)}</h2><p class="muted">${escapeHtml(boardDescription(activeBoardCategory))}</p></div>
+          <span class="pill">${categoryPosts.length} ${categoryPosts.length === 1 ? "thread" : "threads"}</span>
           <button class="secondary-button board-all-button" type="button">All boards</button>
         </div>
-        <div class="meta-row"><span class="pill">${categoryPosts.length} ${categoryPosts.length === 1 ? "thread" : "threads"}</span><span class="pill ${boardBackendAvailable ? "good" : "warn"}">${escapeHtml(boardBackendMessage)}</span></div>
       </section>
-      <section class="section-card section-cyan">
+      <section class="section-card section-cyan board-thread-panel">
         <div class="list-title"><div><h2>Threads</h2><p>Select a title to open the conversation and reply.</p></div></div>
         <div class="board-thread-list">${categoryPosts.length ? categoryPosts.map(postThreadRow).join("") : `<div class="board-empty-state"><strong>No discussions yet.</strong><p>Start the first ${escapeHtml(activeBoardCategory)} thread below.</p></div>`}</div>
       </section>
@@ -2085,8 +2136,9 @@ function renderBoardPostComposer(selectedCategory = "General Chat") {
     <details class="section-card section-cyan board-composer">
       <summary><strong>+ Start a new thread</strong><span>Sent to JP Innovation for approval</span></summary>
       <form id="postForm" class="form-grid two">
-        <label>Thread title <input name="title" required placeholder="What would you like help with?"></label>
+        <label>Thread title <input name="title" required placeholder="Add a clear title"></label>
         <label>Board <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === selectedCategory ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label>
+        <label>Post type <select name="postType">${boardPostTypeOptions("information")}</select></label>
         <label class="wide">First message <textarea name="description" rows="4" required placeholder="Add the important dimensions, constraints or context..."></textarea></label>
         <button class="primary-button wide" type="submit">Submit thread for approval</button>
         <p id="postStatus" class="form-status wide" aria-live="polite"></p>
@@ -2097,7 +2149,7 @@ function renderBoardPostComposer(selectedCategory = "General Chat") {
 
 function postThreadRow(post) {
   const replies = visibleBoardReplies(post);
-  return `<button class="board-thread-row open-board-post" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${escapeHtml(post.title)}</strong><small>${escapeHtml(post.author)} &middot; ${escapeHtml(post.created || "Today")}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>${post.moderationStatus !== "approved" ? `<span class="pill warn">Pending</span>` : ""}<span aria-hidden="true">&rsaquo;</span></button>`;
+  return `<button class="board-thread-row open-board-post" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${escapeHtml(post.title)}</strong><small>${escapeHtml(boardPostTypeLabel(post.postType))} &middot; ${escapeHtml(post.author)} &middot; ${escapeHtml(post.created || "Today")}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>${post.moderationStatus !== "approved" ? `<span class="pill warn">Pending</span>` : ""}<span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
 function boardDescription(category) {
@@ -2218,18 +2270,22 @@ function renderQuotes() {
   const user = currentUser();
   if (user?.role === "client") return renderClientQuotes(user);
   const isAdmin = user?.role === "admin";
-  const visibleQuotes = state.quotes.filter((quote) => isAdmin
+  const visibleQuotes = state.quotes.filter((quote) => personalQuotesMode
+    ? (quote.authorId === user?.id || quote.authorEmail === user?.email || (quote.responses || []).some((response) => response.providerId === user?.id || response.providerEmail === user?.email))
+    : (isAdmin
     || quote.authorEmail === user?.email
     || quote.status === "open"
-    || quote.status === "shortlisted");
+    || quote.status === "shortlisted"));
   const openQuotes = state.quotes.filter((quote) => quote.status === "open" || quote.status === "shortlisted");
   const responseCount = state.quotes.reduce((total, quote) => total + quote.responses.length, 0);
   return `
-    <section class="section-card quote-hub-hero">
+    <section class="section-card quote-hub-hero ${personalQuotesMode ? "quote-personal-hero" : ""}">
       <div>
-        <p class="eyebrow">Flagship feature</p>
-        <h2>Private Quote Hub</h2>
-        <p class="muted">Customers submit one clear engineering request. JP Innovation reviews the scope, then approved members can quote privately without seeing competitor prices.</p>
+        <p class="eyebrow">${personalQuotesMode ? "Profile shortcut" : "Flagship feature"}</p>
+        <h2>${personalQuotesMode ? "My quotes" : "Private Quote Hub"}</h2>
+        <p class="muted">${personalQuotesMode ? "Your quote requests and the private responses you have submitted." : "Customers submit one clear engineering request. JP Innovation reviews the scope, then approved members can quote privately without seeing competitor prices."}</p>
+        ${personalQuotesMode ? `<button class="secondary-button quote-all-button" type="button">Browse Quote Hub</button>` : ""}
+        ${personalQuotesMode ? "" : `
         <div class="quote-hero-actions">
           <button class="primary-button quote-jump" data-target="quoteForm" type="button">Create request</button>
           <button class="secondary-button quote-jump" data-target="quoteResponseForm" type="button">Respond privately</button>
@@ -2239,14 +2295,18 @@ function renderQuotes() {
           <article><strong>JP first review</strong><span>Poorly scoped or unsuitable work can be held back.</span></article>
           <article><strong>Customer control</strong><span>The customer compares responses privately.</span></article>
         </div>
+        `}
       </div>
+      ${personalQuotesMode ? "" : `
       <div class="quote-pipeline">
         ${quoteStage("1", "JP review", "Scope checked before release")}
         ${quoteStage("2", "Open", "Verified members can quote")}
         ${quoteStage("3", "Shortlist", "Customer compares privately")}
         ${quoteStage("4", "Closed", "Job awarded or archived")}
       </div>
+      `}
     </section>
+    ${personalQuotesMode ? "" : `
     <section class="quote-metrics">
       ${metric("JP review", state.quotes.filter((quote) => quote.status === "jp-review").length)}
       ${metric("Open to quote", state.quotes.filter((quote) => quote.status === "open").length)}
@@ -2254,6 +2314,7 @@ function renderQuotes() {
       ${metric("Shortlisted", state.quotes.filter((quote) => quote.status === "shortlisted").length)}
     </section>
     <section class="notice quote-notice">Private pricing rule: each provider only sees their own submitted quote. Customers and JP Innovation can review all responses. This keeps the process fair and avoids a public price race.</section>
+    `}
     <section class="section-card section-violet quote-create-panel">
       <div class="list-title"><div><h2>Request a quote</h2><p>Capture enough detail for a sensible first review before releasing it to members.</p></div></div>
       <form id="quoteForm" class="form-grid two">
@@ -2281,7 +2342,7 @@ function renderQuotes() {
       <div class="list-title"><div><h2>Private requests</h2><p>Status-driven requests with private provider responses.</p></div></div>
       <div class="quote-board">${visibleQuotes.map(quoteCard).join("") || `<p class="muted">No quote requests yet.</p>`}</div>
     </section>
-    <section class="section-card section-violet">
+    ${personalQuotesMode ? "" : `<section class="section-card section-violet">
       <div class="list-title"><div><h2>Submit a private response</h2><p>Responses are visible only to the customer, the responding member and JP Innovation.</p></div></div>
       <form id="quoteResponseForm" class="form-grid two">
         <label>Request <select name="requestId">${openQuotes.map((quote) => `<option value="${quote.id}">${escapeHtml(quote.service)}</option>`).join("")}</select></label>
@@ -2292,7 +2353,7 @@ function renderQuotes() {
         <label class="wide">Notes <textarea name="notes" rows="3" placeholder="What is included, exclusions, questions for the customer..."></textarea></label>
         <button class="secondary-button wide" type="submit" ${openQuotes.length ? "" : "disabled"}>Submit private quote</button>
       </form>
-    </section>
+    </section>`}
   `;
 }
 
@@ -2912,6 +2973,12 @@ function renderAdmin(user) {
   `;
 }
 
+function postPurposeBadge(post, helpfulCount = 0) {
+  if (helpfulCount) return `<span class="pill good">${helpfulCount} helpful</span>`;
+  if (post.postType === "needs-help") return `<span class="pill warn">Needs help</span>`;
+  return `<span class="pill">${escapeHtml(boardPostTypeLabel(post.postType))}</span>`;
+}
+
 function postCard(post) {
   const user = currentUser();
   const isOwner = user?.id === post.authorId || user?.email === post.authorEmail || user?.role === "admin";
@@ -2922,7 +2989,7 @@ function postCard(post) {
       <div class="thread-topline">
         <span class="badge">${escapeHtml(post.category)}</span>
         ${post.moderationStatus !== "approved" ? `<span class="pill warn">${post.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>` : ""}
-        ${helpfulCount ? `<span class="pill good">${helpfulCount} helpful</span>` : `<span class="pill warn">Needs help</span>`}
+        ${postPurposeBadge(post, helpfulCount)}
       </div>
       <h3>${escapeHtml(post.title)}</h3>
       <p>${escapeHtml(post.description)}</p>
@@ -2954,7 +3021,7 @@ function postCard(post) {
         <button class="secondary-button" type="submit">Submit reply for approval</button>
       </form>` : `<p class="muted">Replies open after JP Innovation approves this post.</p>`}
       <button class="secondary-button report-button" data-id="${post.id}" type="button">Report post</button>
-      ${isOwner ? `<details class="post-edit-panel"><summary>Edit post</summary><form class="edit-post-form form-grid two" data-post-id="${escapeHtml(post.id)}"><label>Title <input name="title" value="${escapeHtml(post.title)}" required></label><label>Category <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === post.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label><label class="wide">Description <textarea name="description" rows="4" required>${escapeHtml(post.description)}</textarea></label><button class="primary-button" type="submit">Save changes</button><button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button></form></details>` : ""}
+      ${isOwner ? `<details class="post-edit-panel"><summary>Edit post</summary><form class="edit-post-form form-grid two" data-post-id="${escapeHtml(post.id)}"><label>Title <input name="title" value="${escapeHtml(post.title)}" required></label><label>Category <select name="category">${boardCategories.map((category) => `<option value="${escapeHtml(category)}" ${category === post.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></label><label>Post type <select name="postType">${boardPostTypeOptions(post.postType)}</select></label><label class="wide">Description <textarea name="description" rows="4" required>${escapeHtml(post.description)}</textarea></label><button class="primary-button" type="submit">Save changes</button><button class="secondary-button delete-item-button" data-delete-type="post" data-id="${escapeHtml(post.id)}" type="button">Delete post</button></form></details>` : ""}
     </article>
   `;
 }
@@ -2967,7 +3034,7 @@ function postSummaryCard(post) {
       <div class="thread-topline">
         <span class="badge">${escapeHtml(post.category)}</span>
         ${post.moderationStatus !== "approved" ? `<span class="pill warn">${post.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>` : ""}
-        ${helpfulCount ? `<span class="pill good">${helpfulCount} helpful</span>` : `<span class="pill warn">Needs help</span>`}
+        ${postPurposeBadge(post, helpfulCount)}
       </div>
       <h3>${escapeHtml(post.title)}</h3>
       <p>${escapeHtml(post.description)}</p>
@@ -3240,6 +3307,12 @@ function bindViewHandlers(view) {
       activeBoardPostId = "";
       renderView("boards");
     });
+    $(".board-all-posts")?.addEventListener("click", () => {
+      personalBoardMode = false;
+      activeBoardCategory = "";
+      activeBoardPostId = "";
+      renderView("boards");
+    });
     $(".open-general-chat")?.addEventListener("click", () => {
       activeBoardCategory = "General Chat";
       renderView("boards");
@@ -3293,6 +3366,10 @@ function bindViewHandlers(view) {
     bindProjectDetail();
   }
   if (view === "quotes") {
+    $(".quote-all-button")?.addEventListener("click", () => {
+      personalQuotesMode = false;
+      renderView("quotes");
+    });
     $("#quoteForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = currentUser();
@@ -3872,6 +3949,8 @@ function bindDashboardLinks() {
         openBoardNotification(button.dataset.postId, button.dataset.replyId || "");
         return;
       }
+      personalBoardMode = false;
+      personalQuotesMode = false;
       renderView(button.dataset.viewLink);
       const targetId = button.dataset.targetId;
       if (!targetId) return;
@@ -4305,6 +4384,8 @@ async function boot() {
   $("#dashboardHomeButton")?.addEventListener("click", () => {
     setNotificationsOpen(false);
     setMemberProfileMenuOpen(false);
+    personalBoardMode = false;
+    personalQuotesMode = false;
     renderView("dashboard");
     setMobileDashboardMenuOpen(false);
   });
@@ -4317,19 +4398,36 @@ async function boot() {
   });
   $("#memberProfileMenu")?.addEventListener("click", (event) => event.stopPropagation());
   $all("[data-profile-view]").forEach((button) => button.addEventListener("click", () => {
+    personalBoardMode = false;
+    personalQuotesMode = false;
     renderView(button.dataset.profileView);
     setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
   }));
+  $all("[data-profile-action]").forEach((button) => button.addEventListener("click", () => {
+    const action = button.dataset.profileAction;
+    personalBoardMode = action === "my-posts";
+    personalQuotesMode = action === "my-quotes";
+    activeBoardCategory = "";
+    activeBoardPostId = "";
+    renderView(action === "my-posts" ? "boards" : "quotes");
+    setMemberProfileMenuOpen(false);
+    setMobileDashboardMenuOpen(false);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }));
   $("#messageInboxButton")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setNotificationsOpen(false);
+    personalBoardMode = false;
+    personalQuotesMode = false;
     renderView("messages");
     setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
   });
   $("#notificationBell")?.addEventListener("click", (event) => {
     event.stopPropagation();
+    personalBoardMode = false;
+    personalQuotesMode = false;
     renderView("notifications");
     setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
@@ -4357,6 +4455,8 @@ async function boot() {
     setMobileDashboardMenuOpen(false);
     activeBoardPostId = "";
     activeBoardCategory = "";
+    personalBoardMode = false;
+    personalQuotesMode = false;
     renderView(destination);
     button.blur();
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
