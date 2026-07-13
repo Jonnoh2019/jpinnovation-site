@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=message-inbox-iphone-icon-20260713">
+    <link rel="stylesheet" href="styles.css?v=member-reputation-20260713">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -180,6 +180,7 @@
                 <b id="profileAlertCount" class="member-chip-count hidden">0</b>
               </span>
             </button>
+            <button id="reputationStatusButton" class="member-status-star hidden" type="button" aria-label="Open member verification status" aria-controls="reputationStatusDialog" title="Member verification status">&#9733;</button>
             <div id="memberProfileMenu" class="member-profile-menu" aria-hidden="true">
               <button class="profile-menu-link" data-profile-view="profile" type="button"><span class="profile-menu-icon" aria-hidden="true">&#9675;</span><span><strong>My profile</strong><small>View and edit your details</small></span></button>
               <button id="profileMyPosts" class="profile-menu-link" data-profile-action="my-posts" type="button"><span class="profile-menu-icon" aria-hidden="true">&#128172;</span><span><strong>My posts</strong><small>Your board threads and replies</small></span></button>
@@ -199,7 +200,14 @@
     </main>
   </div>
 
+  <div id="reputationStatusDialog" class="auth-dialog reputation-status-dialog" aria-hidden="true">
+    <section class="auth-card reputation-status-card" role="dialog" aria-modal="true" aria-labelledby="reputationStatusTitle">
+      <button id="closeReputationStatus" class="auth-close" type="button" aria-label="Close member status">&times;</button>
+      <div id="reputationStatusBody"></div>
+    </section>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=message-inbox-iphone-icon-20260713"></script>
+  <script src="app.js?v=member-reputation-20260713"></script>
 </body>
 </html>
