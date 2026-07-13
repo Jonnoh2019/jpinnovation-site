@@ -28,10 +28,17 @@ let currentView = "dashboard";
 let activeBoardPostId = "";
 let boardBackendAvailable = false;
 let boardBackendMessage = "Checking secure board storage...";
+let secureAdminProfiles = [];
+let adminProfilesStatus = "idle";
+let adminProfilesMessage = "Connecting to live account records...";
 const entryParams = new URLSearchParams(window.location.search);
 const entryMode = entryParams.get("entry") === "hub" ? "hub" : "client";
 const signInRequested = entryParams.get("signin") === "1";
 const registerRequested = entryParams.get("register") === "1";
+const requestedView = entryParams.get("view");
+if (["dashboard", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "rewards", "profile", "settings", "admin"].includes(requestedView)) {
+  currentView = requestedView;
+}
 
 const portalSections = [
   { view: "onboarding", title: "Profile Setup", detail: "Complete member basics before using the Hub fully." },
@@ -219,6 +226,7 @@ function normaliseState() {
   state.helpfulAwards ||= [];
   state.resources ||= defaultResources();
   state.applications ||= [];
+  state.flagged ||= [];
   state.applications.forEach((application) => {
     application.status ||= "pending";
     application.created ||= "Today";
@@ -858,6 +866,7 @@ async function syncSecureSession() {
     portalBackend.from("profiles").upsert(profileData, { onConflict: "user_id" }).then(() => {}).catch(() => {});
   }
   const email = String(profileData.email || authUser.email || "").toLowerCase();
+  const accountType = email === adminEmail ? "admin" : (profileData.account_type || "client");
   let user = state.users.find((item) => item.email === email);
   if (!user) {
     user = {
@@ -865,12 +874,12 @@ async function syncSecureSession() {
       email,
       name: profileData.full_name || email.split("@")[0],
       business: profileData.business || "",
-      role: profileData.account_type || "client",
-      level: profileData.account_type === "member" ? "Innovation Hub member" : "Client Portal",
+      role: accountType,
+      level: accountType === "admin" ? "JP Admin" : (accountType === "member" ? "Innovation Hub member" : "Client Portal"),
       approved: true,
       suspended: false,
-      verified: profileData.account_type === "admin",
-      onboardingComplete: ["admin", "client"].includes(profileData.account_type),
+      verified: accountType === "admin",
+      onboardingComplete: ["admin", "client"].includes(accountType),
       points: 0,
       helpfulPoints: 0
     };
@@ -881,7 +890,8 @@ async function syncSecureSession() {
     email,
     name: profileData.full_name || user.name,
     business: profileData.business || user.business || "",
-    role: profileData.account_type || "client",
+    role: accountType,
+    level: accountType === "admin" ? "JP Admin" : (accountType === "member" ? "Innovation Hub member" : "Client Portal"),
     membershipStatus: profileData.membership_status || "free",
     approved: true,
     suspended: false
@@ -1325,6 +1335,12 @@ function renderView(view) {
     view = "onboarding";
   }
   currentView = view;
+  const viewUrl = new URL(window.location.href);
+  viewUrl.searchParams.set("entry", entryMode);
+  viewUrl.searchParams.set("view", view);
+  viewUrl.searchParams.delete("signin");
+  viewUrl.searchParams.delete("register");
+  window.history.replaceState({}, document.title, `${viewUrl.pathname}${viewUrl.search}`);
   const titles = {
     onboarding: "Profile Setup",
     dashboard: "Dashboard",
@@ -1343,6 +1359,7 @@ function renderView(view) {
   $("#viewTitle").textContent = titles[view] || "Dashboard";
   $all(".nav-link").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
   const mount = $("#viewMount");
+  mount.dataset.view = view;
   const renderers = {
     onboarding: renderOnboarding,
     dashboard: renderDashboard,
@@ -2228,10 +2245,83 @@ function renderSettings(user) {
   `;
 }
 
+function secureProfileUser(profile) {
+  const role = profile.account_type || "client";
+  return {
+    id: profile.user_id,
+    email: String(profile.email || "").toLowerCase(),
+    name: profile.full_name || String(profile.email || "Account").split("@")[0],
+    business: profile.business || "",
+    role,
+    membershipStatus: profile.membership_status || (role === "client" ? "free" : "active"),
+    level: role === "admin" ? "JP Admin" : (role === "member" ? "Innovation Hub member" : "Client Portal"),
+    verified: role === "admin" || profile.membership_status === "active",
+    suspended: profile.membership_status === "suspended",
+    onboardingComplete: role !== "member"
+  };
+}
+
+function secureProfileApplication(profile) {
+  return {
+    id: `secure-${profile.user_id}`,
+    userId: profile.user_id,
+    secure: true,
+    fullName: profile.full_name || String(profile.email || "Applicant").split("@")[0],
+    business: profile.business || "",
+    email: String(profile.email || "").toLowerCase(),
+    membershipType: "Innovation Hub access",
+    status: "pending",
+    created: "Live registration",
+    message: "This registered account is waiting for paid Innovation Hub approval.",
+    wantsCommunity: true,
+    wantsQuotes: true,
+    wantsDirectory: false,
+    events: false,
+    partner: false
+  };
+}
+
+async function loadSecureAdminProfiles(force = false) {
+  if (!portalBackend || currentUser()?.role !== "admin") return;
+  if (adminProfilesStatus === "loading" || (adminProfilesStatus === "ready" && !force)) return;
+  adminProfilesStatus = "loading";
+  adminProfilesMessage = "Loading registrations and account access from the secure database...";
+  const { data, error } = await portalBackend
+    .from("profiles")
+    .select("user_id,email,full_name,business,account_type,membership_status")
+    .order("email", { ascending: true });
+  if (error) {
+    adminProfilesStatus = "error";
+    adminProfilesMessage = "Live account permissions still need enabling in Supabase. The admin setup script must be run before launch.";
+  } else {
+    secureAdminProfiles = data || [];
+    adminProfilesStatus = "ready";
+    adminProfilesMessage = `${secureAdminProfiles.length} registered account${secureAdminProfiles.length === 1 ? "" : "s"} loaded from Supabase. Approvals made here change real Hub access.`;
+    secureAdminProfiles.forEach((profile) => {
+      const secureUser = secureProfileUser(profile);
+      const existing = state.users.find((item) => item.email === secureUser.email);
+      if (existing) Object.assign(existing, secureUser);
+      else state.users.push(secureUser);
+    });
+    saveState();
+  }
+  if (currentView === "admin") renderView("admin");
+}
+
+async function updateSecureProfileAccess(userId, changes) {
+  if (!portalBackend || !userId) throw new Error("This account is not connected to a live profile yet.");
+  const { error } = await portalBackend.from("profiles").update(changes).eq("user_id", userId);
+  if (error) throw error;
+  const profile = secureAdminProfiles.find((item) => item.user_id === userId);
+  if (profile) Object.assign(profile, changes);
+}
+
 function renderAdmin(user) {
   if (user.role !== "admin") return `<section class="section-card"><h2>Not available</h2><p class="muted">Admin review is only visible to JP Innovation admins.</p></section>`;
   const flagged = [...state.posts.filter((post) => post.flagged || post.reports > 0), ...state.flagged];
-  const applications = state.applications || [];
+  const applications = adminProfilesStatus === "ready"
+    ? secureAdminProfiles.filter((profile) => profile.membership_status === "pending").map(secureProfileApplication)
+    : (state.applications || []);
   const pendingApplications = applications.filter((application) => application.status === "pending").length;
   return `
     <section class="section-card section-violet admin-control-hero">
@@ -2244,6 +2334,13 @@ function renderAdmin(user) {
         ${metric("Verified members", state.members.filter((item) => item.verified).length)}
         ${metric("Suspended", state.users.filter((item) => item.suspended).length)}
       </div>
+    </section>
+    <section class="section-card admin-live-status ${adminProfilesStatus === "ready" ? "section-lime" : "section-amber"}">
+      <div class="list-title">
+        <div><h2>Live account control</h2><p>${escapeHtml(adminProfilesMessage)}</p></div>
+        <span class="pill ${adminProfilesStatus === "ready" ? "good" : "warn"}">${adminProfilesStatus === "ready" ? "Live" : "Checking"}</span>
+      </div>
+      <button id="refreshAdminProfiles" class="secondary-button" type="button">Refresh registrations</button>
     </section>
     <section class="section-card section-blue">
       <div class="list-title"><div><h2>Private website analytics</h2><p>Only JP Innovation admins can see this. It records anonymous page views, daily visitors and device type.</p></div></div>
@@ -2288,30 +2385,23 @@ function renderAdmin(user) {
               <span class="pill ${application.partner ? "good" : ""}">${application.partner ? "Partner interest" : "Standard member"}</span>
             </div>
             <div class="admin-actions">
-              <button class="secondary-button application-action" data-application-action="contacted" data-id="${escapeHtml(application.id)}" type="button">Mark contacted</button>
-              <button class="secondary-button application-action" data-application-action="approve" data-id="${escapeHtml(application.id)}" type="button" ${application.status === "approved" ? "disabled" : ""}>Approve & create login</button>
+              ${application.secure ? "" : `<button class="secondary-button application-action" data-application-action="contacted" data-id="${escapeHtml(application.id)}" type="button">Mark contacted</button>`}
+              <button class="secondary-button application-action" data-application-action="approve" data-id="${escapeHtml(application.id)}" type="button" ${application.status === "approved" ? "disabled" : ""}>${application.secure ? "Approve Hub access" : "Approve & create login"}</button>
               <button class="secondary-button application-action danger-action" data-application-action="reject" data-id="${escapeHtml(application.id)}" type="button">Reject</button>
-              <button class="secondary-button application-action danger-action" data-application-action="delete" data-id="${escapeHtml(application.id)}" type="button">Delete</button>
+              ${application.secure ? "" : `<button class="secondary-button application-action danger-action" data-application-action="delete" data-id="${escapeHtml(application.id)}" type="button">Delete</button>`}
             </div>
           </article>
         `).join("") : `<p class="muted">No access requests yet.</p>`}
       </div>
     </section>
     <section class="section-card admin-create-panel">
-      <div class="list-title"><div><h2>Create an account</h2><p>Add someone to the free Client Portal or create a paid Innovation Hub member.</p></div></div>
-      <form id="adminCreateMemberForm" class="form-grid two">
-        <label>Full name <input name="name" required autocomplete="off"></label>
-        <label>Business <input name="business" autocomplete="off"></label>
-        <label>Email <input name="email" type="email" required autocomplete="off"></label>
-        <label>Temporary password <input name="password" type="text" minlength="6" required autocomplete="off" placeholder="Give this to the member"></label>
-        <label>Account type <select name="accountType"><option value="client">Client Portal</option><option value="member">Innovation Hub member</option></select></label>
-        <label>Location <input name="location" autocomplete="off"></label>
-        <label>Main skill <input name="skill" placeholder="CAD, CNC, fabrication"></label>
-        <label class="wide">Equipment/capability <input name="equipment"></label>
-        <label class="check wide"><input name="verified" type="checkbox"> Mark as verified professional</label>
-        <button class="primary-button wide" type="submit">Create account login</button>
-        <p id="adminCreateStatus" class="form-status wide" aria-live="polite"></p>
-      </form>
+      <div class="list-title"><div><h2>Safe account process</h2><p>Users create their own password through Register. Their Hub request then appears above for you to approve or reject.</p></div></div>
+      <ul class="compact-list">
+        <li>Client Portal registration creates a free customer account.</li>
+        <li>Innovation Hub registration creates an approval request.</li>
+        <li>Approve Hub access here; never create or share somebody else's password.</li>
+      </ul>
+      <a class="secondary-button" href="../hub/index.html?register=1">Open the Hub registration page</a>
     </section>
     <section class="section-card section-rose">
       <h2>Flagged content</h2>
@@ -2366,7 +2456,7 @@ function renderAdmin(user) {
     <section class="section-card section-lime">
       <div class="list-title"><div><h2>Client Portal and Innovation Hub accounts</h2><p>Create Client Portal accounts, upgrade them to Innovation Hub members, or move members back to Client Portal access.</p></div></div>
       <div class="feed-list">
-        ${state.users.map((member) => `
+        ${(adminProfilesStatus === "ready" ? secureAdminProfiles.map(secureProfileUser) : state.users).map((member) => `
           <article class="feed-item admin-member-row">
             <div>
               <span class="badge">${escapeHtml(roleLabel(member))}</span>
@@ -2381,7 +2471,7 @@ function renderAdmin(user) {
             <div class="admin-actions">
               ${member.role === "client" ? `<button class="primary-button admin-action" data-admin-action="upgrade" data-email="${escapeHtml(member.email)}" type="button">Upgrade to Innovation Hub</button>` : ""}
               ${member.role === "member" ? `<button class="secondary-button admin-action" data-admin-action="downgrade" data-email="${escapeHtml(member.email)}" type="button">Move to Client Portal</button>` : ""}
-              <button class="secondary-button admin-action" data-admin-action="verify" data-email="${escapeHtml(member.email)}" type="button">Verify</button>
+              <button class="secondary-button admin-action" data-admin-action="verify" data-email="${escapeHtml(member.email)}" data-user-id="${escapeHtml(member.id || "")}" type="button">Verify</button>
               <button class="secondary-button admin-action" data-admin-action="warn" data-email="${escapeHtml(member.email)}" type="button">Warn</button>
               <button class="secondary-button admin-action" data-admin-action="${member.suspended ? "restore" : "suspend"}" data-email="${escapeHtml(member.email)}" type="button">${member.suspended ? "Restore" : "Suspend"}</button>
               ${member.role === "admin" ? "" : `<button class="secondary-button admin-action danger-action" data-admin-action="remove" data-email="${escapeHtml(member.email)}" type="button">Remove</button>`}
@@ -2878,6 +2968,8 @@ function bindViewHandlers(view) {
     bindAdminActions();
     bindQuoteActions();
     loadSiteAnalytics();
+    $("#refreshAdminProfiles")?.addEventListener("click", () => loadSecureAdminProfiles(true));
+    if (adminProfilesStatus === "idle") loadSecureAdminProfiles();
   }
   if (view === "profile") {
     $("#profileForm").addEventListener("submit", (event) => {
@@ -2918,37 +3010,52 @@ function bindAdminActions() {
     });
   });
   $all(".admin-action").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const member = state.users.find((user) => user.email === button.dataset.email);
       if (!member) return;
-      if (button.dataset.adminAction === "upgrade") {
+      const action = button.dataset.adminAction;
+      try {
+        if (member.id && adminProfilesStatus === "ready") {
+          if (action === "upgrade") await updateSecureProfileAccess(member.id, { account_type: "member", membership_status: "active" });
+          if (action === "downgrade") await updateSecureProfileAccess(member.id, { account_type: "client", membership_status: "free" });
+          if (action === "verify") await updateSecureProfileAccess(member.id, { membership_status: "active" });
+          if (action === "suspend") await updateSecureProfileAccess(member.id, { membership_status: "suspended" });
+          if (action === "restore") await updateSecureProfileAccess(member.id, { membership_status: member.role === "client" ? "free" : "active" });
+          if (action === "remove") await updateSecureProfileAccess(member.id, { account_type: "client", membership_status: "suspended" });
+        }
+      } catch (error) {
+        adminProfilesMessage = `Account update failed: ${error.message}`;
+        renderView("admin");
+        return;
+      }
+      if (action === "upgrade") {
         member.role = "member";
         member.level = "Innovation Hub member";
         member.onboardingComplete = false;
         member.points ||= 25;
       }
-      if (button.dataset.adminAction === "downgrade") {
+      if (action === "downgrade") {
         member.role = "client";
         member.level = "Client Portal";
         member.verified = false;
         member.directoryVisible = false;
         member.onboardingComplete = true;
       }
-      if (button.dataset.adminAction === "verify") {
+      if (action === "verify") {
         member.verified = true;
         member.level = member.role === "admin" ? "JP Trusted Partner" : "Verified Professional";
         member.suspended = false;
       }
-      if (button.dataset.adminAction === "warn") {
+      if (action === "warn") {
         member.warning = !member.warning;
       }
-      if (button.dataset.adminAction === "suspend") {
+      if (action === "suspend") {
         member.suspended = true;
       }
-      if (button.dataset.adminAction === "restore") {
+      if (action === "restore") {
         member.suspended = false;
       }
-      if (button.dataset.adminAction === "remove") {
+      if (action === "remove") {
         state.users = state.users.filter((user) => user.email !== member.email);
         state.members = state.members.filter((item) => item.email !== member.email);
         saveState();
@@ -2964,10 +3071,25 @@ function bindAdminActions() {
 
 function bindApplicationActions() {
   $all(".application-action").forEach((button) => {
-    button.addEventListener("click", () => {
-      const application = (state.applications || []).find((item) => item.id === button.dataset.id);
+    button.addEventListener("click", async () => {
+      const visibleApplications = adminProfilesStatus === "ready"
+        ? secureAdminProfiles.filter((profile) => profile.membership_status === "pending").map(secureProfileApplication)
+        : (state.applications || []);
+      const application = visibleApplications.find((item) => item.id === button.dataset.id);
       if (!application) return;
       const action = button.dataset.applicationAction;
+      if (application.secure) {
+        try {
+          if (action === "approve") await updateSecureProfileAccess(application.userId, { account_type: "member", membership_status: "active" });
+          if (action === "reject") await updateSecureProfileAccess(application.userId, { account_type: "client", membership_status: "rejected" });
+          adminProfilesMessage = action === "approve" ? `${application.fullName} now has paid Innovation Hub access.` : `${application.fullName}'s Hub request was rejected; Client Portal access remains available.`;
+          renderView("admin");
+        } catch (error) {
+          adminProfilesMessage = `Access update failed: ${error.message}`;
+          renderView("admin");
+        }
+        return;
+      }
       if (action === "delete") {
         state.applications = state.applications.filter((item) => item.id !== application.id);
         saveState();
