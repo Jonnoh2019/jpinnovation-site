@@ -137,30 +137,40 @@ const featurePreviews = {
     label: "Engineering boards",
     title: "Useful answers from real engineering discussions.",
     copy: "Open a board, browse its discussion threads or start a focused question for other approved members.",
+    image: "../assets/mechanical-assembly.jpg",
+    imageAlt: "Engineering assembly used for a member discussion",
     points: ["General Chat", "CAD & Design", "3D Printing", "CNC & Machining", "Jobs & Collaboration"]
   },
   quotes: {
     label: "Private quotes",
     title: "Share requirements without a public price race.",
     copy: "Approved requests can be reviewed by suitable members, with each response kept private.",
+    image: "../assets/case-study-fixture-bracket.png",
+    imageAlt: "Manufacture-ready component for a private quote request",
     points: ["Clear scope and files", "Private supplier responses", "JP Innovation moderation"]
   },
   directory: {
     label: "Member directory",
     title: "Find the right capability faster.",
     copy: "Search approved profiles by skill, location, equipment and current capacity.",
+    image: "../assets/retaining-bracket.jpg",
+    imageAlt: "Engineering component representing specialist capability",
     points: ["Verified profiles", "Local specialists", "Supplier and workshop capability"]
   },
   calculators: {
     label: "Engineering calculators",
     title: "Quick checks without leaving the Hub.",
     copy: "Use focused tools for common workshop and early design calculations.",
+    image: "../assets/case-study-linkage-assembly.png",
+    imageAlt: "Mechanical linkage assembly for engineering calculations",
     points: ["Speed, feed and cutting checks", "Weight and material estimates", "Unit conversions"]
   },
   templates: {
     label: "Templates and guides",
     title: "Start with the right information.",
     copy: "Practical templates make quotes, project briefs and design reviews clearer.",
+    image: "../assets/cad-machined-bracket.png",
+    imageAlt: "CAD component used in an engineering design review",
     points: ["Quote request checklist", "Project brief template", "Design and prototype checks"]
   },
   projects: {
@@ -168,6 +178,7 @@ const featurePreviews = {
     title: "Classic Mini restoration build.",
     copy: "A member can share a Mini restoration, track the work and ask the Engineering Boards for practical help with repairs, fabrication and sourcing.",
     imageSelector: '#examples img[alt="Classic Mini restoration project in a workshop"]',
+    imageAlt: "Classic Mini restoration project preview",
     points: ["Bodywork and fabrication plan", "Parts and milestone list", "Member advice and progress updates"]
   }
 };
@@ -179,7 +190,7 @@ function openFeaturePreview(key) {
   const imageSource = feature.image || (feature.imageSelector ? document.querySelector(feature.imageSelector)?.src : "") || "";
   $("#featurePreviewLabel").textContent = feature.label;
   $("#featurePreviewTitle").textContent = feature.title;
-  $("#featurePreviewBody").innerHTML = `<div class="feature-preview-content">${imageSource ? `<img src="${imageSource}" alt="Classic Mini restoration project preview">` : ""}<p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
+  $("#featurePreviewBody").innerHTML = `<div class="feature-preview-content">${imageSource ? `<img src="${imageSource}" alt="${feature.imageAlt || "Innovation Hub feature preview"}">` : ""}<p>${feature.copy}</p><ul>${feature.points.map((point) => `<li>${point}</li>`).join("")}</ul></div>`;
   dialog.classList.add("open");
   dialog.setAttribute("aria-hidden", "false");
 }
