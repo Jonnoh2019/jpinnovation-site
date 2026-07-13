@@ -321,8 +321,9 @@
       width: 100%;
       height: 100%;
       min-height: 350px;
-      object-fit: cover;
-      object-position: 52% center;
+      object-fit: contain;
+      object-position: center;
+      background: #eceef1;
       filter: saturate(1.06) contrast(1.04);
     }
     .media-label {
@@ -1125,10 +1126,16 @@
         min-height: 220px;
       }
       .hero-media {
-        height: 245px;
+        height: auto;
         min-height: 0;
       }
-      .hero-media img { min-height: 0; }
+      .hero-media img {
+        height: auto;
+        min-height: 0;
+        aspect-ratio: 3 / 2;
+        object-fit: cover;
+        object-position: center;
+      }
     }
   </style>
 </head>
