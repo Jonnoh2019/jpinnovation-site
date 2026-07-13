@@ -1003,9 +1003,9 @@ function configureEntryPage() {
     "#entryPanelCopy",
     isHubEntry
       ? "The Innovation Hub is for paid members. Free Client Portal users can sign in with the same account but will be asked to upgrade before paid features open."
-      : "Client Portal accounts are free and separate from the paid Innovation Hub. Approved accounts can sign in while the secure backend is being completed."
+      : "Client Portal accounts are free and separate from the paid Innovation Hub. Secure account access is active while the remaining collaboration tools complete launch testing."
   );
-  setText("#entryPanelPointOne", isHubEntry ? "One login can be upgraded from Client Portal to Innovation Hub." : "Trial data is browser-based until backend launch.");
+  setText("#entryPanelPointOne", isHubEntry ? "One login can be upgraded from Client Portal to Innovation Hub." : "Secure login is active; some project tools remain in launch testing.");
   setText("#entryPanelPointTwo", isHubEntry ? "Client Portal remains available for quotes, projects and messages." : "Paid Innovation Hub registration stays on the Innovation Hub page.");
 }
 
