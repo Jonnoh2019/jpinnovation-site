@@ -24,12 +24,40 @@
   --shadow: 0 24px 80px rgba(0,0,0,.34);
 }
 
+@media (max-width: 560px) {
+  .view-mount .board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .view-mount .board-category-button { min-height: 108px; padding: 10px; grid-template-columns: 28px minmax(0, 1fr); gap: 5px 7px; }
+  .view-mount .board-card-icon { width: 28px; height: 28px; border-radius: 8px; }
+  .view-mount .board-category-button h3 { font-size: 14px; line-height: 1.15; }
+  .view-mount .board-category-button p { display: none; }
+  .view-mount .board-category-button .board-card-count { font-size: 10px; }
+  .view-mount .board-thread-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding: 9px; }
+  .view-mount .board-thread-row .thread-row-count { grid-column: 2; }
+  .view-mount .board-thread-row .pill { grid-column: 2; width: fit-content; }
+  .view-mount .board-thread-row > span:last-child { grid-column: 3; grid-row: 1 / span 2; }
+  .view-mount .board-overview-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 /* Keep access dialogs centred on every screen size. */
 .auth-dialog {
   align-items: center;
   justify-items: center;
 }
 @media (max-width: 560px) {
+  .board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .board-category-button { min-height: 108px; padding: 10px; grid-template-columns: 28px minmax(0, 1fr); gap: 5px 7px; }
+  .board-card-icon { width: 28px; height: 28px; border-radius: 8px; }
+  .board-category-button h3 { font-size: 14px; line-height: 1.15; }
+  .board-category-button p { display: none; }
+  .board-category-button .board-card-count { font-size: 10px; }
+  .board-overview-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .board-overview-strip .metric { padding: 9px; }
+  .board-thread-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding: 9px; }
+  .board-thread-row .thread-row-count { grid-column: 2; }
+  .board-thread-row .pill { grid-column: 2; width: fit-content; }
+  .board-thread-row > span:last-child { grid-column: 3; grid-row: 1 / span 2; }
+  .board-composer summary { align-items: flex-start; }
+  .board-composer summary span { max-width: 135px; text-align: right; }
   .auth-dialog {
     min-height: 100dvh;
     align-items: center;
@@ -666,7 +694,7 @@ input:focus, textarea:focus, select:focus {
   color: #f4f8fc;
   font-weight: 900;
 }
-.app-nav .featured-nav span { margin-right: 7px; }
+.app-nav .featured-nav .nav-icon { margin-right: 0; }
 .app-nav .featured-nav.active {
   border-color: transparent;
   background: linear-gradient(135deg, var(--blue-deep), var(--blue));
@@ -715,6 +743,21 @@ input:focus, textarea:focus, select:focus {
   text-align: left;
   font-size: 13px;
   font-weight: 850;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid color-mix(in srgb, var(--nav-accent) 35%, transparent);
+  border-radius: 7px;
+  color: var(--nav-accent);
+  font-size: 12px;
+  line-height: 1;
 }
 .nav-link:hover,
 .nav-link.active {
@@ -1093,6 +1136,42 @@ input:focus, textarea:focus, select:focus {
   border-top-color: rgba(255,255,255,.1);
   color: #ff9b9b;
 }
+.profile-chat-notifications {
+  display: grid;
+  gap: 5px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 7px 0;
+}
+.profile-chat-notifications:empty { display: none; }
+.profile-menu-label {
+  margin: 0 8px 2px;
+  color: var(--blue-soft);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.profile-chat-alert {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(32,199,216,.05);
+  color: var(--ink);
+  text-align: left;
+}
+.profile-chat-alert:hover,
+.profile-chat-alert:focus-visible { border-color: rgba(32,199,216,.35); outline: none; }
+.profile-chat-alert strong,
+.profile-chat-alert small { display: block; }
+.profile-chat-alert strong { font-size: 12px; }
+.profile-chat-alert small { margin-top: 2px; color: var(--soft); font-size: 10px; }
+.profile-chat-alert > b { color: var(--cyan); font-size: 9px; text-transform: uppercase; }
 .profile-notification-centre { position: static; }
 .menu-count {
   position: absolute;
@@ -2069,6 +2148,64 @@ input:focus, textarea:focus, select:focus {
   border-color: rgba(32,199,216,.48);
   background: linear-gradient(135deg, rgba(32,199,216,.14), rgba(255,255,255,.05));
 }
+.board-directory { gap: 14px; }
+.board-card-icon,
+.thread-bubble {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(32,199,216,.35);
+  border-radius: 10px;
+  background: rgba(32,199,216,.1);
+  color: var(--cyan);
+}
+.board-category-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: 5px 10px;
+  min-height: 150px;
+}
+.board-category-button h3 { align-self: center; margin: 0; }
+.board-category-button p,
+.board-category-button .board-card-count { grid-column: 1 / -1; }
+.board-overview-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+.board-thread-list { display: grid; gap: 6px; }
+.board-thread-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  background: rgba(255,255,255,.025);
+  color: var(--ink);
+  text-align: left;
+}
+.board-thread-row:hover,
+.board-thread-row:focus-visible { border-color: rgba(32,199,216,.45); background: rgba(32,199,216,.08); outline: none; }
+.board-thread-row .thread-bubble { width: 30px; height: 30px; }
+.thread-row-copy strong,
+.thread-row-copy small { display: block; }
+.thread-row-copy small { margin-top: 2px; color: var(--soft); font-size: 11px; }
+.thread-row-count { color: var(--soft); font-size: 12px; font-weight: 800; }
+.board-composer summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.board-composer summary span { color: var(--soft); font-size: 12px; }
+.board-composer[open] summary { margin-bottom: 12px; }
 .thread-topline {
   display: flex;
   justify-content: space-between;
