@@ -53,6 +53,16 @@ alter table public.board_posts
   add column if not exists moderation_status text not null default 'pending'
   check (moderation_status in ('pending', 'approved', 'rejected'));
 
+alter table public.board_posts
+  add column if not exists approved_at timestamptz,
+  add column if not exists approved_by uuid references auth.users(id),
+  add column if not exists approved_by_name text not null default '';
+
+update public.board_posts
+set approved_at = coalesce(approved_at, updated_at, created_at),
+    approved_by_name = coalesce(nullif(approved_by_name, ''), 'JP Innovation admin')
+where moderation_status = 'approved';
+
 create table if not exists public.board_replies (
   id uuid primary key default gen_random_uuid(),
   post_id uuid not null references public.board_posts(id) on delete cascade,
@@ -166,5 +176,46 @@ $$;
 
 revoke all on function public.mark_board_reply_helpful(uuid) from public;
 grant execute on function public.mark_board_reply_helpful(uuid) to authenticated;
+
+create or replace function public.moderate_board_post(p_post_id uuid, p_status text)
+returns setof public.board_posts
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  admin_name text;
+begin
+  if p_status not in ('pending', 'approved', 'rejected') then
+    raise exception 'Invalid moderation status';
+  end if;
+
+  if not public.is_hub_admin() then
+    raise exception 'Only JP Innovation admins can moderate board posts';
+  end if;
+
+  select coalesce(nullif(full_name, ''), email, 'JP Innovation admin')
+  into admin_name
+  from public.profiles
+  where user_id = auth.uid();
+
+  update public.board_posts
+  set moderation_status = p_status,
+      flagged = case when p_status = 'approved' then false else flagged end,
+      approved_at = case when p_status = 'approved' then now() else null end,
+      approved_by = case when p_status = 'approved' then auth.uid() else null end,
+      approved_by_name = case when p_status = 'approved' then coalesce(admin_name, 'JP Innovation admin') else '' end
+  where id = p_post_id;
+
+  if not found then
+    raise exception 'Board post not found';
+  end if;
+
+  return query select * from public.board_posts where id = p_post_id;
+end;
+$$;
+
+revoke all on function public.moderate_board_post(uuid, text) from public;
+grant execute on function public.moderate_board_post(uuid, text) to authenticated;
 grant select, insert, update, delete on public.board_posts to authenticated;
 grant select, insert, update, delete on public.board_replies to authenticated;
