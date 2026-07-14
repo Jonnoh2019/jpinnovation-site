@@ -251,6 +251,10 @@ function countHelpfulReplies(post) {
   return visibleBoardReplies(post).filter((reply) => reply.helpful && reply.moderationStatus === "approved").length;
 }
 
+function countVisibleReplies(post, user = currentUser()) {
+  return visibleBoardReplies(post, user).length;
+}
+
 function boardMatches(post, term, category, mode) {
   const haystack = [
     post.title,
@@ -264,7 +268,7 @@ function boardMatches(post, term, category, mode) {
   const categoryMatch = category === "All" || post.category === category;
   const modeMatch =
     mode === "all" ||
-    (mode === "unanswered" && !(post.responses || []).length) ||
+    (mode === "unanswered" && !countVisibleReplies(post)) ||
     (mode === "helpful" && countHelpfulReplies(post) > 0) ||
     (mode === "needs-help" && post.postType === "needs-help" && !countHelpfulReplies(post));
   return termMatch && categoryMatch && modeMatch;
@@ -1459,6 +1463,41 @@ async function updateBoardReplyRecord(post, reply, body) {
   reply.moderationStatus = "pending";
 }
 
+async function moderateBoardPostRecord(post, moderationStatus, user = currentUser()) {
+  if (boardBackendAvailable) {
+    let rpcError = null;
+    const { data, error } = await portalBackend.rpc("moderate_board_post", {
+      p_post_id: post.id,
+      p_status: moderationStatus
+    });
+    if (error) {
+      rpcError = error;
+      const { error: updateError } = await portalBackend.from("board_posts").update({
+        moderation_status: moderationStatus,
+        flagged: moderationStatus === "approved" ? false : post.flagged,
+        approved_at: moderationStatus === "approved" ? new Date().toISOString() : null,
+        approved_by_name: moderationStatus === "approved" ? (user?.name || "JP Innovation admin") : ""
+      }).eq("id", post.id);
+      if (updateError) throw rpcError;
+    } else {
+      const updated = Array.isArray(data) ? data[0] : data;
+      if (updated) {
+        post.approvedAt = updated.approved_at || "";
+        post.approvedBy = updated.approved_by_name || "";
+      }
+    }
+  }
+  post.moderationStatus = moderationStatus;
+  if (moderationStatus === "approved") {
+    post.flagged = false;
+    post.approvedAt ||= new Date().toISOString();
+    post.approvedBy ||= user?.name || "JP Innovation admin";
+  } else {
+    post.approvedAt = "";
+    post.approvedBy = "";
+  }
+}
+
 async function deleteBoardReplyRecord(post, replyId) {
   if (boardBackendAvailable) {
     const { error } = await portalBackend.from("board_replies").delete().eq("id", replyId).eq("post_id", post.id);
@@ -2624,6 +2663,10 @@ function renderBoards() {
         return `<button class="board-card board-category-button" data-board-category="${escapeHtml(category)}" type="button"><span class="board-card-icon" aria-hidden="true">&#128172;</span><h3>${escapeHtml(category)}</h3><p>${boardDescription(category)}</p><small class="board-card-count">${count} ${count === 1 ? "thread" : "threads"} &rarr;</small></button>`;
       }).join("")}</div>
     </section>
+    <section class="section-card section-cyan board-thread-panel">
+      <div class="list-title"><div><h2>Recent threads</h2><p>Open a discussion directly or choose a board above.</p></div><span class="pill">${posts.slice(0, 8).length}</span></div>
+      <div class="board-thread-list">${posts.length ? posts.slice(0, 8).map(postThreadRow).join("") : `<div class="board-empty-state"><strong>No live discussions yet.</strong><p>Start the first engineering thread once your membership is approved.</p></div>`}</div>
+    </section>
     <section class="section-card board-overview-strip">
       ${metric("Need replies", unanswered)}
       ${metric("Need helpful answer", needsHelp)}
@@ -3714,22 +3757,20 @@ function postSummaryCard(post) {
   const replies = visibleBoardReplies(post);
   const helpfulCount = countHelpfulReplies(post);
   const postAuthor = memberForIdentity({ id: post.authorId, email: post.authorEmail, name: post.author });
+  const preview = String(post.description || "").replace(/\s+/g, " ").trim();
   return `
-    <article class="feed-item thread-card thread-summary">
-      <div class="thread-topline">
-        <span class="badge">${escapeHtml(post.category)}</span>
-        ${post.moderationStatus !== "approved" ? `<span class="pill warn">${post.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>` : ""}
-        ${postPurposeBadge(post, helpfulCount)}
-      </div>
-      <h3>${escapeHtml(post.title)}</h3>
-      <p>${escapeHtml(post.description)}</p>
-      <div class="meta-row">
-        <span class="pill author-reputation">${escapeHtml(post.author)} ${reputationBadge(postAuthor, { compact: true })}</span>
-        <span class="pill">${escapeHtml(post.created || "Today")}</span>
-        <span class="pill">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>
-      </div>
-      <button class="primary-button open-board-post" data-post-id="${escapeHtml(post.id)}" type="button">Open discussion</button>
-    </article>
+    <button class="board-thread-row board-thread-row-wide open-board-post" data-post-id="${escapeHtml(post.id)}" type="button">
+      <span class="thread-bubble" aria-hidden="true">&#128172;</span>
+      <span class="thread-row-copy">
+        <strong>${escapeHtml(post.title)}</strong>
+        <span class="thread-row-preview">${escapeHtml(preview.slice(0, 150))}${preview.length > 150 ? "&hellip;" : ""}</span>
+        <small>${escapeHtml(post.category)} &middot; ${escapeHtml(post.author)} ${reputationBadge(postAuthor, { compact: true })} &middot; ${escapeHtml(post.created || "Today")}</small>
+      </span>
+      <span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>
+      ${postPurposeBadge(post, helpfulCount)}
+      <span class="pill ${post.moderationStatus === "approved" ? "good" : "warn"}">${post.moderationStatus === "approved" ? "Published" : post.moderationStatus === "rejected" ? "Rejected" : "Pending"}</span>
+      <span aria-hidden="true">&rsaquo;</span>
+    </button>
   `;
 }
 
@@ -4465,20 +4506,8 @@ function bindPostModerationActions() {
       const moderationStatus = button.dataset.postAction;
       const returnView = currentView;
       try {
-        if (boardBackendAvailable) {
-          const { data, error } = await portalBackend.rpc("moderate_board_post", {
-            p_post_id: post.id,
-            p_status: moderationStatus
-          });
-          if (error) throw error;
-          const updated = Array.isArray(data) ? data[0] : data;
-          if (updated) {
-            post.approvedAt = updated.approved_at || "";
-            post.approvedBy = updated.approved_by_name || "";
-          }
-        }
-        post.moderationStatus = moderationStatus;
-        if (moderationStatus === "approved") post.flagged = false;
+        await moderateBoardPostRecord(post, moderationStatus, currentUser());
+        if (boardBackendAvailable) await loadSecureBoards();
         saveState();
         renderNotifications();
         showSuccessToast(
@@ -4507,8 +4536,13 @@ function bindReplyModerationActions() {
           if (error) throw error;
         }
         reply.moderationStatus = moderationStatus;
+        if (boardBackendAvailable) await loadSecureBoards();
         saveState();
         renderNotifications();
+        showSuccessToast(
+          moderationStatus === "approved" ? "Reply approved." : "Reply rejected.",
+          moderationStatus === "approved" ? "The reply is now visible in the discussion thread." : "The reply remains hidden from members."
+        );
         renderView(currentView);
       } catch (error) {
         window.alert(error.message || "The reply moderation update failed.");
