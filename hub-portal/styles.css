@@ -1379,6 +1379,9 @@ input:focus, textarea:focus, select:focus {
   display: grid;
   gap: 6px;
   width: min(320px, calc(100vw - 36px));
+  max-height: min(640px, calc(100dvh - 92px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 10px;
   border: 1px solid rgba(47,141,255,.32);
   border-radius: var(--radius);
@@ -3529,9 +3532,28 @@ input:focus, textarea:focus, select:focus {
     left: 10px;
     right: 10px;
     width: auto;
-    max-height: calc(100dvh - var(--hub-mobile-header-offset, 190px) - 10px);
+    gap: 2px;
+    max-height: calc(100dvh - var(--hub-mobile-header-offset, 190px) - 8px);
+    padding: 6px;
     overflow-y: auto;
   }
+  .member-profile-menu .profile-menu-link {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 7px;
+    min-height: 38px;
+    padding: 6px 34px 6px 7px;
+  }
+  .member-profile-menu .profile-menu-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    font-size: 11px;
+  }
+  .member-profile-menu .profile-menu-link small { display: none; }
+  .member-profile-menu .profile-menu-link strong { font-size: 13px; line-height: 1.15; }
+  .member-profile-menu .profile-menu-signout { margin-top: 1px; }
+  .member-profile-menu .profile-chat-notifications { gap: 2px; padding: 3px 0; }
+  .member-profile-menu .profile-chat-summary > summary { padding: 3px 6px; }
   .header-icon-button,
   .notification-bell {
     width: 40px;
