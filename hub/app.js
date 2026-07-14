@@ -92,6 +92,7 @@ const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishabl
 });
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=hub&signin=1&reset=1`;
+const landingAuthDelayMs = 2000;
 
 function profileHasHubAccess(profile) {
   const accountType = profile?.account_type || "client";
@@ -388,8 +389,8 @@ function hubAuthHandler() {
     }
   });
   setHubAuthTab("signin");
-  if (params.get("register") === "1") openHubAuth("register");
-  else if (params.get("signin") === "1") openHubAuth("signin");
+  if (params.get("register") === "1") window.setTimeout(() => openHubAuth("register"), landingAuthDelayMs);
+  else if (params.get("signin") === "1") window.setTimeout(() => openHubAuth("signin"), landingAuthDelayMs);
 }
 
 async function restoreHubSession() {
