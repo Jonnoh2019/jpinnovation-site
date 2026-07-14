@@ -56,7 +56,8 @@ alter table public.board_posts
 alter table public.board_posts
   add column if not exists approved_at timestamptz,
   add column if not exists approved_by uuid references auth.users(id),
-  add column if not exists approved_by_name text not null default '';
+  add column if not exists approved_by_name text not null default '',
+  add column if not exists is_pinned boolean not null default false;
 
 update public.board_posts
 set approved_at = coalesce(approved_at, updated_at, created_at),
@@ -81,6 +82,7 @@ alter table public.board_replies
 create index if not exists board_posts_created_at_idx on public.board_posts(created_at desc);
 create index if not exists board_posts_category_idx on public.board_posts(category);
 create index if not exists board_posts_moderation_idx on public.board_posts(moderation_status, created_at desc);
+create index if not exists board_posts_pinned_idx on public.board_posts(is_pinned desc, created_at desc);
 create index if not exists board_replies_post_id_idx on public.board_replies(post_id, created_at);
 create index if not exists board_replies_moderation_idx on public.board_replies(moderation_status, created_at desc);
 
