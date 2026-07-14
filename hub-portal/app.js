@@ -6,6 +6,8 @@ const portalBackend = window.supabase?.createClient(supabaseUrl, supabasePublish
 });
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
+const serviceWorkerPath = "/jp-service-worker.js?v=phone-alerts-20260714";
+const pushPublicKey = window.JP_INNOVATION_PUSH_PUBLIC_KEY || "";
 
 const boardCategories = [
   "General Chat",
@@ -253,6 +255,105 @@ function countHelpfulReplies(post) {
 
 function countVisibleReplies(post, user = currentUser()) {
   return visibleBoardReplies(post, user).length;
+}
+
+function pushSupported() {
+  return "serviceWorker" in navigator && "Notification" in window;
+}
+
+function isStandaloneApp() {
+  return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+}
+
+function isAppleMobileDevice() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function pushPermissionLabel() {
+  if (!pushSupported()) return "Not supported on this browser";
+  if (Notification.permission === "granted") return "Enabled on this device";
+  if (Notification.permission === "denied") return "Blocked in browser settings";
+  return "Not enabled yet";
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
+async function registerNotificationServiceWorker() {
+  if (!("serviceWorker" in navigator)) return null;
+  return navigator.serviceWorker.register(serviceWorkerPath, { scope: "/" });
+}
+
+async function savePushSubscription(subscription) {
+  const user = currentUser();
+  if (!portalBackend || !subscription || !user?.id) return;
+  const payload = subscription.toJSON();
+  const { error } = await portalBackend.from("push_subscriptions").upsert({
+    user_id: user.id,
+    email: user.email,
+    endpoint: payload.endpoint,
+    p256dh: payload.keys?.p256dh || "",
+    auth: payload.keys?.auth || "",
+    user_agent: navigator.userAgent.slice(0, 500),
+    enabled: true,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "endpoint" });
+  if (error) throw error;
+}
+
+async function enablePhoneNotifications() {
+  if (!pushSupported()) {
+    throw new Error("This browser does not support phone notifications for websites.");
+  }
+  if (isAppleMobileDevice() && !isStandaloneApp()) {
+    throw new Error("On iPhone, add JP Innovation to your Home Screen first, then open the app icon and enable alerts.");
+  }
+  const registration = await registerNotificationServiceWorker();
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    throw new Error("Notifications were not enabled. You can change this in your browser settings.");
+  }
+  await registration.showNotification("JP Innovation alerts enabled", {
+    body: "You will be able to receive admin tasks, messages and Hub updates here.",
+    icon: "/assets/jp-app-icon-192.png",
+    badge: "/assets/jp-app-icon-180.png",
+    tag: "jp-alerts-enabled",
+    data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
+  });
+  if (!pushPublicKey) {
+    return "Phone alerts are enabled on this device. Backend push sending still needs the secure server key before off-site alerts can be sent automatically.";
+  }
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(pushPublicKey)
+  });
+  await savePushSubscription(subscription);
+  return "Phone alerts enabled and this device has been registered for live push notifications.";
+}
+
+async function maybeShowLocalPhoneNotification(items = []) {
+  const user = currentUser();
+  if (!pushSupported() || Notification.permission !== "granted" || !items.length || !user?.email) return;
+  const item = items.find((entry) => entry.isNew) || items[0];
+  const notificationKey = `${user.email}:${item.title}:${item.detail}`;
+  try {
+    if (window.localStorage.getItem("jpLastPhoneNotification") === notificationKey) return;
+    window.localStorage.setItem("jpLastPhoneNotification", notificationKey);
+  } catch {}
+  try {
+    const registration = await registerNotificationServiceWorker();
+    await registration.showNotification(`JP Innovation: ${item.title}`, {
+      body: item.detail || "Open JP Innovation to view the update.",
+      icon: "/assets/jp-app-icon-192.png",
+      badge: "/assets/jp-app-icon-180.png",
+      tag: `jp-${String(item.view || "notification")}`,
+      data: { url: `/hub-portal/index.html?entry=${isClientPortalContext(user) ? "client" : "hub"}&view=${encodeURIComponent(item.view || "notifications")}` }
+    });
+  } catch {}
 }
 
 function sortBoardPosts(posts = []) {
@@ -2080,6 +2181,7 @@ function renderNotifications() {
     profileAlertCount.classList.toggle("hidden", unread === 0);
   }
   renderProfileChatNotifications(items);
+  maybeShowLocalPhoneNotification(items);
 }
 
 function notificationItems(user = currentUser()) {
@@ -3435,6 +3537,18 @@ function renderSettings(user) {
         <p id="settingsStatus" class="form-status wide" aria-live="polite"></p>
       </form>
     </section>
+    <section class="section-card section-blue">
+      <div class="list-title"><div><h2>Phone alerts</h2><p>Allow JP Innovation to show mobile notifications for admin tasks, messages and items needing attention.</p></div><span class="pill">${escapeHtml(pushPermissionLabel())}</span></div>
+      <div class="cards-grid">
+        <article class="card"><span class="badge">Mobile</span><h3>JP notification badge</h3><p>Alerts use the JP app icon so they appear like a proper phone notification from the site.</p></article>
+        <article class="card"><span class="badge">iPhone note</span><h3>Add to Home Screen first</h3><p>Apple only allows website push notifications after the site has been saved as an app from Safari.</p></article>
+      </div>
+      <div class="trial-data-actions">
+        <button id="enablePhoneAlerts" class="primary-button" type="button">Enable phone alerts</button>
+        <button id="testPhoneAlert" class="secondary-button" type="button">Send test alert</button>
+      </div>
+      <p id="phoneAlertStatus" class="form-status" aria-live="polite">No notification prompt will appear until you press Enable phone alerts.</p>
+    </section>
   `;
 }
 
@@ -4395,9 +4509,42 @@ function bindViewHandlers(view) {
       setLoggedInView();
       $("#settingsStatus").textContent = "Preferences saved.";
     });
+    bindPhoneAlertControls();
   }
   $all(".nav-link-jump").forEach((button) => button.addEventListener("click", () => renderView(button.dataset.targetView)));
   bindDeleteButtons();
+}
+
+function bindPhoneAlertControls() {
+  const status = $("#phoneAlertStatus");
+  $("#enablePhoneAlerts")?.addEventListener("click", async () => {
+    if (!status) return;
+    status.textContent = "Preparing phone alerts...";
+    try {
+      status.textContent = await enablePhoneNotifications();
+      renderView("settings");
+    } catch (error) {
+      status.textContent = error.message || "Phone alerts could not be enabled on this device.";
+    }
+  });
+  $("#testPhoneAlert")?.addEventListener("click", async () => {
+    if (!status) return;
+    try {
+      if (!pushSupported()) throw new Error("This browser does not support website notifications.");
+      if (Notification.permission !== "granted") throw new Error("Press Enable phone alerts first.");
+      const registration = await registerNotificationServiceWorker();
+      await registration.showNotification("JP Innovation test alert", {
+        body: "This is how admin tasks, messages and Hub updates will appear.",
+        icon: "/assets/jp-app-icon-192.png",
+        badge: "/assets/jp-app-icon-180.png",
+        tag: `jp-test-${Date.now()}`,
+        data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
+      });
+      status.textContent = "Test alert sent to this device.";
+    } catch (error) {
+      status.textContent = error.message || "The test alert could not be sent.";
+    }
+  });
 }
 
 function bindAccountSecurity() {
@@ -5335,6 +5482,7 @@ async function boot() {
   document.documentElement.classList.remove("restoring-portal-session");
   configureEntryPage();
   setupEmailFieldCleaning();
+  registerNotificationServiceWorker().catch(() => {});
   $all("[data-client-feature]").forEach((button) => button.addEventListener("click", () => openClientFeature(button.dataset.clientFeature)));
   $("#closeClientFeature")?.addEventListener("click", closeClientFeature);
   $("#clientFeatureDialog")?.addEventListener("click", (event) => {
