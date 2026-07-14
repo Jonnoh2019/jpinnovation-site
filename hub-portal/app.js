@@ -545,6 +545,9 @@ function normaliseState() {
     member.directoryVisible = member.directoryVisible !== false;
     member.preferredWork ||= "";
     member.capacity ||= "";
+    member.profilePhotoUrl ||= "";
+    member.profilePhotoPendingUrl ||= "";
+    member.profilePhotoStatus ||= member.profilePhotoUrl ? "approved" : "none";
   });
   state.users.forEach((user) => {
     user.role ||= "member";
@@ -558,6 +561,11 @@ function normaliseState() {
     user.profileGoals ||= "";
     user.preferredWork ||= "";
     user.capacity ||= "";
+    user.profilePhotoUrl ||= "";
+    user.profilePhotoPendingUrl ||= "";
+    user.profilePhotoStatus ||= user.profilePhotoUrl ? "approved" : "none";
+    user.profilePhotoSubmittedAt ||= "";
+    user.profilePhotoReviewedAt ||= "";
   });
   saveState();
 }
@@ -1030,6 +1038,21 @@ function reputationBadge(member, options = {}) {
   const compact = options.compact === true;
   const label = tier === "gold" ? "Gold Trusted" : "Blue Verified";
   return `<span class="reputation-badge ${tier}" title="${label}: paid Hub member vetted by JP Innovation" aria-label="${label}"><span aria-hidden="true">&#9733;</span>${compact ? "" : `<b>${label}</b>`}</span>`;
+}
+
+function approvedProfilePhoto(user) {
+  return user?.profilePhotoStatus === "approved" && user.profilePhotoUrl ? user.profilePhotoUrl : "";
+}
+
+function profileAvatarMarkup(user, className = "profile-avatar") {
+  const src = approvedProfilePhoto(user);
+  return src
+    ? `<span class="${escapeHtml(className)} has-photo"><img src="${escapeHtml(src)}" alt="${escapeHtml(user?.name || "Member")} profile photo"></span>`
+    : `<span class="${escapeHtml(className)}">${escapeHtml(userInitials(user))}</span>`;
+}
+
+function pendingProfilePhotos() {
+  return (state.users || []).filter((user) => user.profilePhotoStatus === "pending" && user.profilePhotoPendingUrl);
 }
 
 function memberForIdentity({ id = "", email = "", name = "" } = {}) {
@@ -1958,7 +1981,9 @@ function setLoggedInView() {
   $("#appShell").classList.toggle("hidden", !loggedIn);
   if (!loggedIn) return;
   const isClient = isClientPortalContext(user);
-  $("#memberInitials").textContent = userInitials(user);
+  $("#memberInitials").innerHTML = approvedProfilePhoto(user)
+    ? `<img src="${escapeHtml(approvedProfilePhoto(user))}" alt="${escapeHtml(user.name)} profile photo">`
+    : escapeHtml(userInitials(user));
   $("#memberName").textContent = user.name;
   $("#memberRole").textContent = isClient ? "Client Portal" : roleLabel(user);
   const reputationButton = $("#reputationStatusButton");
@@ -2197,6 +2222,7 @@ function notificationItems(user = currentUser()) {
     const pendingProjects = state.projects.filter((project) => project.moderationStatus === "pending").length;
     const pendingQuotes = state.quotes.filter((quote) => quote.status === "jp-review").length;
     const pendingReviews = (state.memberReviews || []).filter((review) => review.moderationStatus === "pending").length;
+    const pendingPhotos = pendingProfilePhotos().length;
     if (pendingAccess) items.push({ title: `${pendingAccess} access request${pendingAccess === 1 ? "" : "s"}`, detail: "Approve or reject access in Admin Review.", isNew: true, view: "admin", targetId: "adminAccessRequests" });
     if (pendingPosts) items.push({ title: `${pendingPosts} post${pendingPosts === 1 ? "" : "s"} awaiting moderation`, detail: "Review posts before publication.", isNew: true, view: "admin", targetId: "adminPostModeration" });
     pendingReplies.slice(0, 5).forEach(({ post, reply }) => items.push({
@@ -2207,6 +2233,7 @@ function notificationItems(user = currentUser()) {
     if (pendingProjects) items.push({ title: `${pendingProjects} project${pendingProjects === 1 ? "" : "s"} awaiting moderation`, detail: "Review member projects before publication.", isNew: true, view: "admin", targetId: "adminProjectModeration" });
     if (pendingQuotes) items.push({ title: `${pendingQuotes} quote request${pendingQuotes === 1 ? "" : "s"} awaiting review`, detail: "Review them in the admin quote queue.", isNew: true, view: "admin", targetId: "adminQuoteQueue" });
     if (pendingReviews) items.push({ title: `${pendingReviews} member review${pendingReviews === 1 ? "" : "s"} awaiting approval`, detail: "Approve both the rating and written comment.", isNew: true, view: "admin", targetId: "adminMemberReviews" });
+    if (pendingPhotos) items.push({ title: `${pendingPhotos} profile photo${pendingPhotos === 1 ? "" : "s"} awaiting approval`, detail: "Approve verified member images before they appear publicly.", isNew: true, view: "admin", targetId: "adminProfilePhotos" });
   } else {
     const pendingPosts = state.posts.filter((post) => post.authorEmail === user.email && post.moderationStatus === "pending").length;
     const pendingProjects = state.projects.filter((project) => project.authorEmail === user.email && project.moderationStatus === "pending").length;
@@ -2214,6 +2241,7 @@ function notificationItems(user = currentUser()) {
     if (pendingPosts) items.push({ title: `${pendingPosts} post${pendingPosts === 1 ? "" : "s"} awaiting approval`, detail: "JP Innovation will publish approved posts.", isNew: true, view: "boards" });
     if (pendingProjects) items.push({ title: `${pendingProjects} project${pendingProjects === 1 ? "" : "s"} awaiting approval`, detail: "JP Innovation will publish approved projects.", isNew: true, view: "projects" });
     if (pendingQuotes) items.push({ title: `${pendingQuotes} quote request${pendingQuotes === 1 ? "" : "s"} under review`, detail: "JP Innovation is reviewing the scope.", isNew: true, view: "quotes" });
+    if (user.profilePhotoStatus === "pending") items.push({ title: "Profile photo awaiting approval", detail: "JP Innovation will verify it before it appears publicly.", isNew: true, view: "profile" });
     const boardActivity = state.posts.flatMap((post) => (post.responses || [])
       .filter((reply) => reply.authorId !== user.id && reply.moderationStatus === "approved" && (post.authorId === user.id || post.authorEmail === user.email))
       .map((reply) => ({ post, reply })))
@@ -3466,6 +3494,18 @@ function renderProfile(user) {
         <div><h2>My profile</h2><p>Keep this complete for verification and quote opportunities.</p></div>
         <span class="pill good">${escapeHtml(user.level)}</span>
       </div>
+      <div class="profile-photo-manager">
+        <div class="profile-photo-preview">
+          ${profileAvatarMarkup(user, "profile-photo-large")}
+        </div>
+        <div>
+          <h3>Profile photo</h3>
+          <p class="muted">${user.profilePhotoStatus === "pending" ? "Your new photo is waiting for JP Innovation approval before it appears publicly." : user.profilePhotoStatus === "approved" ? "Your approved photo is visible on your Hub profile and member activity." : "Upload a clear photo or logo for JP Innovation to verify before it appears publicly."}</p>
+          ${user.profilePhotoPendingUrl ? `<div class="profile-photo-pending"><img src="${escapeHtml(user.profilePhotoPendingUrl)}" alt="Pending profile photo preview"><span class="pill warn">Pending approval</span></div>` : ""}
+          <label class="secondary-button profile-photo-upload">Upload photo for approval <input id="profilePhotoInput" type="file" accept="image/png,image/jpeg,image/webp"></label>
+          <p id="profilePhotoStatus" class="form-status" aria-live="polite"></p>
+        </div>
+      </div>
       <form id="profileForm" class="form-grid two">
         <label>Name <input name="name" value="${escapeHtml(user.name)}" required></label>
         <label>Business <input name="business" value="${escapeHtml(user.business)}"></label>
@@ -3635,6 +3675,7 @@ function renderAdmin(user) {
   const moderationReplies = state.posts.flatMap((post) => (post.responses || []).filter((reply) => reply.moderationStatus === "pending").map((reply) => ({ post, reply })));
   const moderationProjects = state.projects.filter((project) => project.moderationStatus === "pending");
   const pendingMemberReviews = (state.memberReviews || []).filter((review) => review.moderationStatus === "pending");
+  const photoApprovals = pendingProfilePhotos();
   const applications = adminProfilesStatus === "ready"
     ? secureAdminProfiles.filter((profile) => profile.membership_status === "pending").map(secureProfileApplication)
     : (state.applications || []).filter((application) => !application.example && application.created !== "Example");
@@ -3651,6 +3692,7 @@ function renderAdmin(user) {
         ${metric("Post reviews", moderationPosts.length + moderationReplies.length)}
         ${metric("Project reviews", moderationProjects.length)}
         ${metric("Member reviews", pendingMemberReviews.length)}
+        ${metric("Photo reviews", photoApprovals.length)}
         ${metric("Quote reviews", state.quotes.filter((quote) => quote.status === "jp-review").length)}
         ${metric("Suspended", suspendedAccounts)}
       </div>
@@ -3721,6 +3763,25 @@ function renderAdmin(user) {
           <div><span class="review-stars" aria-label="${review.rating} out of 5 stars">${"&#9733;".repeat(review.rating)}${"&#9734;".repeat(5 - review.rating)}</span><h3>${escapeHtml(review.reviewerName)} reviewed ${escapeHtml(review.reviewedName)}</h3><p>${escapeHtml(review.comment)}</p><small>Submitted ${escapeHtml(review.created)}</small></div>
           <div class="admin-actions"><button class="primary-button review-moderation-action" data-review-action="approved" data-review-id="${escapeHtml(review.id)}" type="button">Approve review</button><button class="secondary-button review-moderation-action danger-action" data-review-action="rejected" data-review-id="${escapeHtml(review.id)}" type="button">Reject</button></div>
         </article>`).join("") : `<p class="muted">No member reviews are waiting for approval.</p>`}</div>
+    </details>
+    <details id="adminProfilePhotos" class="section-card admin-fold section-cyan" ${photoApprovals.length ? "open" : ""}>
+      <summary class="list-title"><div><h2>Profile photo approvals</h2><p>Approve member photos before they appear on profiles, posts and the directory.</p></div><span class="pill ${photoApprovals.length ? "warn" : "good"}">${photoApprovals.length}</span></summary>
+      <div class="profile-photo-admin-list">
+        ${photoApprovals.length ? photoApprovals.map((member) => `
+          <article class="profile-photo-admin-card">
+            <img src="${escapeHtml(member.profilePhotoPendingUrl)}" alt="${escapeHtml(member.name)} pending profile photo">
+            <div>
+              <span class="badge">${escapeHtml(roleLabel(member))}</span>
+              <h3>${escapeHtml(member.name)}</h3>
+              <p>${escapeHtml(member.business || "Independent member")} &middot; ${escapeHtml(member.email)}</p>
+              <small>Submitted ${escapeHtml(member.profilePhotoSubmittedAt ? formatBoardDate(member.profilePhotoSubmittedAt) : "recently")}</small>
+            </div>
+            <div class="admin-actions">
+              <button class="primary-button profile-photo-action" data-photo-action="approve" data-email="${escapeHtml(member.email)}" type="button">Approve photo</button>
+              <button class="secondary-button profile-photo-action danger-action" data-photo-action="reject" data-email="${escapeHtml(member.email)}" type="button">Reject</button>
+            </div>
+          </article>`).join("") : `<p class="muted">No profile photos are waiting for approval.</p>`}
+      </div>
     </details>
     <details id="adminPostModeration" class="section-card admin-fold section-rose" ${moderationPosts.length ? "open" : ""}>
       <summary class="list-title"><div><h2>Post moderation</h2><p>Approve, reject or review reported posts.</p></div><span class="pill ${moderationPosts.length ? "warn" : "good"}">${moderationPosts.length}</span></summary>
@@ -4122,8 +4183,13 @@ function memberCard(member) {
     : "No approved reviews yet";
   return `
     <article class="member-card">
-      <span class="badge">${escapeHtml(member.level)}</span>
-      <div class="member-name-with-badge"><h3>${escapeHtml(member.name)}</h3>${reputationBadge(member)}</div>
+      <div class="member-card-head">
+        ${profileAvatarMarkup(member, "profile-avatar")}
+        <div>
+          <span class="badge">${escapeHtml(member.level)}</span>
+          <div class="member-name-with-badge"><h3>${escapeHtml(member.name)}</h3>${reputationBadge(member)}</div>
+        </div>
+      </div>
       <p><strong>${escapeHtml(member.business || "Independent member")}</strong></p>
       <p>${escapeHtml(member.bio || "")}</p>
       <div class="tag-row">
@@ -4499,6 +4565,7 @@ function bindViewHandlers(view) {
       setLoggedInView();
       renderView("profile");
     });
+    bindProfilePhotoUpload();
   }
   if (view === "settings") {
     $("#settingsForm").addEventListener("submit", (event) => {
@@ -4601,6 +4668,43 @@ function bindAccountSecurity() {
   });
 }
 
+function bindProfilePhotoUpload() {
+  const input = $("#profilePhotoInput");
+  const status = $("#profilePhotoStatus");
+  if (!input) return;
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    const user = currentUser();
+    if (!file || !user) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+      if (status) status.textContent = "Please upload a PNG, JPG or WebP image.";
+      input.value = "";
+      return;
+    }
+    if (file.size > 2.5 * 1024 * 1024) {
+      if (status) status.textContent = "Please use an image under 2.5MB so the Hub stays quick on mobile.";
+      input.value = "";
+      return;
+    }
+    if (status) status.textContent = "Preparing photo for JP Innovation approval...";
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      user.profilePhotoPendingUrl = String(reader.result || "");
+      user.profilePhotoStatus = "pending";
+      user.profilePhotoSubmittedAt = new Date().toISOString();
+      syncMember(user);
+      saveState();
+      showSuccessToast("Photo submitted for approval.", "It will appear publicly after JP Innovation verifies it.");
+      renderNotifications();
+      renderView("profile");
+    });
+    reader.addEventListener("error", () => {
+      if (status) status.textContent = "That photo could not be read. Please try a different image.";
+    });
+    reader.readAsDataURL(file);
+  });
+}
+
 function bindAdminActions() {
   $all(".launch-action").forEach((button) => {
     button.addEventListener("click", () => {
@@ -4673,6 +4777,26 @@ function bindAdminActions() {
       }
       syncMember(member);
       saveState();
+      renderView("admin");
+    });
+  });
+  $all(".profile-photo-action").forEach((button) => {
+    button.addEventListener("click", () => {
+      const member = state.users.find((user) => user.email === button.dataset.email);
+      if (!member) return;
+      if (button.dataset.photoAction === "approve") {
+        member.profilePhotoUrl = member.profilePhotoPendingUrl;
+        member.profilePhotoPendingUrl = "";
+        member.profilePhotoStatus = "approved";
+        member.profilePhotoReviewedAt = new Date().toISOString();
+      } else {
+        member.profilePhotoPendingUrl = "";
+        member.profilePhotoStatus = member.profilePhotoUrl ? "approved" : "rejected";
+        member.profilePhotoReviewedAt = new Date().toISOString();
+      }
+      syncMember(member);
+      saveState();
+      renderNotifications();
       renderView("admin");
     });
   });
@@ -5451,6 +5575,9 @@ function syncMember(user) {
     bio: user.bio || "Innovation Hub member.",
     preferredWork: user.preferredWork || "",
     capacity: user.capacity || "",
+    profilePhotoUrl: user.profilePhotoUrl || "",
+    profilePhotoPendingUrl: user.profilePhotoPendingUrl || "",
+    profilePhotoStatus: user.profilePhotoStatus || "none",
     directoryVisible: user.directoryVisible === true
   };
   if (existing) Object.assign(existing, data);
