@@ -255,6 +255,13 @@ function countVisibleReplies(post, user = currentUser()) {
   return visibleBoardReplies(post, user).length;
 }
 
+function sortBoardPosts(posts = []) {
+  return [...posts].sort((a, b) => {
+    if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? -1 : 1;
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+}
+
 function boardMatches(post, term, category, mode) {
   const haystack = [
     post.title,
@@ -978,6 +985,7 @@ function mapBoardPost(row) {
     updatedAt: row.updated_at,
     reports: row.reports || 0,
     flagged: row.flagged === true,
+    isPinned: row.is_pinned === true || row.isPinned === true,
     moderationStatus: row.moderation_status || "pending",
     approvedAt: row.approved_at || "",
     approvedBy: row.approved_by_name || "",
@@ -1014,10 +1022,18 @@ async function clearKnownPretendSecureContent() {
 async function loadSecureBoards() {
   const user = currentUser();
   if (!portalBackend || !user || isClientPortalContext(user)) return false;
-  const { data, error } = await portalBackend
+  const baseBoardSelect = "id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,moderation_status,approved_at,approved_by_name,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful,moderation_status)";
+  const pinnedBoardSelect = "id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,is_pinned,moderation_status,approved_at,approved_by_name,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful,moderation_status)";
+  let { data, error } = await portalBackend
     .from("board_posts")
-    .select("id,title,category,body,author_id,author_name,created_at,updated_at,flagged,reports,moderation_status,approved_at,approved_by_name,board_replies(id,body,author_id,author_name,created_at,updated_at,helpful,moderation_status)")
+    .select(pinnedBoardSelect)
     .order("created_at", { ascending: false });
+  if (error && /is_pinned|column/i.test(String(error.message || ""))) {
+    ({ data, error } = await portalBackend
+      .from("board_posts")
+      .select(baseBoardSelect)
+      .order("created_at", { ascending: false }));
+  }
   if (error) {
     boardBackendAvailable = false;
     return false;
@@ -1416,7 +1432,7 @@ async function createBoardPostRecord(data, user) {
   return {
     id: uid("post"), title: data.title, category: data.category, description: data.description, postType: data.postType || "information",
     author: user.name, authorEmail: user.email, authorId: user.id, created: "Just now",
-    reports: 0, flagged, moderationStatus: "pending", responses: []
+    reports: 0, flagged, isPinned: false, moderationStatus: "pending", responses: []
   };
 }
 
@@ -1502,6 +1518,14 @@ async function moderateBoardPostRecord(post, moderationStatus, user = currentUse
     post.approvedAt = "";
     post.approvedBy = "";
   }
+}
+
+async function toggleBoardPostPinRecord(post, isPinned) {
+  if (boardBackendAvailable) {
+    const { error } = await portalBackend.from("board_posts").update({ is_pinned: isPinned }).eq("id", post.id);
+    if (error && !/is_pinned|column/i.test(String(error.message || ""))) throw error;
+  }
+  post.isPinned = isPinned;
 }
 
 async function deleteBoardReplyRecord(post, replyId) {
@@ -2606,8 +2630,10 @@ function renderOnboarding(user) {
 
 function visibleBoardPosts(user = currentUser()) {
   if (!user) return [];
-  if (user.role === "admin") return state.posts;
-  return state.posts.filter((post) => post.moderationStatus === "approved" || post.authorId === user.id || post.authorEmail === user.email);
+  const posts = user.role === "admin"
+    ? state.posts
+    : state.posts.filter((post) => post.moderationStatus === "approved" || post.authorId === user.id || post.authorEmail === user.email);
+  return sortBoardPosts(posts);
 }
 
 function visibleBoardReplies(post, user = currentUser()) {
@@ -2701,7 +2727,7 @@ function postThreadRow(post) {
   const replies = visibleBoardReplies(post);
   const preview = String(post.description || "").replace(/\s+/g, " ").trim().slice(0, 110);
   const postAuthor = memberForIdentity({ id: post.authorId, email: post.authorEmail, name: post.author });
-  return `<button class="board-thread-row open-board-post" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${escapeHtml(post.title)}</strong><span class="thread-row-preview">${escapeHtml(preview)}${String(post.description || "").length > 110 ? "&hellip;" : ""}</span><small>${escapeHtml(post.author)} ${reputationBadge(postAuthor, { compact: true })} &middot; ${escapeHtml(post.created || "Today")} &middot; ${escapeHtml(boardPostTypeLabel(post.postType))}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span><span class="pill ${post.moderationStatus === "approved" ? "good" : "warn"}">${post.moderationStatus === "approved" ? "Published" : "Pending"}</span><span aria-hidden="true">&rsaquo;</span></button>`;
+  return `<button class="board-thread-row open-board-post ${post.isPinned ? "is-pinned" : ""}" data-post-id="${escapeHtml(post.id)}" type="button"><span class="thread-bubble" aria-hidden="true">&#128172;</span><span class="thread-row-copy"><strong>${post.isPinned ? `<span class="thread-pin-marker">Pinned</span> ` : ""}${escapeHtml(post.title)}</strong><span class="thread-row-preview">${escapeHtml(preview)}${String(post.description || "").length > 110 ? "&hellip;" : ""}</span><small>${escapeHtml(post.author)} ${reputationBadge(postAuthor, { compact: true })} &middot; ${escapeHtml(post.created || "Today")} &middot; ${escapeHtml(boardPostTypeLabel(post.postType))}</small></span><span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>${post.isPinned ? `<span class="pill pinned">Pinned</span>` : ""}<span class="pill ${post.moderationStatus === "approved" ? "good" : "warn"}">${post.moderationStatus === "approved" ? "Published" : "Pending"}</span><span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
 function boardDescription(category) {
@@ -3718,6 +3744,7 @@ function postCard(post) {
   return `
     <article class="feed-item thread-card" id="post-${escapeHtml(post.id)}">
       <div class="thread-topline">
+        ${post.isPinned ? `<span class="pill pinned">Pinned</span>` : ""}
         <span class="badge">${escapeHtml(post.category)}</span>
         ${post.moderationStatus !== "approved" ? `<span class="pill warn">${post.moderationStatus === "rejected" ? "Not approved" : "Awaiting approval"}</span>` : ""}
         ${postPurposeBadge(post, helpfulCount)}
@@ -3730,6 +3757,7 @@ function postCard(post) {
         <span class="pill">${replies.length} replies</span>
         ${post.flagged ? `<span class="pill warn">Flagged</span>` : ""}
       </div>
+      ${user?.role === "admin" ? `<div class="admin-actions thread-pin-actions"><button class="secondary-button board-pin-action" data-post-id="${escapeHtml(post.id)}" data-pin-action="${post.isPinned ? "unpin" : "pin"}" type="button">${post.isPinned ? "Unpin from top" : "Pin to top"}</button></div>` : ""}
       ${user?.role === "admin" && post.moderationStatus !== "approved" ? `<div class="admin-actions thread-moderation-actions"><button class="primary-button post-moderation-action" data-post-action="approved" data-post-id="${escapeHtml(post.id)}" type="button">Approve and publish</button><button class="secondary-button post-moderation-action danger-action" data-post-action="rejected" data-post-id="${escapeHtml(post.id)}" type="button">Reject</button></div>` : ""}
       ${replies.length ? `
         <div class="reply-list">
@@ -3768,12 +3796,13 @@ function postSummaryCard(post) {
     <button class="board-thread-row board-thread-row-wide open-board-post" data-post-id="${escapeHtml(post.id)}" type="button">
       <span class="thread-bubble" aria-hidden="true">&#128172;</span>
       <span class="thread-row-copy">
-        <strong>${escapeHtml(post.title)}</strong>
+        <strong>${post.isPinned ? `<span class="thread-pin-marker">Pinned</span> ` : ""}${escapeHtml(post.title)}</strong>
         <span class="thread-row-preview">${escapeHtml(preview.slice(0, 150))}${preview.length > 150 ? "&hellip;" : ""}</span>
         <small>${escapeHtml(post.category)} &middot; ${escapeHtml(post.author)} ${reputationBadge(postAuthor, { compact: true })} &middot; ${escapeHtml(post.created || "Today")}</small>
       </span>
       <span class="thread-row-count">${replies.length} ${replies.length === 1 ? "reply" : "replies"}</span>
       ${postPurposeBadge(post, helpfulCount)}
+      ${post.isPinned ? `<span class="pill pinned">Pinned</span>` : ""}
       <span class="pill ${post.moderationStatus === "approved" ? "good" : "warn"}">${post.moderationStatus === "approved" ? "Published" : post.moderationStatus === "rejected" ? "Rejected" : "Pending"}</span>
       <span aria-hidden="true">&rsaquo;</span>
     </button>
@@ -4039,6 +4068,7 @@ function bindViewHandlers(view) {
     bindHelpfulButtons();
     bindReplyForms();
     bindPostModerationActions();
+    bindBoardPinActions();
     bindReplyModerationActions();
     bindBoardFilters();
     bindOpenBoardPosts();
@@ -4323,6 +4353,7 @@ function bindViewHandlers(view) {
     bindApplicationActions();
     bindAdminActions();
     bindPostModerationActions();
+    bindBoardPinActions();
     bindReplyModerationActions();
     bindProjectModerationActions();
     bindQuoteActions();
@@ -4524,6 +4555,30 @@ function bindPostModerationActions() {
       } catch (error) {
         adminProfilesMessage = `Post moderation failed: ${error.message}`;
         renderView("admin");
+      }
+    });
+  });
+}
+
+function bindBoardPinActions() {
+  $all(".board-pin-action").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const user = currentUser();
+      if (user?.role !== "admin") return;
+      const post = state.posts.find((item) => item.id === button.dataset.postId);
+      if (!post) return;
+      const shouldPin = button.dataset.pinAction === "pin";
+      try {
+        await toggleBoardPostPinRecord(post, shouldPin);
+        if (boardBackendAvailable) await loadSecureBoards();
+        saveState();
+        showSuccessToast(
+          shouldPin ? "Post pinned." : "Post unpinned.",
+          shouldPin ? "This thread now appears at the top of the board." : "This thread has returned to normal board order."
+        );
+        renderView(currentView);
+      } catch (error) {
+        window.alert(error.message || "The pinned status could not be updated.");
       }
     });
   });
