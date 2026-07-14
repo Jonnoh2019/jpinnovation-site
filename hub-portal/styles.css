@@ -1195,6 +1195,14 @@ input:focus, textarea:focus, select:focus {
   border-radius: 50%;
   background: linear-gradient(135deg, var(--blue-deep), var(--blue));
   font-weight: 900;
+  overflow: hidden;
+}
+.member-chip #memberInitials img,
+.profile-avatar.has-photo img,
+.profile-photo-large.has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .member-chip strong,
 .member-chip small { display: block; }
@@ -1343,6 +1351,57 @@ input:focus, textarea:focus, select:focus {
 .reputation-progress-grid progress { width: 100%; accent-color: var(--blue-soft); }
 .profile-reputation-card.gold .reputation-progress-grid progress { accent-color: #e0a900; }
 .reputation-rule { margin: 11px 0 0; }
+.profile-photo-manager {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid rgba(47,141,255,.22);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+}
+.profile-photo-preview,
+.profile-photo-large {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
+  color: #fff;
+  font-size: 24px;
+  font-weight: 950;
+}
+.profile-photo-manager h3,
+.profile-photo-manager p { margin: 0 0 8px; }
+.profile-photo-upload {
+  position: relative;
+  overflow: hidden;
+  width: fit-content;
+}
+.profile-photo-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.profile-photo-pending {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+.profile-photo-pending img {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,.16);
+}
 .member-review-panel,
 .member-review-history { margin-top: 10px; }
 .member-review-panel > summary,
@@ -1363,12 +1422,54 @@ input:focus, textarea:focus, select:focus {
 .review-stars { color: #ffc83d; letter-spacing: 1px; }
 .member-review-admin-list { display: grid; gap: 8px; }
 .member-review-admin-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.profile-photo-admin-list { display: grid; gap: 8px; }
+.profile-photo-admin-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  background: rgba(255,255,255,.035);
+}
+.profile-photo-admin-card img {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  object-fit: cover;
+  border: 1px solid rgba(47,141,255,.32);
+}
+.profile-photo-admin-card h3,
+.profile-photo-admin-card p { margin: 2px 0; }
+.profile-photo-admin-card small { color: var(--soft); font-size: 11px; }
+.member-card-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 950;
+}
 @media (max-width: 640px) {
   .member-status-star { right: 37px; bottom: 7px; width: 18px; height: 18px; font-size: 9px; }
   .reputation-dialog-metrics,
   .reputation-tier-guide,
   .reputation-progress-grid { grid-template-columns: 1fr; }
-  .member-review-admin-card { grid-template-columns: 1fr; }
+  .member-review-admin-card,
+  .profile-photo-admin-card,
+  .profile-photo-manager { grid-template-columns: 1fr; }
+  .profile-photo-preview { width: 64px; height: 64px; border-radius: 18px; }
   .reputation-badge b { font-size: 10px; }
 }
 .member-profile-menu {
