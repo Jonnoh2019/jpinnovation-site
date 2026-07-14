@@ -67,6 +67,7 @@ const entryParams = new URLSearchParams(window.location.search);
 const entryMode = entryParams.get("entry") === "hub" ? "hub" : "client";
 const signInRequested = entryParams.get("signin") === "1";
 const registerRequested = entryParams.get("register") === "1";
+const landingAuthDelayMs = 2000;
 const requestedView = entryParams.get("view");
 if (["dashboard", "clientwork", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings", "admin"].includes(requestedView)) {
   currentView = requestedView;
@@ -5722,8 +5723,8 @@ async function boot() {
   });
   setLoggedInView();
   if (!currentUser() && hasPasswordRecoveryLink()) openPasswordReset();
-  else if (!currentUser() && registerRequested) openAuth("register");
-  else if (!currentUser() && signInRequested && !$("#upgradeDialog")?.classList.contains("open")) openAuth("signin");
+  else if (!currentUser() && registerRequested) window.setTimeout(() => openAuth("register"), landingAuthDelayMs);
+  else if (!currentUser() && signInRequested && !$("#upgradeDialog")?.classList.contains("open")) window.setTimeout(() => openAuth("signin"), landingAuthDelayMs);
 }
 
 boot();
