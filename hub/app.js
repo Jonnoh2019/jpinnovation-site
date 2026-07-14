@@ -93,6 +93,20 @@ const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishabl
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=hub&signin=1&reset=1`;
 
+function profileHasHubAccess(profile) {
+  const accountType = profile?.account_type || "client";
+  const inactiveStatuses = new Set(["free", "pending", "rejected", "suspended"]);
+  return ["admin", "member"].includes(accountType) && !inactiveStatuses.has(profile?.membership_status || "active");
+}
+
+function syncHubLandingNav(profile) {
+  const hideClientPortal = profileHasHubAccess(profile);
+  $all("[data-client-portal-link], #clientPortalHeaderButton").forEach((link) => {
+    link.hidden = hideClientPortal;
+    link.setAttribute("aria-hidden", String(hideClientPortal));
+  });
+}
+
 function setHubAuthTab(mode = "signin") {
   const isRegister = mode === "register";
   const signinForm = $("#hubSigninForm");
@@ -245,11 +259,11 @@ async function signInToHub(data) {
 
   const { data: profile, error: profileError } = await hubBackend
     .from("profiles")
-    .select("account_type")
+    .select("account_type,membership_status")
     .eq("user_id", result.user.id)
     .single();
   if (profileError) throw profileError;
-  if ((profile.account_type || "client") === "client") {
+  if (!profileHasHubAccess(profile)) {
     await hubBackend.rpc("request_hub_access");
     await hubBackend.auth.signOut();
     throw new Error("Your Innovation Hub access request has been sent to JP Innovation. Your free Client Portal remains available while approval is pending.");
@@ -384,10 +398,11 @@ async function restoreHubSession() {
   if (error || !data?.session?.user) return false;
   const { data: profile } = await hubBackend
     .from("profiles")
-    .select("account_type")
+    .select("account_type,membership_status")
     .eq("user_id", data.session.user.id)
     .single();
-  if ((profile?.account_type || "client") === "client") return false;
+  syncHubLandingNav(profile);
+  if (!profileHasHubAccess(profile)) return false;
   window.location.replace("../hub-portal/index.html?entry=hub");
   return true;
 }
