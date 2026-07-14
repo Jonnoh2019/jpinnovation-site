@@ -374,6 +374,169 @@
       font-size: 13px;
       font-weight: 700;
     }
+    .trust-strip { padding-top: 18px; padding-bottom: 10px; }
+    .trust-grid {
+      max-width: var(--max);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .trust-badge {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.025));
+      box-shadow: 0 18px 44px rgba(0,0,0,.18);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .trust-badge::before { content: "✓"; color: var(--blue); font-weight: 950; }
+    .experience-grid,
+    .meet-grid,
+    .hub-intro-grid {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .experience-card,
+    .person-card,
+    .hub-preview-card {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.025));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .experience-card {
+      padding: 26px;
+      display: grid;
+      align-content: center;
+      gap: 14px;
+    }
+    .experience-card strong {
+      display: block;
+      color: var(--ink);
+      font-size: clamp(36px, 5vw, 58px);
+      line-height: .9;
+      letter-spacing: -.06em;
+    }
+    .experience-card span,
+    .case-meta b {
+      color: var(--blue);
+      font-weight: 950;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    .experience-points {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .experience-points article,
+    .case-meta span,
+    .hub-row {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.045);
+    }
+    .experience-points h3 { margin: 0 0 8px; font-size: 18px; }
+    .experience-points p,
+    .person-copy p,
+    .flow-step p,
+    .hub-row,
+    .case-body p { margin: 0; color: var(--soft); line-height: 1.6; }
+    .meet-grid { grid-template-columns: 320px 1fr; }
+    .photo-placeholder {
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 20%, rgba(0,123,255,.24), transparent 42%), linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+    }
+    .photo-placeholder span {
+      width: 118px;
+      height: 118px;
+      border-radius: 34px;
+      display: grid;
+      place-items: center;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.14);
+      color: var(--ink);
+      font-size: 42px;
+      font-weight: 950;
+      letter-spacing: -.08em;
+    }
+    .person-copy { padding: 28px; display: grid; align-content: center; gap: 14px; }
+    .person-copy h3 { margin: 0; font-size: clamp(28px, 4vw, 46px); letter-spacing: -.05em; }
+    .process-flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      position: relative;
+    }
+    .process-flow::before {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 42px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,123,255,.6), transparent);
+    }
+    .flow-step {
+      position: relative;
+      z-index: 1;
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(145deg, rgba(8,28,50,.92), rgba(255,255,255,.035));
+      text-align: center;
+    }
+    .flow-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      color: var(--ink);
+      background: rgba(0,123,255,.18);
+      border: 1px solid rgba(0,123,255,.38);
+      font-weight: 950;
+    }
+    .flow-step h3 { margin: 0 0 6px; font-size: 17px; }
+    .case-study {
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(0, 1fr);
+    }
+    .case-study img { width: 100%; height: 100%; min-height: 310px; object-fit: cover; }
+    .case-body { padding: 24px; display: grid; gap: 14px; }
+    .case-body h3 { margin: 0; font-size: 25px; letter-spacing: -.04em; }
+    .case-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .case-meta b { display: block; margin-bottom: 4px; }
+    .hub-preview-card {
+      padding: 20px;
+      background: radial-gradient(circle at 85% 20%, rgba(0,123,255,.22), transparent 34%), linear-gradient(145deg, rgba(255,255,255,.085), rgba(255,255,255,.025));
+    }
+    .hub-screen {
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.28);
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .hub-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .hub-row b { color: var(--ink); }
+    .hub-row em { color: var(--blue); font-style: normal; font-weight: 900; font-size: 12px; }
     .hero-media {
       position: relative;
       min-height: 0;
@@ -1274,6 +1437,31 @@
       .media-label b { font-size: 12px; }
       .media-label span { font-size: 10px; line-height: 1.3; }
     }
+    @media (max-width: 900px) {
+      .trust-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .experience-grid,
+      .meet-grid,
+      .hub-intro-grid,
+      .case-study { grid-template-columns: 1fr; }
+      .experience-points { grid-template-columns: 1fr; }
+      .process-flow { grid-template-columns: 1fr; }
+      .process-flow::before { display: none; }
+      .case-study img { min-height: 220px; }
+    }
+    @media (max-width: 560px) {
+      .trust-strip { padding-top: 10px; }
+      .trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .trust-badge { min-height: 38px; border-radius: 14px; font-size: 11px; }
+      .experience-card,
+      .person-copy,
+      .hub-preview-card { padding: 16px; }
+      .photo-placeholder { min-height: 190px; }
+      .photo-placeholder span { width: 88px; height: 88px; border-radius: 26px; font-size: 32px; }
+      .case-body { padding: 16px; }
+      .case-meta { grid-template-columns: 1fr; }
+      .flow-step { padding: 14px; }
+      .hub-row { padding: 11px; font-size: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -1313,7 +1501,6 @@
           <div class="hero-actions">
             <a class="button" href="#contact"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg><span>Book a Free Discovery Call</span><span class="button-arrow">→</span></a>
             <a class="button secondary" href="#projects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg><span>View Project Examples</span><span class="button-arrow">→</span></a>
-            <button class="button install-app-button" id="installAppButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg><span>Install app</span><span class="button-arrow">→</span></button>
           </div>
           <div class="hero-proof" aria-label="Service highlights">
             <div class="proof-item"><b>CAD</b><span>Supplier-ready 3D models and drawings</span></div>
@@ -1327,6 +1514,32 @@
             <b>Manufacture-ready engineering support</b>
             <span>Clean CAD, practical geometry and manufacture-ready thinking.</span>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section trust-strip" aria-label="JP Innovation trust badges">
+      <div class="trust-grid">
+        <span class="trust-badge">CAD Design</span>
+        <span class="trust-badge">Product Development</span>
+        <span class="trust-badge">Prototyping</span>
+        <span class="trust-badge">Manufacturing Support</span>
+        <span class="trust-badge">UK Based</span>
+        <span class="trust-badge">Fast Turnaround</span>
+      </div>
+    </section>
+
+    <section class="section" aria-label="Trusted engineering experience">
+      <div class="section-inner experience-grid">
+        <article class="experience-card">
+          <span>Trusted Experience</span>
+          <strong>10+ years</strong>
+          <p class="section-copy">Engineering, CAD, manufacturing and product development experience shaped around practical real-world output.</p>
+        </article>
+        <div class="experience-points">
+          <article><h3>Automotive engineering</h3><p>Background in practical engineering environments where fit, reliability and buildability matter.</p></article>
+          <article><h3>CAD to manufacture</h3><p>Clean models, sensible drawings and supplier-ready thinking from concept through production.</p></article>
+          <article><h3>Product development</h3><p>Support for founders, makers and manufacturers who need clear technical direction.</p></article>
         </div>
       </div>
     </section>
@@ -1404,21 +1617,33 @@
     <section class="section" id="projects">
       <div class="section-inner">
         <p class="eyebrow">Featured Projects</p>
-        <h2>Examples of engineering design in practice.</h2>
-        <p class="section-copy">A small sample of CAD modelling, product design and assembly support work.</p>
+        <h2>Engineering case studies, not just pretty renders.</h2>
+        <p class="section-copy">Each project is shown as a practical engineering problem: the challenge, route to manufacture and final output.</p>
         <div class="projects">
-          <article class="project">
+          <article class="project case-study">
             <img src="assets/case-study-fixture-bracket.png" alt="Precision fixture bracket CAD render">
-            <div class="project-body">
+            <div class="case-body">
               <h3>Precision Fixture Bracket</h3>
               <p>A manufacture-ready fixture bracket developed with slotted mounting points, clean radii and practical machining features for accurate positioning and repeatable assembly.</p>
+              <div class="case-meta">
+                <span><b>Challenge</b>Turn a functional bracket idea into a supplier-ready machined component.</span>
+                <span><b>Solution</b>Refined CAD geometry, mounting slots, radii and clean drawing output.</span>
+                <span><b>Method</b>CNC machining / aluminium prototype route.</span>
+                <span><b>Outcome</b>Clear files ready for quotation, review and manufacture.</span>
+              </div>
             </div>
           </article>
-          <article class="project">
+          <article class="project case-study">
             <img src="assets/case-study-linkage-assembly.png" alt="Compact mechanical linkage CAD assembly">
-            <div class="project-body">
+            <div class="case-body">
               <h3>Mechanical Linkage Assembly</h3>
               <p>A compact linkage concept designed around pivot alignment, spacer clearances and fastener access, helping validate movement and assembly before manufacture.</p>
+              <div class="case-meta">
+                <span><b>Challenge</b>Validate movement, clearances and assembly access before physical build.</span>
+                <span><b>Solution</b>Assembly CAD with pivot alignment and practical fastener positioning.</span>
+                <span><b>Method</b>3D CAD assembly review and prototype-ready modelling.</span>
+                <span><b>Outcome</b>A clearer engineering route before committing to manufacture.</span>
+              </div>
             </div>
           </article>
         </div>
@@ -1449,16 +1674,21 @@
 
     <section class="section" id="about">
       <div class="section-inner">
-        <p class="eyebrow">About</p>
-        <h2>Engineering design support based in Milton Keynes.</h2>
-        <div class="about-panel">
-          <div>
-            <h3>JP Innovation Ltd</h3>
-            <p>A professional engineering consultancy helping customers develop ideas, parts, prototypes and manufacturing routes from early concept through to practical output.</p>
-          </div>
-          <div>
-            <p>Customers work directly with the person responsible for the engineering work, keeping communication simple and decisions grounded in function, material, cost, fit and manufacture. Site visits can be arranged where they add value to measurement, scoping or project understanding.</p>
-          </div>
+        <p class="eyebrow">Meet Jonathan</p>
+        <h2>People buy from people. Engineering works best when the conversation is direct.</h2>
+        <div class="meet-grid">
+          <article class="person-card photo-placeholder" aria-label="Professional photo placeholder">
+            <span>JP</span>
+          </article>
+          <article class="person-card person-copy">
+            <h3>Jonathan Hotard</h3>
+            <p>JP Innovation Ltd is built around direct engineering support: clear conversations, practical CAD, sensible manufacturing decisions and honest guidance before money is spent on prototypes or production.</p>
+            <p>Jonathan helps businesses, founders and manufacturers move from idea to manufacture-ready output, combining automotive engineering experience with CAD modelling, product development and hands-on buildability thinking.</p>
+            <div class="hero-actions">
+              <a class="button" href="#contact"><span>Talk through a project</span><span class="button-arrow">→</span></a>
+              <a class="button secondary" href="#projects"><span>View case studies</span><span class="button-arrow">→</span></a>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -1507,25 +1737,38 @@
     <section class="section" id="process">
       <div class="section-inner">
         <p class="eyebrow">Process</p>
-        <h2>A straightforward path from idea to output.</h2>
-        <div class="process">
-          <article class="step">
-            <h3>Discovery</h3>
-            <p>A free call to understand the challenge, objectives and constraints.</p>
-          </article>
-          <article class="step">
-            <h3>Scope</h3>
-            <p>Define the deliverables, project cost, milestones and timescale.</p>
-          </article>
-          <article class="step">
-            <h3>Develop</h3>
-            <p>Design, CAD modelling, engineering review and practical refinement.</p>
-          </article>
-          <article class="step">
-            <h3>Deliver</h3>
-            <p>Receive agreed files, drawings, prototype support and manufacturing guidance.</p>
-          </article>
+        <h2>From idea to manufacture-ready output.</h2>
+        <div class="process-flow">
+          <article class="flow-step"><div class="flow-icon">01</div><h3>Idea</h3><p>Clarify the goal, constraints and likely route.</p></article>
+          <article class="flow-step"><div class="flow-icon">02</div><h3>CAD Design</h3><p>Model the concept and check key geometry.</p></article>
+          <article class="flow-step"><div class="flow-icon">03</div><h3>Prototype</h3><p>Validate fit, form and early function.</p></article>
+          <article class="flow-step"><div class="flow-icon">04</div><h3>Testing</h3><p>Review issues, tolerances and improvements.</p></article>
+          <article class="flow-step"><div class="flow-icon">05</div><h3>Manufacture</h3><p>Prepare clean files and supplier-ready decisions.</p></article>
         </div>
+      </div>
+    </section>
+
+    <section class="section" id="innovation-hub-preview">
+      <div class="section-inner hub-intro-grid">
+        <div>
+          <p class="eyebrow">Innovation Hub</p>
+          <h2>Join the JP Innovation Hub.</h2>
+          <p class="section-copy">A premium engineering community where members can connect with engineers, ask technical questions, share projects, find suppliers, collaborate and learn from practical engineering content.</p>
+          <div class="hero-actions">
+            <a class="button" href="hub/index.html"><span>Explore the Hub</span><span class="button-arrow">→</span></a>
+            <a class="button secondary" href="hub/index.html?register=1"><span>Become a Member</span><span class="button-arrow">→</span></a>
+            <button class="button secondary install-app-button" id="installAppButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg><span>Install app</span><span class="button-arrow">→</span></button>
+          </div>
+        </div>
+        <article class="hub-preview-card">
+          <div class="hub-screen">
+            <div class="hub-row"><b>Engineering Boards</b><em>Live discussions</em></div>
+            <div class="hub-row"><b>RFQ Opportunities</b><em>Private quotes</em></div>
+            <div class="hub-row"><b>Member Directory</b><em>Verified profiles</em></div>
+            <div class="hub-row"><b>Projects</b><em>Collaboration</em></div>
+            <div class="hub-row"><b>Resources & Tools</b><em>Calculators</em></div>
+          </div>
+        </article>
       </div>
     </section>
 
