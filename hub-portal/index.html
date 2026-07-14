@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=member-reputation-20260713">
+    <link rel="stylesheet" href="styles.css?v=unified-member-workspace-20260714">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -133,6 +133,7 @@
       </a>
       <nav class="app-nav" aria-label="Portal navigation">
         <button class="nav-link active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">&#8962;</span><span>Dashboard</span></button>
+        <button class="nav-link" data-view="clientwork"><span class="nav-icon" aria-hidden="true">&#128188;</span><span>My Client Work</span></button>
         <button class="nav-link" data-view="onboarding"><span class="nav-icon" aria-hidden="true">&#10003;</span><span>Profile Setup</span></button>
         <button class="nav-link" data-view="boards"><span class="nav-icon" aria-hidden="true">&#128172;</span><span>Engineering Boards</span></button>
         <button class="nav-link" data-view="projects"><span class="nav-icon" aria-hidden="true">&#9638;</span><span>Projects</span></button>
@@ -183,6 +184,7 @@
             <button id="reputationStatusButton" class="member-status-star hidden" type="button" aria-label="Open member verification status" aria-controls="reputationStatusDialog" title="Member verification status">&#9733;</button>
             <div id="memberProfileMenu" class="member-profile-menu" aria-hidden="true">
               <button class="profile-menu-link" data-profile-view="profile" type="button"><span class="profile-menu-icon" aria-hidden="true">&#9675;</span><span><strong>My profile</strong><small>View and edit your details</small></span></button>
+              <button id="profileClientWork" class="profile-menu-link" data-profile-view="clientwork" type="button"><span class="profile-menu-icon" aria-hidden="true">&#128188;</span><span><strong>My client work</strong><small>Quotes, projects and JP messages</small></span></button>
               <button id="profileMyPosts" class="profile-menu-link" data-profile-action="my-posts" type="button"><span class="profile-menu-icon" aria-hidden="true">&#128172;</span><span><strong>My posts</strong><small>Your board threads and replies</small></span></button>
               <button class="profile-menu-link" data-profile-action="my-quotes" type="button"><span class="profile-menu-icon" aria-hidden="true">&#163;</span><span><strong>My quotes</strong><small>Your requests and responses</small></span></button>
               <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications"><span class="profile-menu-icon" aria-hidden="true">&#9679;</span><span><strong>Notifications</strong><small>Approvals and account updates</small></span><span id="notificationCount" class="menu-count hidden">0</span></button>
@@ -208,6 +210,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=member-reputation-20260713"></script>
+  <script src="app.js?v=unified-member-workspace-20260714"></script>
 </body>
 </html>
