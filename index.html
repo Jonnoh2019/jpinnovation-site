@@ -1293,8 +1293,8 @@
       </nav>
       <div class="header-actions">
         <nav class="section-switcher" aria-label="Portal and Hub">
-          <a class="section-switch-button" href="hub-portal/index.html?entry=client&amp;signin=1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20v-2.2c0-3 2.7-5.3 6.5-5.3s6.5 2.3 6.5 5.3V20"/></svg><span>Client Portal</span></a>
-          <a class="section-switch-button" href="hub/index.html?signin=1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><circle cx="5.5" cy="10" r="2.3"/><circle cx="18.5" cy="10" r="2.3"/><path d="M7 20v-2c0-3 2-5 5-5s5 2 5 5v2M2 19v-1.2c0-2.2 1.4-3.8 3.5-3.8M22 19v-1.2c0-2.2-1.4-3.8-3.5-3.8"/></svg><span>Innovation Hub</span></a>
+          <a id="clientPortalHeaderButton" class="section-switch-button" href="hub-portal/index.html?entry=client&amp;signin=1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20v-2.2c0-3 2.7-5.3 6.5-5.3s6.5 2.3 6.5 5.3V20"/></svg><span>Client Portal</span></a>
+          <a id="innovationHubHeaderButton" class="section-switch-button" href="hub/index.html?signin=1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><circle cx="5.5" cy="10" r="2.3"/><circle cx="18.5" cy="10" r="2.3"/><path d="M7 20v-2c0-3 2-5 5-5s5 2 5 5v2M2 19v-1.2c0-2.2 1.4-3.8 3.5-3.8M22 19v-1.2c0-2.2-1.4-3.8-3.5-3.8"/></svg><span>Innovation Hub</span></a>
         </nav>
         <button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="siteNav" aria-expanded="false">
           <span></span>
@@ -1635,6 +1635,20 @@
           device_type: deviceType(),
           viewport_width: window.innerWidth || null
         });
+        client.auth.getSession().then(async ({ data }) => {
+          const authUser = data?.session?.user;
+          if (!authUser) return;
+          const { data: profile } = await client
+            .from("profiles")
+            .select("account_type,membership_status")
+            .eq("user_id", authUser.id)
+            .maybeSingle();
+          const activeMember = profile?.account_type === "member" && profile?.membership_status === "active";
+          const clientButton = document.querySelector("#clientPortalHeaderButton");
+          const hubButton = document.querySelector("#innovationHubHeaderButton");
+          if (clientButton) clientButton.hidden = activeMember;
+          if (hubButton && activeMember) hubButton.href = "hub-portal/index.html?entry=hub";
+        }).catch(() => {});
       }
     })();
 
