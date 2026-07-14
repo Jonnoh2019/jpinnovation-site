@@ -1643,7 +1643,9 @@
             .select("account_type,membership_status")
             .eq("user_id", authUser.id)
             .maybeSingle();
-          const activeMember = profile?.account_type === "member" && profile?.membership_status === "active";
+          const hubAccount = ["admin", "member"].includes(profile?.account_type);
+          const inactiveHubStatus = ["free", "pending", "rejected", "suspended"].includes(profile?.membership_status);
+          const activeMember = hubAccount && !inactiveHubStatus;
           const clientButton = document.querySelector("#clientPortalHeaderButton");
           const hubButton = document.querySelector("#innovationHubHeaderButton");
           if (clientButton) clientButton.hidden = activeMember;
