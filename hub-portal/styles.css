@@ -2352,6 +2352,11 @@ input:focus, textarea:focus, select:focus {
 .pill.good { border-color: rgba(48,216,143,.35); color: var(--good); }
 .pill.warn { border-color: rgba(255,191,71,.38); color: var(--warn); }
 .pill.danger { border-color: rgba(255,107,107,.38); color: var(--danger); }
+.pill.pinned {
+  border-color: rgba(47,141,255,.48);
+  background: rgba(47,141,255,.13);
+  color: var(--blue-soft);
+}
 .section-card {
   position: relative;
   overflow: hidden;
@@ -2745,7 +2750,21 @@ input:focus, textarea:focus, select:focus {
 }
 .board-thread-row:hover,
 .board-thread-row:focus-visible { border-color: rgba(32,199,216,.45); background: rgba(32,199,216,.08); outline: none; }
+.board-thread-row.is-pinned {
+  border-color: rgba(47,141,255,.36);
+  background: linear-gradient(90deg, rgba(0,111,230,.12), rgba(255,255,255,.03));
+}
 .board-thread-row .thread-bubble { width: 30px; height: 30px; }
+.thread-pin-marker {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 5px;
+  color: var(--blue-soft);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
 .thread-row-copy strong,
 .thread-row-copy .thread-row-preview,
 .thread-row-copy small { display: block; }
