@@ -1202,6 +1202,7 @@ input:focus, textarea:focus, select:focus {
 .member-chip > div {
   min-width: 0;
   max-width: 112px;
+  padding-right: 18px;
 }
 .member-chip strong,
 .member-chip small {
@@ -1252,18 +1253,18 @@ input:focus, textarea:focus, select:focus {
 }
 .member-status-star {
   position: absolute;
-  top: -7px;
-  left: 42px;
+  right: 40px;
+  bottom: 7px;
   z-index: 4;
   display: grid;
   place-items: center;
-  width: 25px;
-  height: 25px;
+  width: 19px;
+  height: 19px;
   padding: 0;
-  border: 2px solid #07101a;
+  border: 1.5px solid #07101a;
   border-radius: 999px;
   color: #fff;
-  font-size: 14px;
+  font-size: 10px;
   line-height: 1;
   cursor: pointer;
   box-shadow: 0 5px 16px rgba(0,0,0,.42);
@@ -1363,7 +1364,7 @@ input:focus, textarea:focus, select:focus {
 .member-review-admin-list { display: grid; gap: 8px; }
 .member-review-admin-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 @media (max-width: 640px) {
-  .member-status-star { left: 38px; }
+  .member-status-star { right: 37px; bottom: 7px; width: 18px; height: 18px; font-size: 9px; }
   .reputation-dialog-metrics,
   .reputation-tier-guide,
   .reputation-progress-grid { grid-template-columns: 1fr; }
@@ -1580,6 +1581,28 @@ input:focus, textarea:focus, select:focus {
   list-style: none;
   color: var(--soft);
 }
+.compact-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,.035);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.compact-list-row:hover,
+.compact-list-row:focus-visible { border-color: rgba(47,141,255,.58); background: rgba(0,111,230,.11); outline: none; }
+.compact-list-row span,
+.compact-list-row strong,
+.compact-list-row small { display: block; min-width: 0; }
+.compact-list-row small { margin-top: 3px; color: var(--soft); font-size: 12px; text-transform: capitalize; }
+.compact-list-row b { color: var(--blue-soft); font-size: 18px; }
 
 .metrics-grid,
 .cards-grid,
