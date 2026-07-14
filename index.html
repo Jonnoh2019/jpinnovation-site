@@ -379,8 +379,8 @@
       max-width: var(--max);
       margin: 0 auto;
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
     }
     .trust-badge {
       min-height: 48px;
@@ -1098,7 +1098,6 @@
       .header-inner {
         grid-template-columns: minmax(190px, 280px) 1fr auto;
       }
-      .hero-grid,
       .intro-panel,
       .about-panel,
       .account-panel,
@@ -1109,9 +1108,14 @@
         min-height: auto;
         padding-top: 34px;
       }
-      .hero-media,
+      .hero-media {
+        align-self: stretch;
+      }
       .hero-media img {
-        min-height: 340px;
+        height: 100%;
+        min-height: 0;
+        object-fit: contain;
+        background: radial-gradient(circle at center, #f4f6f8 0%, #dfe4ea 100%);
       }
       .cards,
       .pricing,
@@ -1202,6 +1206,7 @@
       .lead,
       .section-copy { font-size: 14px; line-height: 1.45; }
       .hero-grid {
+        grid-template-columns: 1fr;
         gap: 14px;
       }
       .hero-grid:before { width: 94%; height: 48%; right: -26%; opacity: .12; }
@@ -1219,7 +1224,9 @@
         margin-top: 0;
       }
       .hero-media img {
+        height: 100%;
         min-height: 0;
+        object-fit: cover;
       }
       .intro-panel { margin-top: 0; }
       .intro-band { padding: 0 16px 24px; }
