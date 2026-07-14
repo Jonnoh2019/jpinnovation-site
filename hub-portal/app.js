@@ -1780,7 +1780,17 @@ function isClientBlockedFromHub(user) {
 }
 
 function hasActiveHubAccess(user = currentUser()) {
-  return user?.role === "admin" || (user?.role === "member" && user?.membershipStatus === "active");
+  const status = user?.membershipStatus || (user?.role === "member" ? "active" : "");
+  const inactiveStatuses = new Set(["free", "pending", "rejected", "suspended"]);
+  return user?.role === "admin" || (user?.role === "member" && !inactiveStatuses.has(status));
+}
+
+function syncPublicNavAccessState(user = currentUser()) {
+  const hideClientPortal = hasActiveHubAccess(user);
+  $all("[data-client-portal-link], #clientPortalHeaderButton").forEach((link) => {
+    link.hidden = hideClientPortal;
+    link.setAttribute("aria-hidden", String(hideClientPortal));
+  });
 }
 
 function isClientPortalContext(user = currentUser()) {
@@ -1833,6 +1843,7 @@ function closeReputationStatusDialog() {
 function setLoggedInView() {
   const user = currentUser();
   const loggedIn = Boolean(user);
+  syncPublicNavAccessState(user);
   if (loggedIn && isClientBlockedFromHub(user)) {
     state.sessionEmail = "";
     saveState();
