@@ -1478,7 +1478,13 @@ async function moderateBoardPostRecord(post, moderationStatus, user = currentUse
         approved_at: moderationStatus === "approved" ? new Date().toISOString() : null,
         approved_by_name: moderationStatus === "approved" ? (user?.name || "JP Innovation admin") : ""
       }).eq("id", post.id);
-      if (updateError) throw rpcError;
+      if (updateError) {
+        const { error: simpleUpdateError } = await portalBackend.from("board_posts").update({
+          moderation_status: moderationStatus,
+          flagged: moderationStatus === "approved" ? false : post.flagged
+        }).eq("id", post.id);
+        if (simpleUpdateError) throw rpcError;
+      }
     } else {
       const updated = Array.isArray(data) ? data[0] : data;
       if (updated) {
