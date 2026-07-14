@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Client Portal">
   <script>
     try {
-      if (new URLSearchParams(location.search).get("entry") === "hub") {
+      if (["hub", "client"].includes(new URLSearchParams(location.search).get("entry"))) {
         document.documentElement.classList.add("restoring-portal-session");
       }
     } catch (error) {}
