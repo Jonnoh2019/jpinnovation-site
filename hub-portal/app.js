@@ -66,7 +66,7 @@ const entryMode = entryParams.get("entry") === "hub" ? "hub" : "client";
 const signInRequested = entryParams.get("signin") === "1";
 const registerRequested = entryParams.get("register") === "1";
 const requestedView = entryParams.get("view");
-if (["dashboard", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings", "admin"].includes(requestedView)) {
+if (["dashboard", "clientwork", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings", "admin"].includes(requestedView)) {
   currentView = requestedView;
 }
 
@@ -1707,13 +1707,18 @@ function configureEntryPage() {
 }
 
 function isClientBlockedFromHub(user) {
-  return entryMode === "hub" && user?.role === "client";
+  return entryMode === "hub" && !hasActiveHubAccess(user);
+}
+
+function hasActiveHubAccess(user = currentUser()) {
+  return user?.role === "admin" || (user?.role === "member" && user?.membershipStatus === "active");
 }
 
 function isClientPortalContext(user = currentUser()) {
-  // The selected portal always wins. A paid member or admin can deliberately
-  // open the Client Portal without being redirected back into the Hub.
-  return entryMode === "client" || user?.role === "client";
+  // Admins may deliberately preview the Client Portal. Active paid members use
+  // one Hub workspace; paused/free accounts fall back here without losing data.
+  if (user?.role === "admin") return entryMode === "client";
+  return !hasActiveHubAccess(user);
 }
 
 function showUpgradeDialog() {
@@ -1783,6 +1788,7 @@ function setLoggedInView() {
     reputationButton.setAttribute("aria-label", reputationTier === "gold" ? "Open Gold Trusted member status" : "Open Blue Verified member status");
   }
   $("#profileAdminLink")?.classList.toggle("hidden", user.role !== "admin" || isClient);
+  $("#profileClientWork")?.classList.toggle("hidden", isClient);
   $("#profileMyPosts")?.classList.toggle("hidden", isClient);
   $all(".nav-link").forEach((button) => {
     button.classList.toggle("hidden", isClient && !clientViews.has(button.dataset.view));
@@ -1807,8 +1813,8 @@ async function registerUser(data) {
     email,
     password,
     options: {
-      data: { full_name: fullName },
-      emailRedirectTo: `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1`
+      data: { full_name: fullName, requested_access: entryMode },
+      emailRedirectTo: `${publicSiteOrigin}/hub-portal/index.html?entry=${entryMode}&signin=1`
     }
   });
   if (error) throw error;
@@ -2140,6 +2146,7 @@ function renderView(view) {
   const titles = {
     onboarding: "Profile Setup",
     dashboard: "Dashboard",
+    clientwork: "My Client Work",
     boards: "Engineering Boards",
     projects: "Projects",
     quotes: "Quote Requests",
@@ -2160,6 +2167,7 @@ function renderView(view) {
   const renderers = {
     onboarding: renderOnboarding,
     dashboard: renderDashboard,
+    clientwork: renderClientWork,
     boards: renderBoards,
     projects: renderProjects,
     quotes: renderQuotes,
@@ -2189,7 +2197,7 @@ function syncNavigationState(view = currentView) {
 }
 
 function prepareCompactSections(view) {
-  const compactViews = new Set(["dashboard", "onboarding", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings"]);
+  const compactViews = new Set(["dashboard", "clientwork", "onboarding", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings"]);
   if (!compactViews.has(view)) return;
   const mobile = window.matchMedia("(max-width: 560px)").matches;
   $all("#viewMount > .section-card").forEach((section, index) => {
@@ -2241,6 +2249,41 @@ function renderClientDashboard(user) {
       </div>
     </section>
   `;
+}
+
+function renderClientWork(user) {
+  const email = cleanEmailValue(user?.email || "");
+  const ownQuotes = state.quotes.filter((quote) => quote.authorId === user?.id || cleanEmailValue(quote.authorEmail || "") === email);
+  const ownProjects = state.projects.filter((project) => project.authorId === user?.id || cleanEmailValue(project.authorEmail || "") === email);
+  const ownMessages = state.messages.filter((message) => {
+    const owner = cleanEmailValue(message.ownerEmail || "");
+    const sender = cleanEmailValue(message.senderEmail || "");
+    const recipient = cleanEmailValue(message.recipientEmail || "");
+    return owner === email || sender === email || recipient === email;
+  });
+  const unread = ownMessages.filter((message) => message.unread && cleanEmailValue(message.senderEmail || "") !== email).length;
+  const latestQuotes = ownQuotes.slice(0, 3);
+  return `
+    <section class="section-card section-blue">
+      <p class="eyebrow">Included in your membership</p>
+      <h2>Your JP Innovation work</h2>
+      <p class="muted">Your private quotes, project progress and messages are kept inside the Innovation Hub. Upgrading never creates a second account or loses your Client Portal history.</p>
+      <div class="metrics-grid">
+        ${metric("My quotes", ownQuotes.length)}
+        ${metric("My projects", ownProjects.length)}
+        ${metric("Unread messages", unread)}
+        ${metric("Total messages", ownMessages.length)}
+      </div>
+    </section>
+    <section class="section-card section-violet">
+      <div class="list-title"><div><h2>Client work</h2><p>Everything shared privately between you and JP Innovation.</p></div></div>
+      <div class="cards-grid">
+        <article class="card"><span class="badge">Quotes</span><h3>Requests and responses</h3><p>Submit work, review status and keep supplier responses private.</p><button class="primary-button nav-link-jump" data-target-view="quotes" type="button">Open my quotes</button></article>
+        <article class="card"><span class="badge">Projects</span><h3>Project progress</h3><p>See active work, milestones and the next action against your requests.</p><button class="secondary-button nav-link-jump" data-target-view="projects" type="button">Open my projects</button></article>
+        <article class="card"><span class="badge">Messages</span><h3>Direct contact</h3><p>Keep private project questions and updates together.</p><button class="secondary-button nav-link-jump" data-target-view="messages" type="button">Open messages</button></article>
+      </div>
+      ${latestQuotes.length ? `<div class="compact-list"><h3>Latest quote requests</h3>${latestQuotes.map((quote) => `<button class="compact-list-row nav-link-jump" data-target-view="quotes" type="button"><span><strong>${escapeHtml(quote.service || quote.title || "Quote request")}</strong><small>${escapeHtml(quote.status || "Submitted")}</small></span><b aria-hidden="true">&#8594;</b></button>`).join("")}</div>` : ""}
+    </section>`;
 }
 
 function renderDashboard(user) {
@@ -5174,6 +5217,10 @@ async function boot() {
     state.sessionEmail = "";
     saveState();
     console.error("Secure session could not be loaded.", error);
+  }
+  if (entryMode === "client" && hasActiveHubAccess(currentUser()) && currentUser()?.role !== "admin") {
+    window.location.replace("index.html?entry=hub");
+    return;
   }
   if (entryMode === "hub" && !currentUser()) {
     window.location.replace(`../hub/index.html${signInRequested ? "?signin=1" : ""}`);
