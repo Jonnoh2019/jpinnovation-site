@@ -69,13 +69,13 @@ const signInRequested = entryParams.get("signin") === "1";
 const registerRequested = entryParams.get("register") === "1";
 const landingAuthDelayMs = 2000;
 const requestedView = entryParams.get("view");
-if (["dashboard", "clientwork", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings", "admin"].includes(requestedView)) {
+if (["dashboard", "clientwork", "onboarding", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings", "admin", "metrics"].includes(requestedView)) {
   currentView = requestedView;
 }
 
 const portalSections = [
   { view: "onboarding", title: "Profile Setup", detail: "Complete member basics before using the Hub fully." },
-  { view: "boards", title: "Engineering Boards", detail: "Ask questions, reply to posts and mark helpful feedback." },
+  { view: "boards", title: "Engineering Discussions", detail: "Ask questions, reply to posts and mark helpful feedback." },
   { view: "projects", title: "Projects", detail: "Share member builds, restoration work and product ideas." },
   { view: "quotes", title: "Quote Requests", detail: "Create private blind quote requests and respond securely." },
   { view: "directory", title: "Member Directory", detail: "Find skills, equipment, locations and verified partners." },
@@ -2037,6 +2037,7 @@ function setLoggedInView() {
     reputationButton.setAttribute("aria-label", reputationTier === "admin" ? "Open JP Admin status" : (reputationTier === "gold" ? "Open Gold Trusted member status" : "Open Blue Verified member status"));
   }
   $("#profileAdminLink")?.classList.toggle("hidden", user.role !== "admin" || isClient);
+  $("#profileMetricsLink")?.classList.toggle("hidden", user.role !== "admin" || isClient);
   $("#profileClientWork")?.classList.toggle("hidden", isClient);
   $("#profileMyPosts")?.classList.toggle("hidden", isClient);
   $all(".nav-link").forEach((button) => {
@@ -2426,7 +2427,7 @@ function renderView(view) {
     onboarding: "Profile Setup",
     dashboard: "Dashboard",
     clientwork: "My Client Work",
-    boards: "Engineering Boards",
+    boards: "Engineering Discussions",
     projects: "Projects",
     quotes: "Quote Requests",
     directory: "Member Directory",
@@ -2437,7 +2438,8 @@ function renderView(view) {
     rewards: "Rewards",
     profile: "My Profile",
     settings: "Settings",
-    admin: "Admin Review"
+    admin: "Admin Review",
+    metrics: "Website Metrics"
   };
   $("#viewTitle").textContent = titles[view] || "Dashboard";
   syncNavigationState(view);
@@ -2458,7 +2460,8 @@ function renderView(view) {
     rewards: renderRewards,
     profile: renderProfile,
     settings: renderSettings,
-    admin: renderAdmin
+    admin: renderAdmin,
+    metrics: renderMetrics
   };
   mount.innerHTML = (renderers[view] || renderDashboard)(user);
   prepareCompactSections(view);
@@ -2476,7 +2479,7 @@ function syncNavigationState(view = currentView) {
 }
 
 function prepareCompactSections(view) {
-  const compactViews = new Set(["dashboard", "clientwork", "onboarding", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings"]);
+  const compactViews = new Set(["dashboard", "clientwork", "onboarding", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "rewards", "profile", "settings", "metrics"]);
   if (!compactViews.has(view)) return;
   const mobile = window.matchMedia("(max-width: 560px)").matches;
   $all("#viewMount > .section-card").forEach((section, index) => {
@@ -2567,16 +2570,23 @@ function renderClientWork(user) {
 
 function renderDashboard(user) {
   if (isClientPortalContext(user)) return renderClientDashboard(user);
-  const unread = state.messages.filter((msg) => msg.unread).length;
+  const unread = unreadMessageCount(user);
   const quotes = state.quotes.length;
   const projects = state.projects.length;
   const posts = state.posts.length;
-  const leaders = rewardLeaders();
   const completion = profileCompletion(user);
   const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
-  const activeProject = state.projects.find((project) => project.id === state.activeProjectId) || state.projects[0];
+  const activeProjects = (state.projects || []).filter((project) => !["complete", "completed", "closed"].includes(String(project.status || "").toLowerCase()));
+  const activeProject = state.projects.find((project) => project.id === state.activeProjectId) || activeProjects[0] || state.projects[0];
   const unresolvedPosts = state.posts.filter((post) => !countHelpfulReplies(post)).length;
   const nextActions = dashboardNextActions(user, { completion, unread, unresolvedPosts, openQuotes });
+  const notificationCount = notificationItems(user).filter((item) => item.isNew).length;
+  const recentReplies = recentDashboardReplies(user).length;
+  const upcomingEvents = upcomingDashboardEvents().length;
+  const summaryItems = dashboardSummaryItems({ notificationCount, unread, openQuotes, activeProjects: activeProjects.length, recentReplies, upcomingEvents });
+  const activityItems = dashboardActivityFeed(user);
+  const onlineMembers = dashboardOnlineMembers(user);
+  const question = engineeringQuestionOfDay();
   return `
     ${user.role !== "admin" && completion < 80 ? `
       <section class="section-card setup-reminder">
@@ -2590,17 +2600,17 @@ function renderDashboard(user) {
     ` : ""}
     <section class="home-hero section-card dashboard-visual-hero">
       <div>
-        <p class="eyebrow">Portal home</p>
+        <p class="eyebrow">Today's summary</p>
         <h2>Welcome back, ${escapeHtml(user.name.split(" ")[0] || user.name)}</h2>
-        <p class="muted">A private working area for engineering questions, project support, verified contacts, quotes and member opportunities.</p>
+        <p class="muted">Your engineering workspace at a glance: messages, discussions, quotes, projects and events that need attention.</p>
         <div class="meta-row">
           <span class="pill good">Private Innovation Hub area</span>
           <span class="pill">${escapeHtml(roleLabel(user))}</span>
-          <span class="pill">Professional member workspace</span>
+          <span class="pill"><span class="online-dot" aria-hidden="true"></span>${onlineMembers.length} online now</span>
         </div>
         <div class="hero-button-row">
-          <button class="primary-button dashboard-link" data-view-link="boards" type="button">Ask the boards</button>
-          <button class="secondary-button dashboard-link" data-view-link="quotes" type="button">Review quote requests</button>
+          <button class="primary-button dashboard-link" data-view-link="boards" type="button">Open discussions</button>
+          <button class="secondary-button dashboard-link" data-view-link="messages" type="button">Check messages</button>
         </div>
       </div>
       <div class="dashboard-image-card">
@@ -2612,16 +2622,34 @@ function renderDashboard(user) {
         </div>
       </div>
     </section>
-    <div class="metrics-grid dashboard-metrics">
-      ${metric("Posts", posts)}
-      ${metric("Projects", projects)}
-      ${metric("Open quotes", openQuotes)}
-      ${metric("Unread messages", unread)}
-    </div>
+    <section class="dashboard-summary-grid">
+      ${summaryItems.map((item) => dashboardSummaryCard(item)).join("")}
+    </section>
+    <section class="section-card question-card section-cyan">
+      <div>
+        <p class="eyebrow">Today's engineering question</p>
+        <h2>${escapeHtml(question.title)}</h2>
+        <p class="muted">${escapeHtml(question.detail)}</p>
+        <div class="meta-row"><span class="pill">${question.replyCount} replies</span><span class="pill">Pinned discussion</span></div>
+      </div>
+      <button class="primary-button dashboard-link" data-view-link="boards" type="button">Join discussion</button>
+    </section>
+    <section class="section-card activity-feed-panel section-blue">
+      <div class="list-title"><div><h2>Activity feed</h2><p>Recent Hub movement, member updates and engineering activity.</p></div><button class="secondary-button dashboard-link" data-view-link="notifications" type="button">View notifications</button></div>
+      <div class="activity-feed-list">
+        ${activityItems.length ? activityItems.map(activityFeedItem).join("") : `<p class="muted">New posts, replies, projects and quote activity will appear here.</p>`}
+      </div>
+    </section>
+    <section class="section-card online-members-panel section-lime">
+      <div class="list-title"><div><h2>Members online</h2><p>People currently active or recently available in the Hub.</p></div><button class="secondary-button dashboard-link" data-view-link="directory" type="button">Open directory</button></div>
+      <div class="online-member-row">
+        ${onlineMembers.length ? onlineMembers.map((member) => `<span class="online-member-pill"><span class="online-dot" aria-hidden="true"></span>${escapeHtml(member.name)}</span>`).join("") : `<span class="muted">No other members appear online yet.</span>`}
+      </div>
+    </section>
     <section class="section-card dashboard-actions">
       <div class="list-title"><div><h2>Quick actions</h2><p>Jump straight into the work members use most.</p></div></div>
       <div class="action-grid">
-        ${quickAction("Q1", "Create board post", "Ask a technical question or start a focused engineering discussion.", "boards")}
+        ${quickAction("Q1", "Create discussion post", "Ask a technical question or start a focused engineering discussion.", "boards")}
         ${quickAction("Q2", "Add project", "Share a build, product idea or prototype for member input.", "projects")}
         ${quickAction("Q3", "Create quote request", "Prepare a private request for JP review or member quoting.", "quotes")}
         ${quickAction("MSG", "Open messages", "Read replies, member contact and project updates.", "messages")}
@@ -2694,6 +2722,111 @@ function quickAction(code, title, detail, view) {
   `;
 }
 
+function dashboardSummaryItems({ notificationCount, unread, openQuotes, activeProjects, recentReplies, upcomingEvents }) {
+  return [
+    { label: "Notifications", value: notificationCount, detail: notificationCount ? "New alerts needing attention" : "No new alerts", view: "notifications", tone: notificationCount ? "warn" : "good" },
+    { label: "Unread messages", value: unread, detail: unread ? "Open conversations waiting" : "Inbox is clear", view: "messages", tone: unread ? "warn" : "good" },
+    { label: "Open quote requests", value: openQuotes, detail: "Live quote opportunities", view: "quotes", tone: openQuotes ? "" : "good" },
+    { label: "Active projects", value: activeProjects, detail: "Projects currently moving", view: "projects", tone: activeProjects ? "" : "good" },
+    { label: "Recent replies", value: recentReplies, detail: "Discussion replies to review", view: "boards", tone: recentReplies ? "" : "good" },
+    { label: "Upcoming events", value: upcomingEvents, detail: "Workshops, visits or challenges", view: "events", tone: upcomingEvents ? "" : "good" }
+  ];
+}
+
+function dashboardSummaryCard(item) {
+  return `
+    <button class="dashboard-summary-card dashboard-link ${escapeHtml(item.tone || "")}" data-view-link="${escapeHtml(item.view)}" type="button">
+      <span class="badge">${escapeHtml(item.label)}</span>
+      <strong>${escapeHtml(item.value)}</strong>
+      <small>${escapeHtml(item.detail)}</small>
+    </button>
+  `;
+}
+
+function recentDashboardReplies(user = currentUser()) {
+  const email = user?.email || "";
+  return (state.posts || []).flatMap((post) => (post.responses || []).map((reply) => ({ post, reply })))
+    .filter(({ reply }) => !email || reply.authorEmail !== email)
+    .sort((a, b) => String(b.reply.createdAt || b.reply.created || "").localeCompare(String(a.reply.createdAt || a.reply.created || "")))
+    .slice(0, 6);
+}
+
+function upcomingDashboardEvents() {
+  const now = new Date();
+  return (state.events || []).filter((event) => {
+    const raw = event.date || event.startsAt || event.created;
+    if (!raw) return true;
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) || date >= now;
+  }).slice(0, 6);
+}
+
+function engineeringQuestionOfDay() {
+  const questions = [
+    { title: "What is the best way to prevent distortion when TIG welding aluminium?", detail: "Share fixture ideas, heat control tips and practical workshop experience.", category: "welding" },
+    { title: "When should a prototype move from 3D print to machined aluminium?", detail: "Discuss tolerance, load, surface finish and cost trade-offs.", category: "prototyping" },
+    { title: "What information makes a CAD model supplier-ready?", detail: "Share drawing, tolerance, material and manufacturing handover tips.", category: "cad" },
+    { title: "How would you reduce cost on a small CNC bracket run?", detail: "Think operations, setup time, material, radii and inspection.", category: "machining" }
+  ];
+  const day = Math.floor(Date.now() / 86400000);
+  const question = questions[day % questions.length];
+  const replyCount = (state.posts || []).filter((post) => String(post.category || "").toLowerCase().includes(question.category)).reduce((sum, post) => sum + (post.responses || []).length, 0);
+  return { ...question, replyCount };
+}
+
+function dashboardActivityFeed(user = currentUser()) {
+  const items = [];
+  (state.posts || []).slice(0, 8).forEach((post) => {
+    items.push({ type: "Discussion", title: post.title || "New engineering discussion", detail: `${post.author || "Member"} started a discussion`, when: post.createdAt || post.created, view: "boards", accent: "cyan" });
+    (post.responses || []).slice(-2).forEach((reply) => items.push({ type: "Reply", title: post.title || "Discussion reply", detail: `${reply.author || "Member"} replied`, when: reply.createdAt || reply.created, view: "boards", accent: "blue" }));
+  });
+  (state.projects || []).slice(0, 6).forEach((project) => items.push({ type: "Project", title: project.title || "Project update", detail: project.nextStep || project.description || "A project was updated", when: project.updatedAt || project.created, view: "projects", accent: "teal" }));
+  (state.quotes || []).slice(0, 6).forEach((quote) => items.push({ type: "Quote", title: quote.service || quote.title || "Quote request", detail: quote.status ? `Status: ${quoteStatusLabel(quote.status)}` : "Quote request activity", when: quote.updatedAt || quote.created, view: "quotes", accent: "violet" }));
+  (state.memberReviews || []).filter((review) => review.moderationStatus === "approved").slice(0, 4).forEach((review) => items.push({ type: "Reputation", title: `${review.reviewedName || "Member"} received a review`, detail: `${review.rating}/5 approved member review`, when: review.approvedAt || review.created, view: "directory", accent: "lime" }));
+  if (!items.length) {
+    items.push({ type: "JP Tip", title: "Prepare supplier-ready files before requesting quotes", detail: "STEP files, material, finish, tolerance and quantity make responses faster.", when: new Date().toISOString(), view: "resources", accent: "blue" });
+  }
+  return items.sort((a, b) => String(b.when || "").localeCompare(String(a.when || ""))).slice(0, 8);
+}
+
+function activityFeedItem(item) {
+  return `
+    <button class="activity-feed-item dashboard-link accent-${escapeHtml(item.accent || "blue")}" data-view-link="${escapeHtml(item.view)}" type="button">
+      <span class="activity-dot" aria-hidden="true"></span>
+      <span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>
+      <em>${escapeHtml(relativeDateLabel(item.when))}</em>
+    </button>
+  `;
+}
+
+function relativeDateLabel(value) {
+  const date = new Date(value || Date.now());
+  if (Number.isNaN(date.getTime())) return "Recently";
+  const diff = Date.now() - date.getTime();
+  if (diff < 60000) return "Just now";
+  if (diff < 3600000) return `${Math.max(1, Math.round(diff / 60000))}m ago`;
+  if (diff < 86400000) return `${Math.round(diff / 3600000)}h ago`;
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
+
+function isMemberOnline(member, user = currentUser()) {
+  if (!member) return false;
+  if (user?.email && member.email === user.email) return true;
+  if (member.online === true || member.presence === "online") return true;
+  const recentValues = [member.lastActiveAt, member.updatedAt, member.lastSeenAt].filter(Boolean);
+  return recentValues.some((value) => {
+    const date = new Date(value);
+    return !Number.isNaN(date.getTime()) && Date.now() - date.getTime() < 15 * 60 * 1000;
+  });
+}
+
+function dashboardOnlineMembers(user = currentUser()) {
+  const members = (state.members || []).filter((member) => member.directoryVisible !== false);
+  const online = members.filter((member) => isMemberOnline(member, user));
+  if (online.length) return online.slice(0, 8);
+  return members.slice(0, 1);
+}
+
 function dashboardNextActions(user, counts) {
   return [
     counts.completion < 80
@@ -2722,6 +2855,25 @@ function renderAnalyticsRows(rows = []) {
       </div>
     </article>
   `).join("");
+}
+
+function renderMetrics(user) {
+  if (user.role !== "admin") return `<section class="section-card"><h2>Not available</h2><p class="muted">Website metrics are only visible to JP Innovation admins.</p></section>`;
+  return `
+    <section class="section-card section-blue metrics-command-centre">
+      <div class="list-title">
+        <div>
+          <p class="eyebrow">Admin metrics</p>
+          <h2>Website visits and Hub activity.</h2>
+          <p>Track real visitor activity, registrations, posts and active members from the live backend.</p>
+        </div>
+        <button class="secondary-button dashboard-link" data-view-link="admin" type="button">Back to admin</button>
+      </div>
+      <div id="analyticsPanel">
+        <p class="muted">Loading private site analytics...</p>
+      </div>
+    </section>
+  `;
 }
 
 async function loadSiteAnalytics() {
@@ -4244,6 +4396,7 @@ function applicationStatusPill(status) {
 
 function memberCard(member) {
   const viewer = currentUser();
+  const online = isMemberOnline(member, viewer);
   const reviews = approvedReviewsFor(member);
   const canReview = viewer?.id && member.id && viewer.id !== member.id && ["member", "admin"].includes(viewer.role);
   const reviewSummary = reviews.length
@@ -4252,9 +4405,9 @@ function memberCard(member) {
   return `
     <article class="member-card">
       <div class="member-card-head">
-        ${profileAvatarMarkup(member, "profile-avatar")}
+        <span class="member-avatar-wrap ${online ? "is-online" : ""}">${profileAvatarMarkup(member, "profile-avatar")}</span>
         <div>
-          <span class="badge">${escapeHtml(member.level)}</span>
+          <span class="badge">${escapeHtml(member.level)}${online ? ` <span class="online-inline"><span class="online-dot" aria-hidden="true"></span>Online</span>` : ""}</span>
           <div class="member-name-with-badge"><h3>${escapeHtml(member.name)}</h3>${reputationBadge(member)}</div>
         </div>
       </div>
@@ -4621,6 +4774,9 @@ function bindViewHandlers(view) {
     loadSiteAnalytics();
     $("#refreshAdminProfiles")?.addEventListener("click", () => loadSecureAdminProfiles(true));
     if (adminProfilesStatus === "idle") loadSecureAdminProfiles();
+  }
+  if (view === "metrics") {
+    loadSiteAnalytics();
   }
   if (view === "profile") {
     $("#profileForm").addEventListener("submit", (event) => {
