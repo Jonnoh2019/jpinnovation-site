@@ -2390,6 +2390,7 @@ function setMemberProfileMenuOpen(open) {
   menu.classList.toggle("open", open);
   menu.setAttribute("aria-hidden", String(!open));
   button.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("member-profile-menu-open", open);
   if (!open) setNotificationsOpen(false);
 }
 
