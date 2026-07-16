@@ -524,10 +524,20 @@
     .flow-step h3 { margin: 0 0 6px; font-size: 17px; }
     .case-study {
       display: grid;
-      grid-template-columns: minmax(0, .85fr) minmax(0, 1fr);
+      grid-template-columns: minmax(300px, .9fr) minmax(0, 1.1fr);
+      align-items: stretch;
     }
-    .case-study img { width: 100%; height: 100%; min-height: 310px; object-fit: cover; }
-    .case-body { padding: 24px; display: grid; gap: 14px; }
+    .case-study img {
+      width: 100%;
+      height: 100%;
+      min-height: 260px;
+      max-height: 360px;
+      object-fit: contain;
+      object-position: center;
+      padding: 12px;
+      background: radial-gradient(circle at 50% 40%, rgba(0,123,255,.16), transparent 48%), #0f141a;
+    }
+    .case-body { padding: 24px; display: grid; align-content: center; gap: 14px; max-width: 620px; }
     .case-body h3 { margin: 0; font-size: 25px; letter-spacing: -.04em; }
     .case-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .case-meta b { display: block; margin-bottom: 4px; }
@@ -736,9 +746,10 @@
 
     .projects {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 18px;
-      margin-top: 34px;
+      width: min(100%, 1080px);
+      margin: 34px auto 0;
     }
     .project {
       border: 1px solid var(--line);
