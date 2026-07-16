@@ -1023,8 +1023,9 @@ function approvedReviewsFor(member) {
 
 function memberReputationTier(member) {
   if (!member || member.role === "client") return "none";
+  if (member.role === "admin") return "admin";
   if (["blue", "gold"].includes(member.badgeTier)) return member.badgeTier;
-  const active = member.role === "admin" || member.membershipStatus === "active";
+  const active = member.membershipStatus === "active";
   const vetted = member.role === "admin" || member.vetted === true || member.verified === true;
   if (!active || !vetted) return "none";
   const positiveReviews = Number(member.approvedPositiveReviews || approvedReviewsFor(member).filter((review) => review.rating >= 4).length);
@@ -1036,8 +1037,9 @@ function reputationBadge(member, options = {}) {
   const tier = memberReputationTier(member);
   if (tier === "none") return "";
   const compact = options.compact === true;
-  const label = tier === "gold" ? "Gold Trusted" : "Blue Verified";
-  return `<span class="reputation-badge ${tier}" title="${label}: paid Hub member vetted by JP Innovation" aria-label="${label}"><span aria-hidden="true">&#9733;</span>${compact ? "" : `<b>${label}</b>`}</span>`;
+  const label = tier === "admin" ? "JP Admin" : (tier === "gold" ? "Gold Trusted" : "Blue Verified");
+  const title = tier === "admin" ? "JP Innovation admin account" : `${label}: paid Hub member vetted by JP Innovation`;
+  return `<span class="reputation-badge ${tier}" title="${title}" aria-label="${label}"><span aria-hidden="true">&#9733;</span>${compact ? "" : `<b>${label}</b>`}</span>`;
 }
 
 function approvedProfilePhoto(user) {
@@ -1068,6 +1070,7 @@ function reputationStatusCopy(member) {
   const tier = memberReputationTier(member);
   const points = Number(member?.reputationPoints ?? member?.points ?? 0);
   const positive = Number(member?.approvedPositiveReviews || approvedReviewsFor(member).filter((review) => review.rating >= 4).length);
+  if (tier === "admin") return { tier, title: "JP Admin", detail: "Admin account with full Hub moderation and access controls.", points, positive };
   if (tier === "gold") return { tier, title: "Gold Trusted member", detail: "Gold status is active through approved community reputation.", points, positive };
   if (tier === "blue") return { tier, title: "Blue Verified member", detail: `Reach Gold with ${goldPointsTarget} points or ${goldPositiveReviewsTarget} approved positive reviews.`, points, positive };
   return { tier, title: "Member verification in progress", detail: "Blue Verified appears after paid membership is active and JP Innovation has completed vetting.", points, positive };
@@ -1912,6 +1915,15 @@ function hasActiveHubAccess(user = currentUser()) {
 
 function syncPublicNavAccessState(user = currentUser()) {
   const hideClientPortal = hasActiveHubAccess(user);
+  try {
+    if (hideClientPortal) {
+      window.localStorage.setItem("jpActiveHubAccess", "1");
+      document.documentElement.classList.add("hub-member-session");
+    } else {
+      window.localStorage.removeItem("jpActiveHubAccess");
+      document.documentElement.classList.remove("hub-member-session");
+    }
+  } catch {}
   $all("[data-client-portal-link], #clientPortalHeaderButton").forEach((link) => {
     link.hidden = hideClientPortal;
     link.setAttribute("aria-hidden", String(hideClientPortal));
@@ -1965,6 +1977,22 @@ function closeReputationStatusDialog() {
   dialog.setAttribute("aria-hidden", "true");
 }
 
+function positionMemberStatusStar() {
+  const star = $("#reputationStatusButton");
+  const name = $("#memberName");
+  const control = $(".member-profile-control");
+  if (!star || !name || !control || star.classList.contains("hidden")) return;
+  const controlRect = control.getBoundingClientRect();
+  const nameRect = name.getBoundingClientRect();
+  const starSize = star.offsetWidth || 19;
+  const left = Math.max(0, nameRect.right - controlRect.left + 6);
+  const top = Math.max(0, nameRect.top - controlRect.top + ((nameRect.height - starSize) / 2));
+  star.style.left = `${Math.round(left)}px`;
+  star.style.top = `${Math.round(top)}px`;
+  star.style.right = "auto";
+  star.style.bottom = "auto";
+}
+
 function setLoggedInView() {
   const user = currentUser();
   const loggedIn = Boolean(user);
@@ -1987,12 +2015,18 @@ function setLoggedInView() {
   $("#memberName").textContent = user.name;
   $("#memberRole").textContent = isClient ? "Client Portal" : roleLabel(user);
   const reputationButton = $("#reputationStatusButton");
+  const inlineReputationStar = $("#memberStatusStarInline");
   const reputationTier = memberReputationTier(user);
+  const hideReputation = isClient || reputationTier === "none";
+  [reputationButton, inlineReputationStar].forEach((badge) => {
+    if (!badge) return;
+    badge.classList.toggle("hidden", hideReputation);
+    badge.classList.toggle("admin", reputationTier === "admin");
+    badge.classList.toggle("blue", reputationTier === "blue");
+    badge.classList.toggle("gold", reputationTier === "gold");
+  });
   if (reputationButton) {
-    reputationButton.classList.toggle("hidden", isClient || reputationTier === "none");
-    reputationButton.classList.toggle("blue", reputationTier === "blue");
-    reputationButton.classList.toggle("gold", reputationTier === "gold");
-    reputationButton.setAttribute("aria-label", reputationTier === "gold" ? "Open Gold Trusted member status" : "Open Blue Verified member status");
+    reputationButton.setAttribute("aria-label", reputationTier === "admin" ? "Open JP Admin status" : (reputationTier === "gold" ? "Open Gold Trusted member status" : "Open Blue Verified member status"));
   }
   $("#profileAdminLink")?.classList.toggle("hidden", user.role !== "admin" || isClient);
   $("#profileClientWork")?.classList.toggle("hidden", isClient);
@@ -2024,7 +2058,12 @@ async function registerUser(data) {
       emailRedirectTo: `${publicSiteOrigin}/hub-portal/index.html?entry=${entryMode}&signin=1`
     }
   });
-  if (error) throw error;
+  if (error) {
+    if (/already|registered|exists/i.test(error.message || "")) {
+      throw new Error("This email already has a JP Innovation login. Please sign in instead; if Hub access was declined before, signing in from the Hub page will request access again.");
+    }
+    throw error;
+  }
   if (result.session) {
     const user = await syncSecureSession();
     if (entryMode === "hub" && user?.role === "client") {
@@ -2145,6 +2184,7 @@ async function signIn(data) {
 
 async function signOut() {
   if (portalBackend) await portalBackend.auth.signOut();
+  try { window.localStorage.removeItem("jpActiveHubAccess"); } catch {}
   state.sessionEmail = "";
   saveState();
   currentView = "dashboard";
@@ -3526,7 +3566,7 @@ function renderProfile(user) {
       <div class="metrics-grid">
         ${metric("Status", user.level)}
         ${metric("Points", user.points)}
-        ${metric("Badge", reputation.tier === "gold" ? "Gold Trusted" : reputation.tier === "blue" ? "Blue Verified" : "Member")}
+        ${metric("Badge", reputation.tier === "admin" ? "JP Admin" : reputation.tier === "gold" ? "Gold Trusted" : reputation.tier === "blue" ? "Blue Verified" : "Member")}
         ${metric("Reviews", reviews.length)}
         ${metric("Profile", `${profileCompletion(user)}%`)}
         ${metric("Warnings", user.warning ? "1" : "0")}
@@ -3896,7 +3936,7 @@ function renderAdmin(user) {
               <div class="member-name-with-badge"><h3>${escapeHtml(member.name)}</h3>${reputationBadge(member)}</div>
               <p>${escapeHtml(member.business || "Independent member")} - ${escapeHtml(member.email)}</p>
               <div class="meta-row">
-                <span class="pill ${memberReputationTier(member) !== "none" ? "good" : "warn"}">${memberReputationTier(member) === "gold" ? "Gold Trusted" : memberReputationTier(member) === "blue" ? "Blue Verified" : "Pending vetting"}</span>
+                <span class="pill ${memberReputationTier(member) !== "none" ? "good" : "warn"}">${memberReputationTier(member) === "admin" ? "JP Admin" : memberReputationTier(member) === "gold" ? "Gold Trusted" : memberReputationTier(member) === "blue" ? "Blue Verified" : "Pending vetting"}</span>
                 <span class="pill ${member.suspended ? "danger" : ""}">${member.suspended ? "Suspended" : "Active"}</span>
                 <span class="pill ${member.warning ? "warn" : ""}">${member.warning ? "Warned" : "No warning"}</span>
               </div>
@@ -4198,7 +4238,7 @@ function memberCard(member) {
         <span class="pill">${escapeHtml(member.equipment || "Equipment TBC")}</span>
         <span class="pill">${escapeHtml(member.preferredWork || "Open to help")}</span>
         <span class="pill">${escapeHtml(member.capacity || "Capacity TBC")}</span>
-        <span class="pill ${memberReputationTier(member) !== "none" ? "good" : ""}">${memberReputationTier(member) === "gold" ? "Gold Trusted" : memberReputationTier(member) === "blue" ? "Blue Verified" : "Member"}</span>
+        <span class="pill ${memberReputationTier(member) !== "none" ? "good" : ""}">${memberReputationTier(member) === "admin" ? "JP Admin" : memberReputationTier(member) === "gold" ? "Gold Trusted" : memberReputationTier(member) === "blue" ? "Blue Verified" : "Member"}</span>
         <span class="pill">${Number(member.reputationPoints ?? member.points ?? 0)} pts</span>
         <span class="pill">${escapeHtml(reviewSummary)}</span>
       </div>
@@ -4932,8 +4972,8 @@ function bindApplicationActions() {
       if (application.secure) {
         try {
           if (action === "approve") await updateSecureProfileAccess(application.userId, { account_type: "member", membership_status: "active", vetted_at: new Date().toISOString() });
-          if (action === "reject") await updateSecureProfileAccess(application.userId, { account_type: "client", membership_status: "rejected", vetted_at: null });
-          adminProfilesMessage = action === "approve" ? `${application.fullName} now has paid Innovation Hub access.` : `${application.fullName}'s Hub request was rejected; Client Portal access remains available.`;
+          if (action === "reject") await updateSecureProfileAccess(application.userId, { account_type: "client", membership_status: "free", vetted_at: null });
+          adminProfilesMessage = action === "approve" ? `${application.fullName} now has paid Innovation Hub access.` : `${application.fullName}'s Hub request was moved back to free Client Portal access. They can sign in from the Hub page to request access again later.`;
           renderView("admin");
         } catch (error) {
           adminProfilesMessage = `Access update failed: ${error.message}`;
@@ -5746,12 +5786,14 @@ async function boot() {
     if (willOpen) setMobileDashboardMenuOpen(false);
     setMemberProfileMenuOpen(willOpen);
   });
-  $("#reputationStatusButton")?.addEventListener("click", (event) => {
+  const openStatusFromHeader = (event) => {
     event.stopPropagation();
     setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
     openReputationStatusDialog();
-  });
+  };
+  $("#reputationStatusButton")?.addEventListener("click", openStatusFromHeader);
+  $("#memberStatusStarInline")?.addEventListener("click", openStatusFromHeader);
   $("#closeReputationStatus")?.addEventListener("click", closeReputationStatusDialog);
   $("#reputationStatusDialog")?.addEventListener("click", (event) => {
     if (event.target === $("#reputationStatusDialog")) closeReputationStatusDialog();
