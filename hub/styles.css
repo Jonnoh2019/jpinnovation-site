@@ -1477,6 +1477,12 @@ input:focus, textarea:focus, select:focus {
     width: 100%;
   }
   .public-nav a { min-height: 38px; padding: 7px 8px; font-size: 11px; }
+  #clientPortalHeaderButton {
+    grid-column: 2;
+  }
+  #innovationHubHeaderButton {
+    grid-column: 3;
+  }
   .public-nav .home-icon-button {
     display: inline-flex;
     font-size: 18px;
@@ -1631,6 +1637,12 @@ input:focus, textarea:focus, select:focus {
   .lead { font-size: 13px; }
   .public-nav { display: grid; }
   .public-nav .feature-link { display: none; }
+  #clientPortalHeaderButton {
+    grid-column: 2;
+  }
+  #innovationHubHeaderButton {
+    grid-column: 3;
+  }
   .feature-mini-grid { grid-template-columns: 1fr; }
   .hub-feature-summary ul {
     columns: 2;
