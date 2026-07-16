@@ -1073,6 +1073,15 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,.045);
   color: var(--silver);
 }
+.account-control-cluster .notification-bell {
+  border-color: transparent;
+  background: transparent;
+}
+.account-control-cluster .notification-bell:hover,
+.account-control-cluster .notification-bell[aria-expanded="true"] {
+  border-color: transparent;
+  background: rgba(0,111,230,.18);
+}
 .header-icon-button:hover,
 .notification-bell:hover,
 .notification-bell[aria-expanded="true"] {
