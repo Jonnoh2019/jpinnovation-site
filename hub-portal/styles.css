@@ -1171,17 +1171,19 @@ input:focus, textarea:focus, select:focus {
 .member-chip {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 8px 9px;
+  justify-content: center;
+  gap: 0;
+  width: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 3px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 50%;
   background: rgba(255,255,255,.045);
   color: var(--ink);
   text-align: left;
   font: inherit;
-  width: auto;
-  max-width: 220px;
+  max-width: 48px;
 }
 .member-chip:hover,
 .member-chip:focus-visible {
@@ -1192,8 +1194,8 @@ input:focus, textarea:focus, select:focus {
 .member-chip #memberInitials {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--blue-deep), var(--blue));
   font-weight: 900;
@@ -1234,11 +1236,6 @@ input:focus, textarea:focus, select:focus {
 .member-status-star-inline.gold { background: linear-gradient(145deg, #ffe27a, #c98b00); color: #241700; }
 .member-status-star-inline.admin { background: conic-gradient(from 215deg, #1788ff, #ffe27a, #f8fbff, #1788ff); color: #06111f; border-color: rgba(255,255,255,.72); }
 .member-chip small { color: var(--soft); }
-.member-chip > div {
-  min-width: 0;
-  max-width: 112px;
-  padding-right: 18px;
-}
 .member-chip strong,
 .member-chip small {
   overflow: hidden;
@@ -1246,25 +1243,6 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap;
 }
 .member-name-line #memberName { min-width: 0; }
-.member-chip-alert {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex: 0 0 30px;
-  width: 30px;
-  height: 30px;
-  margin-left: 2px;
-  color: var(--silver);
-}
-.member-chip-alert svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
 .member-chip-count {
   position: absolute;
   top: -5px;
@@ -1539,6 +1517,63 @@ input:focus, textarea:focus, select:focus {
   visibility: visible;
   pointer-events: auto;
   transform: translateY(0);
+}
+.profile-menu-header {
+  position: relative;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 12px;
+  border: 1px solid rgba(47,141,255,.22);
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(0,111,230,.16), rgba(255,255,255,.045));
+}
+.profile-menu-avatar {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue-deep), var(--blue));
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  overflow: hidden;
+}
+.profile-menu-avatar.has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-menu-identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.profile-menu-identity strong {
+  display: block;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-menu-identity small {
+  display: block;
+  overflow: hidden;
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-menu-header .member-chip-count {
+  position: static;
+  align-self: start;
+  border-color: rgba(5,10,16,.92);
 }
 .profile-menu-link {
   position: relative;
@@ -3529,7 +3564,7 @@ input:focus, textarea:focus, select:focus {
   .application-head {
     display: grid;
   }
-  .member-chip { flex: 0 0 auto; min-width: 0; }
+  .member-chip { flex: 0 0 48px; min-width: 48px; }
   .member-profile-control { flex: 0 0 auto; min-width: 0; margin-left: auto; }
   .setup-reminder .primary-button {
     justify-self: start;
@@ -3755,20 +3790,17 @@ input:focus, textarea:focus, select:focus {
     height: 20px;
   }
   .member-chip {
-    min-width: 0;
-    padding: 7px;
-    gap: 8px;
-    max-width: 205px;
+    width: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 3px;
+    gap: 0;
+    max-width: 42px;
   }
   .member-chip #memberInitials {
     width: 34px;
     height: 34px;
     font-size: 13px;
-  }
-  .member-chip-alert {
-    flex-basis: 27px;
-    width: 27px;
-    height: 27px;
   }
   .member-chip strong {
     font-size: 14px;
