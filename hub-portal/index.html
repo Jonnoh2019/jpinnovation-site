@@ -35,7 +35,7 @@
       <nav class="public-nav" aria-label="Client Portal navigation">
         <a class="home-icon-button" href="../index.html" aria-label="Homepage">&#8962;</a>
         <a id="clientPortalHeaderButton" class="section-switch-button active" data-client-portal-link href="index.html?entry=client&amp;signin=1" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20v-2.2c0-3 2.7-5.3 6.5-5.3s6.5 2.3 6.5 5.3V20"/></svg><span>Client Portal</span></a>
-        <a class="section-switch-button" href="../hub/index.html?signin=1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><circle cx="5.5" cy="10" r="2.3"/><circle cx="18.5" cy="10" r="2.3"/><path d="M7 20v-2c0-3 2-5 5-5s5 2 5 5v2M2 19v-1.2c0-2.2 1.4-3.8 3.5-3.8M22 19v-1.2c0-2.2-1.4-3.8-3.5-3.8"/></svg><span>Innovation Hub</span></a>
+        <a id="innovationHubHeaderButton" class="section-switch-button" href="../hub/index.html?signin=1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><circle cx="5.5" cy="10" r="2.3"/><circle cx="18.5" cy="10" r="2.3"/><path d="M7 20v-2c0-3 2-5 5-5s5 2 5 5v2M2 19v-1.2c0-2.2 1.4-3.8 3.5-3.8M22 19v-1.2c0-2.2-1.4-3.8-3.5-3.8"/></svg><span>Innovation Hub</span></a>
       </nav>
     </header>
 
@@ -172,6 +172,19 @@
               <path d="M9.5 20v-6h5v6"/>
             </svg>
           </button>
+          <div class="notification-centre">
+            <button id="topNotificationBell" class="notification-bell" type="button" aria-label="Open notification popout" aria-controls="notificationPopover" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+              <span id="notificationCountTop" class="notification-count hidden">0</span>
+            </button>
+            <div id="notificationPopover" class="notification-popover" aria-hidden="true">
+              <div class="notification-heading">
+                <div><span class="eyebrow">Alerts</span><h3>Notifications</h3></div>
+                <button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">&times;</button>
+              </div>
+              <div id="notificationList" class="notification-list"></div>
+            </div>
+          </div>
           <div class="member-profile-control">
             <button id="memberProfileButton" class="member-chip" type="button" aria-label="Open account menu" aria-controls="memberProfileMenu" aria-expanded="false">
               <span id="memberInitials">JP</span>
