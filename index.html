@@ -19,6 +19,13 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.jpinnovation.co.uk/">
   <meta property="og:image" content="https://www.jpinnovation.co.uk/assets/case-study-fixture-bracket.png">
+  <script>
+    try {
+      if (localStorage.getItem("jpActiveHubAccess") === "1") {
+        document.documentElement.classList.add("hub-member-session");
+      }
+    } catch (error) {}
+  </script>
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -189,6 +196,7 @@
       box-shadow: 0 12px 28px rgba(0,111,230,.28);
     }
     .section-switch-button.active svg { stroke: #fff; }
+    .hub-member-session #clientPortalHeaderButton { display: none !important; }
     .menu-toggle { display: none; }
 
     .button {
@@ -1010,6 +1018,111 @@
       color: var(--blue-soft);
       font-weight: 800;
     }
+
+    .compact-trust { display: grid; gap: 14px; }
+    .availability-badge {
+      width: fit-content;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border: 1px solid rgba(36,211,153,.3);
+      border-radius: 999px;
+      background: rgba(36,211,153,.1);
+      color: #70e6bd;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .availability-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #24d399; box-shadow: 0 0 16px rgba(36,211,153,.72); }
+    .trust-card-grid,
+    .industry-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .trust-card-grid article,
+    .industry-grid span,
+    .faq-list details {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.025));
+    }
+    .trust-card-grid article { padding: 15px; min-height: 112px; }
+    .trust-card-grid strong { display: block; margin-bottom: 7px; color: var(--ink); font-size: 14px; line-height: 1.25; }
+    .trust-card-grid span { color: var(--soft); font-size: 12px; line-height: 1.4; }
+    .compact-cards .card { min-height: 158px; padding: 18px; }
+    .compact-cards .card p { font-size: 14px; line-height: 1.45; }
+    .compact-cards .card-marker { margin-bottom: 12px; }
+    .compact-process .flow-step { padding: 16px; }
+    .text-link {
+      width: fit-content;
+      color: var(--blue-soft);
+      font-weight: 900;
+    }
+    .text-link::after { content: " \2192"; }
+    .section-actions { display: flex; justify-content: center; margin-top: 22px; }
+    .industry-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .industry-grid span {
+      min-height: 58px;
+      display: grid;
+      place-items: center;
+      padding: 12px;
+      color: var(--silver);
+      font-size: 13px;
+      font-weight: 900;
+      text-align: center;
+    }
+    .review-placeholders .testimonial { min-height: 0; }
+    .stars { display: block; margin-bottom: 10px; color: #ffd66b; letter-spacing: .08em; }
+    .testimonial dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 14px 0 0; color: var(--soft); font-size: 12px; }
+    .testimonial dt { color: var(--blue-soft); font-weight: 900; }
+    .testimonial dd { margin: 0; }
+    .benefit-list,
+    .cta-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .benefit-list li,
+    .cta-points span {
+      padding: 8px 10px;
+      border: 1px solid rgba(47,141,255,.24);
+      border-radius: 999px;
+      background: rgba(47,141,255,.08);
+      color: var(--silver);
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .faq-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+    .faq-list details { padding: 14px 16px; }
+    .faq-list summary { cursor: pointer; color: var(--ink); font-weight: 900; }
+    .faq-list p { margin: 10px 0 0; color: var(--soft); font-size: 14px; line-height: 1.5; }
+    .final-cta .contact-form { background: radial-gradient(circle at 85% 10%, rgba(0,111,230,.22), transparent 32%), rgba(255,255,255,.055); }
+    .form-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .brochure-link { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; color: var(--blue-soft); font-weight: 900; }
+    .brochure-link span { color: var(--muted); font-size: 12px; font-weight: 800; }
+    .floating-contact {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 55;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 13px;
+      border: 1px solid rgba(47,141,255,.45);
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--blue-deep), var(--blue));
+      color: #fff;
+      box-shadow: 0 16px 42px rgba(0,0,0,.42);
+      font-size: 13px;
+      font-weight: 950;
+    }
+    .floating-contact span { font-size: 16px; }
+
     .install-app-panel {
       position: fixed;
       left: 16px;
@@ -1372,7 +1485,8 @@
       h3 { font-size: 16px; }
       .eyebrow { font-size: 12px; }
       .button { min-height: 40px; padding: 9px 12px; font-size: 13px; }
-      .install-app-panel {
+  
+    .install-app-panel {
         grid-template-columns: auto 1fr;
         padding: 10px;
       }
@@ -1446,7 +1560,8 @@
       .media-label span { font-size: 10px; line-height: 1.3; }
     }
     @media (max-width: 900px) {
-      .trust-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .trust-grid,
+      .trust-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .experience-grid,
       .meet-grid,
       .hub-intro-grid,
@@ -1455,11 +1570,19 @@
       .process-flow { grid-template-columns: 1fr; }
       .process-flow::before { display: none; }
       .case-study img { min-height: 220px; }
+      .industry-grid,
+      .faq-list { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 560px) {
       .trust-strip { padding-top: 10px; }
-      .trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .trust-grid,
+      .trust-card-grid,
+      .industry-grid,
+      .faq-list { grid-template-columns: 1fr; gap: 8px; }
       .trust-badge { min-height: 38px; border-radius: 14px; font-size: 11px; }
+      .trust-card-grid article { min-height: 0; padding: 13px; }
+      .floating-contact { right: 12px; bottom: 12px; padding: 10px; }
+      .floating-contact b { display: none; }
       .experience-card,
       .person-copy,
       .hub-preview-card { padding: 16px; }
@@ -1483,8 +1606,9 @@
       <nav class="nav" id="siteNav" aria-label="Main navigation">
         <a href="#services">Services</a>
         <a href="#projects">Projects</a>
-        <a href="#pricing">Pricing</a>
         <a href="#process">Process</a>
+        <a href="#industries">Industries</a>
+        <a href="#faq">FAQ</a>
         <a href="#contact">Contact</a>
       </nav>
       <div class="header-actions">
@@ -1504,120 +1628,63 @@
       <div class="hero-grid">
         <div class="hero-copy">
           <p class="eyebrow">Engineering. Design. Product Development.</p>
-          <h1><span class="hero-title-blue">Engineering</span><span class="hero-title-main">solutions</span><span class="hero-title-sub">from <em>concept</em> to <em>manufacture.</em></span></h1>
-          <p class="lead"><strong>JP Innovation Ltd</strong> helps businesses, founders and manufacturers turn ideas into practical, manufacturable products through CAD modelling, engineering design, prototypes and production support.</p>
+          <h1>Engineering solutions from concept to manufacture.</h1>
+          <p class="lead"><strong>JP Innovation</strong> helps businesses, founders and manufacturers turn ideas into practical, manufacturable products through CAD design, engineering development, prototypes and production support.</p>
           <div class="hero-actions">
-            <a class="button" href="#contact"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg><span>Book a Free Discovery Call</span><span class="button-arrow">→</span></a>
-            <a class="button secondary" href="#projects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg><span>View Project Examples</span><span class="button-arrow">→</span></a>
-          </div>
-          <div class="hero-proof" aria-label="Service highlights">
-            <div class="proof-item"><b>CAD</b><span>Supplier-ready 3D models and drawings</span></div>
-            <div class="proof-item"><b>Prototype</b><span>Engineering validation before production</span></div>
-            <div class="proof-item"><b>Manufacture</b><span>Design decisions shaped for real-world build</span></div>
+            <a class="button" href="#contact"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg><span>Book a Free Discovery Call</span><span class="button-arrow">?</span></a>
+            <a class="button secondary" href="#projects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg><span>View Project Examples</span><span class="button-arrow">?</span></a>
+            <button class="button secondary install-app-button" id="installAppButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg><span>Install app</span><span class="button-arrow">?</span></button>
           </div>
         </div>
         <div class="hero-media" aria-label="Machined CAD bracket project">
           <img src="assets/cad-machined-bracket.png" alt="Machined aluminium CAD bracket render">
           <div class="media-label">
             <b>Manufacture-ready engineering support</b>
-            <span>Clean CAD, practical geometry and manufacture-ready thinking.</span>
+            <span>Clean CAD, practical geometry and supplier-ready thinking.</span>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="section trust-strip" aria-label="JP Innovation trust badges">
-      <div class="trust-grid">
-        <span class="trust-badge">CAD Design</span>
-        <span class="trust-badge">Product Development</span>
-        <span class="trust-badge">Prototyping</span>
-        <span class="trust-badge">Manufacturing Support</span>
-        <span class="trust-badge">UK Based</span>
-        <span class="trust-badge">Fast Turnaround</span>
-      </div>
-    </section>
-
-    <section class="section" aria-label="Trusted engineering experience">
-      <div class="section-inner experience-grid">
-        <article class="experience-card">
-          <span>Trusted Experience</span>
-          <strong>10+ years</strong>
-          <p class="section-copy">Engineering, CAD, manufacturing and product development experience shaped around practical real-world output.</p>
-        </article>
-        <div class="experience-points">
-          <article><h3>Automotive engineering</h3><p>Background in practical engineering environments where fit, reliability and buildability matter.</p></article>
-          <article><h3>CAD to manufacture</h3><p>Clean models, sensible drawings and supplier-ready thinking from concept through production.</p></article>
-          <article><h3>Product development</h3><p>Support for founders, makers and manufacturers who need clear technical direction.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section intro-band" aria-label="Why choose JP Innovation">
-      <div class="intro-panel">
-        <div>
-          <p class="eyebrow">Why JP Innovation</p>
-          <h2>Engineering support that keeps your project moving.</h2>
-          <p class="intro-summary">Direct, practical engineering input to help you make decisions, solve problems and move confidently towards manufacture.</p>
-        </div>
-        <div>
-          <div class="why-list">
-            <article class="why-item">
-              <h3>Fast Turnaround</h3>
-              <p>Responsive design support for urgent CAD work, prototypes, revisions and technical decisions.</p>
-            </article>
-            <article class="why-item">
-              <h3>Personal Approach</h3>
-              <p>Work directly with the engineer handling your project, with clear communication from start to finish.</p>
-            </article>
-            <article class="why-item">
-              <h3>Practical Site Support</h3>
-              <p>Site visits can be arranged where useful, helping capture measurements, constraints and real-world context.</p>
-            </article>
-            <article class="why-item">
-              <h3>Manufacture in Mind</h3>
-              <p>Design choices are shaped around fit, function, material, cost and how the part will actually be made.</p>
-            </article>
-          </div>
+    <section class="section trust-strip" aria-label="JP Innovation trust and availability">
+      <div class="section-inner compact-trust">
+        <span class="availability-badge">Available for new projects</span>
+        <div class="trust-card-grid">
+          <article><strong>10+ Years? Experience</strong><span>Engineering, CAD and product development experience.</span></article>
+          <article><strong>Automotive Engineering Background</strong><span>Experience shaped around fit, function and real-world build constraints.</span></article>
+          <article><strong>UK Based</strong><span>Milton Keynes based engineering design support.</span></article>
+          <article><strong>NDA Friendly</strong><span>Confidential projects can be discussed under NDA.</span></article>
+          <article><strong>Direct Engineer Support</strong><span>Speak directly with the person working on your project.</span></article>
         </div>
       </div>
     </section>
 
     <section class="section" id="services">
       <div class="section-inner">
-        <p class="eyebrow">What We Do</p>
+        <p class="eyebrow">CAD design services</p>
         <h2>Focused support for every stage of development.</h2>
-        <p class="section-copy">Use JP Innovation for a single CAD task, an engineering review, a prototype package, or a full product development project.</p>
-        <div class="cards">
-          <article class="card">
-            <div class="card-marker">01</div>
-            <h3>Engineering Review</h3>
-            <p>Free discovery call, technical scoping, feasibility thinking and a clear route forward before work begins.</p>
-          </article>
-          <article class="card">
-            <div class="card-marker">02</div>
-            <h3>CAD Modelling</h3>
-            <p>Professional 3D models, assemblies, drawings and supplier-ready files for components and product ideas.</p>
-          </article>
-          <article class="card">
-            <div class="card-marker">03</div>
-            <h3>Product Design</h3>
-            <p>Practical components, fixtures and assemblies developed with function, fit and manufacture in mind.</p>
-          </article>
-          <article class="card">
-            <div class="card-marker">04</div>
-            <h3>3D Printing & Prototypes</h3>
-            <p>Prototype parts and test models to check fit, form and early function before committing to production.</p>
-          </article>
-          <article class="card">
-            <div class="card-marker">05</div>
-            <h3>Reverse Engineering</h3>
-            <p>Measure, model and improve existing parts where drawings are missing, outdated or need production-ready updates.</p>
-          </article>
-          <article class="card">
-            <div class="card-marker">06</div>
-            <h3>Manufacturing Support</h3>
-            <p>Refinement, supplier liaison and production-focused design support to reduce avoidable build issues.</p>
-          </article>
+        <p class="section-copy">From one-off CAD work to complete product development, support can be tailored around the project.</p>
+        <div class="cards compact-cards">
+          <article class="card"><div class="card-marker">01</div><h3>Engineering Review</h3><p>Feasibility, scope and a clear route forward.</p></article>
+          <article class="card"><div class="card-marker">02</div><h3>CAD Modelling</h3><p>3D models, assemblies, drawings and supplier-ready files.</p></article>
+          <article class="card"><div class="card-marker">03</div><h3>Product Design</h3><p>Components and assemblies designed around function and manufacture.</p></article>
+          <article class="card"><div class="card-marker">04</div><h3>3D Printing & Prototypes</h3><p>Prototype parts and test models to check fit, form and early function.</p></article>
+          <article class="card"><div class="card-marker">05</div><h3>Reverse Engineering</h3><p>Existing components recreated or improved from measurements, samples or drawings.</p></article>
+          <article class="card"><div class="card-marker">06</div><h3>Manufacturing Support</h3><p>Supplier communication, design revisions and support through production.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="process">
+      <div class="section-inner">
+        <p class="eyebrow">How it works</p>
+        <h2>A clear route from idea to delivery.</h2>
+        <div class="process-flow compact-process">
+          <article class="flow-step"><div class="flow-icon">01</div><h3>Discovery Call</h3><p>Discuss the idea, requirements and current challenges.</p></article>
+          <article class="flow-step"><div class="flow-icon">02</div><h3>Scope & Quotation</h3><p>Agree the work, deliverables, cost and timescale.</p></article>
+          <article class="flow-step"><div class="flow-icon">03</div><h3>Design & Development</h3><p>Create, review and refine the CAD or engineering solution.</p></article>
+          <article class="flow-step"><div class="flow-icon">04</div><h3>Prototype & Validation</h3><p>Check fit, function and practicality where required.</p></article>
+          <article class="flow-step"><div class="flow-icon">05</div><h3>Manufacture Support</h3><p>Prepare final files and support the route into production.</p></article>
         </div>
       </div>
     </section>
@@ -1626,132 +1693,81 @@
       <div class="section-inner">
         <p class="eyebrow">Featured Projects</p>
         <h2>Engineering case studies, not just pretty renders.</h2>
-        <p class="section-copy">Each project is shown as a practical engineering problem: the challenge, route to manufacture and final output.</p>
+        <p class="section-copy">Each project is shown as an engineering problem: the challenge, route to manufacture and final output.</p>
         <div class="projects">
           <article class="project case-study">
             <img src="assets/case-study-fixture-bracket.png" alt="Precision fixture bracket CAD render">
             <div class="case-body">
               <h3>Precision Fixture Bracket</h3>
-              <p>A manufacture-ready fixture bracket developed with slotted mounting points, clean radii and practical machining features for accurate positioning and repeatable assembly.</p>
               <div class="case-meta">
                 <span><b>Challenge</b>Turn a functional bracket idea into a supplier-ready machined component.</span>
                 <span><b>Solution</b>Refined CAD geometry, mounting slots, radii and clean drawing output.</span>
                 <span><b>Method</b>CNC machining / aluminium prototype route.</span>
                 <span><b>Outcome</b>Clear files ready for quotation, review and manufacture.</span>
               </div>
+              <a class="text-link" href="#contact">View Full Case Study</a>
             </div>
           </article>
           <article class="project case-study">
             <img src="assets/case-study-linkage-assembly.png" alt="Compact mechanical linkage CAD assembly">
             <div class="case-body">
               <h3>Mechanical Linkage Assembly</h3>
-              <p>A compact linkage concept designed around pivot alignment, spacer clearances and fastener access, helping validate movement and assembly before manufacture.</p>
               <div class="case-meta">
                 <span><b>Challenge</b>Validate movement, clearances and assembly access before physical build.</span>
-                <span><b>Solution</b>Assembly CAD with pivot alignment and practical fastener positioning.</span>
+                <span><b>Solution</b>Assembly CAD with pivot alignment and fastener positioning.</span>
                 <span><b>Method</b>3D CAD assembly review and prototype-ready modelling.</span>
                 <span><b>Outcome</b>A clearer engineering route before committing to manufacture.</span>
               </div>
+              <a class="text-link" href="#contact">View Full Case Study</a>
             </div>
           </article>
+        </div>
+        <div class="section-actions"><a class="button secondary" href="#projects">View All Projects</a></div>
+      </div>
+    </section>
+
+    <section class="section" id="industries">
+      <div class="section-inner">
+        <p class="eyebrow">Industries supported</p>
+        <h2>Engineering support across multiple sectors.</h2>
+        <p class="section-copy">Support is tailored around the product, application and manufacturing route rather than limited to one industry.</p>
+        <div class="industry-grid">
+          <span>Automotive</span><span>Motorsport</span><span>Manufacturing</span><span>Robotics & Automation</span><span>Industrial Equipment</span><span>Consumer Products</span><span>Start-ups & Inventors</span>
         </div>
       </div>
     </section>
 
     <section class="section" id="testimonials">
       <div class="section-inner">
-        <p class="eyebrow">What Customers Can Expect</p>
-        <h2>Clear, practical support for real engineering work.</h2>
-        <p class="section-copy">Until live testimonials are added, this section sets out the service standards JP Innovation is built around.</p>
-        <div class="testimonials">
-          <article class="testimonial">
-            <p>Clear explanation of design choices, practical options and next steps before money is spent on manufacture.</p>
-            <strong>Practical engineering advice</strong>
-          </article>
-          <article class="testimonial">
-            <p>Responsive CAD and development support for customers who need to keep projects moving without losing technical control.</p>
-            <strong>Fast, focused turnaround</strong>
-          </article>
-          <article class="testimonial">
-            <p>Direct communication, site visits where useful, fixed-price quotations and design decisions shaped around real buildability.</p>
-            <strong>Personal project support</strong>
-          </article>
+        <p class="eyebrow">Testimonials</p>
+        <h2>What clients say.</h2>
+        <p class="section-copy">Temporary placeholders are shown below and should be replaced with genuine reviews when available.</p>
+        <div class="testimonials review-placeholders">
+          <article class="testimonial"><span class="stars" aria-hidden="true">?????</span><p>?Add genuine customer testimonial here.?</p><dl><dt>Client name</dt><dd>Editable</dd><dt>Company</dt><dd>Editable</dd><dt>Project type</dt><dd>Editable</dd></dl></article>
+          <article class="testimonial"><span class="stars" aria-hidden="true">?????</span><p>?Add feedback about communication, quality and turnaround here.?</p><dl><dt>Client name</dt><dd>Editable</dd><dt>Company</dt><dd>Editable</dd><dt>Project type</dt><dd>Editable</dd></dl></article>
+          <article class="testimonial"><span class="stars" aria-hidden="true">?????</span><p>?Add feedback about CAD, prototypes or manufacturing support here.?</p><dl><dt>Client name</dt><dd>Editable</dd><dt>Company</dt><dd>Editable</dd><dt>Project type</dt><dd>Editable</dd></dl></article>
         </div>
+        <div class="section-actions"><a class="button secondary" href="#contact">Leave a Review</a></div>
       </div>
     </section>
 
     <section class="section" id="about">
       <div class="section-inner">
         <p class="eyebrow">Meet Jonathan</p>
-        <h2>People buy from people. Engineering works best when the conversation is direct.</h2>
+        <h2>Direct engineering support from first conversation to final output.</h2>
         <div class="meet-grid">
           <article class="person-card photo-placeholder" aria-label="Professional photo placeholder">
+            <!-- Replace this placeholder with a real professional photograph of Jonathan when available. -->
             <span>JP</span>
           </article>
           <article class="person-card person-copy">
             <h3>Jonathan Hotard</h3>
-            <p>JP Innovation Ltd is built around direct engineering support: clear conversations, practical CAD, sensible manufacturing decisions and honest guidance before money is spent on prototypes or production.</p>
-            <p>Jonathan helps businesses, founders and manufacturers move from idea to manufacture-ready output, combining automotive engineering experience with CAD modelling, product development and hands-on buildability thinking.</p>
+            <p>JP Innovation is built around direct, practical engineering support. Jonathan combines automotive engineering experience with CAD modelling, product development and hands-on manufacturing knowledge to help clients move from idea to manufacture-ready output.</p>
             <div class="hero-actions">
-              <a class="button" href="#contact"><span>Talk through a project</span><span class="button-arrow">→</span></a>
-              <a class="button secondary" href="#projects"><span>View case studies</span><span class="button-arrow">→</span></a>
+              <a class="button" href="#contact"><span>Talk Through a Project</span><span class="button-arrow">?</span></a>
+              <a class="button secondary" href="#projects"><span>View Case Studies</span><span class="button-arrow">?</span></a>
             </div>
           </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="pricing">
-      <div class="section-inner">
-        <p class="eyebrow">Project Pricing</p>
-        <h2>Clear starting points, then a fixed quotation.</h2>
-        <p class="section-copy">Every engineering project is unique. Following your free discovery call, JP Innovation provides a detailed fixed-price quotation based on your scope, deliverables and timescales.</p>
-        <div class="pricing">
-          <article class="price">
-            <span class="tier">Tier 0</span>
-            <h3>Discovery</h3>
-            <div class="amount">Free</div>
-            <p>30-minute consultation to discuss your idea, objectives and the best route forward.</p>
-          </article>
-          <article class="price">
-            <span class="tier">Tier 1</span>
-            <h3>Concept Design</h3>
-            <div class="amount"><small>From</small>&pound;750</div>
-            <p>Initial concept development, engineering feasibility, design consultation and early layouts.</p>
-          </article>
-          <article class="price">
-            <span class="tier">Tier 2</span>
-            <h3>CAD Design & Engineering</h3>
-            <div class="amount"><small>From</small>&pound;1,500</div>
-            <p>Professional 3D CAD, engineering refinement and production-ready models.</p>
-          </article>
-          <article class="price">
-            <span class="tier">Tier 3</span>
-            <h3>Prototype & Validation</h3>
-            <div class="amount"><small>From</small>&pound;2,500</div>
-            <p>Engineering prototype manufacture to validate fit, form and function before production.</p>
-          </article>
-          <article class="price">
-            <span class="tier">Tier 4</span>
-            <h3>Full Product Development</h3>
-            <div class="amount"><small>From</small>&pound;7,500+</div>
-            <p>Complete engineering partnership from concept through manufacture and supplier support.</p>
-          </article>
-        </div>
-        <p class="pricing-note">Figures shown are typical starting points. Your final quotation will be tailored to your exact project requirements, with deliverables and milestones agreed before any work begins.</p>
-      </div>
-    </section>
-
-    <section class="section" id="process">
-      <div class="section-inner">
-        <p class="eyebrow">Process</p>
-        <h2>From idea to manufacture-ready output.</h2>
-        <div class="process-flow">
-          <article class="flow-step"><div class="flow-icon">01</div><h3>Idea</h3><p>Clarify the goal, constraints and likely route.</p></article>
-          <article class="flow-step"><div class="flow-icon">02</div><h3>CAD Design</h3><p>Model the concept and check key geometry.</p></article>
-          <article class="flow-step"><div class="flow-icon">03</div><h3>Prototype</h3><p>Validate fit, form and early function.</p></article>
-          <article class="flow-step"><div class="flow-icon">04</div><h3>Testing</h3><p>Review issues, tolerances and improvements.</p></article>
-          <article class="flow-step"><div class="flow-icon">05</div><h3>Manufacture</h3><p>Prepare clean files and supplier-ready decisions.</p></article>
         </div>
       </div>
     </section>
@@ -1761,69 +1777,63 @@
         <div>
           <p class="eyebrow">Innovation Hub</p>
           <h2>Join the JP Innovation Hub.</h2>
-          <p class="section-copy">A premium engineering community where members can connect with engineers, ask technical questions, share projects, find suppliers, collaborate and learn from practical engineering content.</p>
-          <div class="hero-actions">
-            <a class="button" href="hub/index.html"><span>Explore the Hub</span><span class="button-arrow">→</span></a>
-            <a class="button secondary" href="hub/index.html?register=1"><span>Become a Member</span><span class="button-arrow">→</span></a>
-            <button class="button secondary install-app-button" id="installAppButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg><span>Install app</span><span class="button-arrow">→</span></button>
-          </div>
+          <p class="section-copy">A dedicated community for engineers, makers, manufacturers and founders to ask questions, share projects, find support and connect with others in the industry.</p>
+          <ul class="benefit-list"><li>Ask technical questions</li><li>Share projects and ideas</li><li>Connect with engineering specialists</li></ul>
+          <div class="hero-actions"><a class="button" href="hub/index.html"><span>Explore the Innovation Hub</span><span class="button-arrow">?</span></a></div>
         </div>
         <article class="hub-preview-card">
           <div class="hub-screen">
-            <div class="hub-row"><b>Engineering Boards</b><em>Live discussions</em></div>
-            <div class="hub-row"><b>RFQ Opportunities</b><em>Private quotes</em></div>
-            <div class="hub-row"><b>Member Directory</b><em>Verified profiles</em></div>
+            <div class="hub-row"><b>Engineering Boards</b><em>Discussions</em></div>
+            <div class="hub-row"><b>Member Directory</b><em>Profiles</em></div>
             <div class="hub-row"><b>Projects</b><em>Collaboration</em></div>
-            <div class="hub-row"><b>Resources & Tools</b><em>Calculators</em></div>
           </div>
         </article>
       </div>
     </section>
 
-    <section class="section" id="contact">
+    <section class="section" id="faq">
+      <div class="section-inner">
+        <p class="eyebrow">FAQ</p>
+        <h2>Frequently asked questions.</h2>
+        <div class="faq-list">
+          <details><summary>What CAD software do you use?</summary><p>Software is selected around the project requirements and required file formats. Common neutral formats such as STEP, STL and PDF drawings can be supplied.</p></details>
+          <details><summary>Can you work from sketches or photographs?</summary><p>Yes. Initial concepts can be developed from sketches, photographs, measurements, existing parts or written requirements.</p></details>
+          <details><summary>Can you sign an NDA?</summary><p>Yes. Confidential projects can be discussed under a non-disclosure agreement.</p></details>
+          <details><summary>Do you offer fixed-price quotations?</summary><p>Yes. Where the scope is clear, work can be quoted at a fixed price before the project begins.</p></details>
+          <details><summary>Can you help manufacture the design?</summary><p>Yes. Support can include supplier-ready files, design revisions, quotation support and communication with manufacturers.</p></details>
+          <details><summary>Do you offer reverse engineering?</summary><p>Yes. Existing components can be recreated or improved using measurements, samples and available drawings.</p></details>
+          <details><summary>Can you produce prototypes?</summary><p>Yes. Prototype options can include 3D printed parts and support with other manufacturing routes.</p></details>
+          <details><summary>How quickly can you start?</summary><p>Availability depends on the project size, but urgent and smaller tasks can often be reviewed quickly.</p></details>
+          <details><summary>Do you work with individuals as well as businesses?</summary><p>Yes. JP Innovation supports businesses, manufacturers, start-ups, inventors and individuals.</p></details>
+          <details><summary>Can you visit a customer site?</summary><p>Yes. Site visits can be arranged where measurements, equipment access or real-world assessment is useful.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="section final-cta" id="contact">
       <div class="section-inner contact-grid">
         <form class="contact-form" action="mailto:jpinnovation.enquiries@gmail.com" method="post" enctype="text/plain">
           <div class="form-intro">
             <p class="eyebrow">Start Your Project</p>
-            <h2>Book a free discovery call.</h2>
-            <p>Tell JP Innovation what you are building, improving or trying to solve. You will receive clear next steps and, where appropriate, a fixed-price quotation.</p>
+            <h2>Ready to move your project forward?</h2>
+            <p>Whether you need a single CAD model, a prototype or complete product development support, start with a free project discussion.</p>
+            <div class="cta-points"><span>UK based</span><span>NDA friendly</span><span>No-obligation first conversation</span></div>
           </div>
-          <div class="field">
-            <label for="name">Name</label>
-            <input id="name" name="Name" type="text" autocomplete="name" required>
-          </div>
-          <div class="field">
-            <label for="business">Business</label>
-            <input id="business" name="Business" type="text" autocomplete="organization">
-          </div>
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" name="Email" type="email" autocomplete="email" required>
-          </div>
-          <div class="field">
-            <label for="phone">Phone</label>
-            <input id="phone" name="Phone" type="tel" autocomplete="tel">
-          </div>
-          <div class="field full">
-            <label for="service">Project type</label>
-            <select id="service" name="Project type">
-              <option>Engineering review</option>
-              <option>CAD modelling</option>
-              <option>Prototype and validation</option>
-              <option>Manufacturing support</option>
-              <option>Full product development</option>
-            </select>
-          </div>
-          <div class="field full">
-            <label for="message">What would you like help with?</label>
-            <textarea id="message" name="Message" required></textarea>
-          </div>
-          <button class="button field full" type="submit">Send Project Enquiry</button>
+          <div class="field"><label for="name">Name</label><input id="name" name="Name" type="text" autocomplete="name" required></div>
+          <div class="field"><label for="business">Business</label><input id="business" name="Business" type="text" autocomplete="organization"></div>
+          <div class="field"><label for="email">Email</label><input id="email" name="Email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="phone">Phone</label><input id="phone" name="Phone" type="tel" autocomplete="tel"></div>
+          <div class="field full"><label for="service">Project type</label><select id="service" name="Project type"><option>Engineering review</option><option>CAD modelling</option><option>Prototype development</option><option>Reverse engineering</option><option>Manufacturing support</option><option>Full product development</option></select></div>
+          <div class="field full"><label for="message">What would you like help with?</label><textarea id="message" name="Message" required></textarea></div>
+          <div class="field full form-actions"><a class="button" href="#contact">Book a Free Discovery Call</a><button class="button secondary" type="submit">Send a Project Enquiry</button></div>
           <p class="form-note">This form opens your email app and sends your enquiry to jpinnovation.enquiries@gmail.com.</p>
+          <a class="brochure-link" href="#" aria-disabled="true">Download Capability Brochure <span>PDF coming soon</span></a>
         </form>
       </div>
     </section>
   </main>
+
+  <a class="floating-contact" href="#contact" aria-label="Discuss a Project"><span aria-hidden="true">&#9993;</span><b>Discuss a Project</b></a>
 
   <footer class="site-footer">
     <span>JP Innovation Ltd | Engineering | Design | Product Development | From Concept to Manufacture</span>
@@ -1886,9 +1896,24 @@
           device_type: deviceType(),
           viewport_width: window.innerWidth || null
         });
+        const hubAccessKey = "jpActiveHubAccess";
+        const clientButton = document.querySelector("#clientPortalHeaderButton");
+        const hubButton = document.querySelector("#innovationHubHeaderButton");
+        try {
+          if (window.localStorage.getItem(hubAccessKey) === "1") {
+            document.documentElement.classList.add("hub-member-session");
+            if (clientButton) clientButton.hidden = true;
+            if (hubButton) hubButton.href = "hub-portal/index.html?entry=hub";
+          }
+        } catch {}
         client.auth.getSession().then(async ({ data }) => {
           const authUser = data?.session?.user;
-          if (!authUser) return;
+          if (!authUser) {
+            try { window.localStorage.removeItem(hubAccessKey); } catch {}
+            document.documentElement.classList.remove("hub-member-session");
+            if (clientButton) clientButton.hidden = false;
+            return;
+          }
           const { data: profile } = await client
             .from("profiles")
             .select("account_type,membership_status")
@@ -1897,8 +1922,15 @@
           const hubAccount = ["admin", "member"].includes(profile?.account_type);
           const inactiveHubStatus = ["free", "pending", "rejected", "suspended"].includes(profile?.membership_status);
           const activeMember = hubAccount && !inactiveHubStatus;
-          const clientButton = document.querySelector("#clientPortalHeaderButton");
-          const hubButton = document.querySelector("#innovationHubHeaderButton");
+          try {
+            if (activeMember) {
+              window.localStorage.setItem(hubAccessKey, "1");
+              document.documentElement.classList.add("hub-member-session");
+            } else {
+              window.localStorage.removeItem(hubAccessKey);
+              document.documentElement.classList.remove("hub-member-session");
+            }
+          } catch {}
           if (clientButton) clientButton.hidden = activeMember;
           if (hubButton && activeMember) hubButton.href = "hub-portal/index.html?entry=hub";
         }).catch(() => {});
