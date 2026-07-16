@@ -102,6 +102,15 @@ function profileHasHubAccess(profile) {
 
 function syncHubLandingNav(profile) {
   const hideClientPortal = profileHasHubAccess(profile);
+  try {
+    if (hideClientPortal) {
+      window.localStorage.setItem("jpActiveHubAccess", "1");
+      document.documentElement.classList.add("hub-member-session");
+    } else {
+      window.localStorage.removeItem("jpActiveHubAccess");
+      document.documentElement.classList.remove("hub-member-session");
+    }
+  } catch {}
   $all("[data-client-portal-link], #clientPortalHeaderButton").forEach((link) => {
     link.hidden = hideClientPortal;
     link.setAttribute("aria-hidden", String(hideClientPortal));
@@ -287,7 +296,12 @@ async function registerHubAccount(data) {
       }
     }
   });
-  if (error) throw error;
+  if (error) {
+    if (/already|registered|exists/i.test(error.message || "")) {
+      throw new Error("This email already has a JP Innovation login. Please sign in above; if Hub access was declined before, signing in from this page will request access again.");
+    }
+    throw error;
+  }
   if (result.session) await hubBackend.rpc("request_hub_access");
 }
 
