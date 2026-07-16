@@ -2009,9 +2009,17 @@ function setLoggedInView() {
   $("#appShell").classList.toggle("hidden", !loggedIn);
   if (!loggedIn) return;
   const isClient = isClientPortalContext(user);
-  $("#memberInitials").innerHTML = approvedProfilePhoto(user)
-    ? `<img src="${escapeHtml(approvedProfilePhoto(user))}" alt="${escapeHtml(user.name)} profile photo">`
-    : escapeHtml(userInitials(user));
+  const initials = userInitials(user);
+  const profilePhoto = approvedProfilePhoto(user);
+  const avatarMarkup = profilePhoto
+    ? `<img src="${escapeHtml(profilePhoto)}" alt="${escapeHtml(user.name)} profile photo">`
+    : escapeHtml(initials);
+  $("#memberInitials").innerHTML = avatarMarkup;
+  const profileMenuAvatar = $("#profileMenuAvatar");
+  if (profileMenuAvatar) {
+    profileMenuAvatar.innerHTML = avatarMarkup;
+    profileMenuAvatar.classList.toggle("has-photo", Boolean(profilePhoto));
+  }
   $("#memberName").textContent = user.name;
   $("#memberRole").textContent = isClient ? "Client Portal" : roleLabel(user);
   const reputationButton = $("#reputationStatusButton");
