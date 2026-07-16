@@ -2247,12 +2247,30 @@ function moderationFlag(text) {
 function renderNotifications() {
   const items = notificationItems(currentUser());
   const unread = items.filter((item) => item.isNew).length;
-  $("#notificationCount").textContent = unread > 9 ? "9+" : String(unread);
-  $("#notificationCount").classList.toggle("hidden", unread === 0);
+  const countLabel = unread > 9 ? "9+" : String(unread);
+  const menuNotificationCount = $("#notificationCount");
+  if (menuNotificationCount) {
+    menuNotificationCount.textContent = countLabel;
+    menuNotificationCount.classList.toggle("hidden", unread === 0);
+  }
+  const topNotificationCount = $("#notificationCountTop");
+  if (topNotificationCount) {
+    topNotificationCount.textContent = countLabel;
+    topNotificationCount.classList.toggle("hidden", unread === 0);
+  }
   const profileAlertCount = $("#profileAlertCount");
   if (profileAlertCount) {
-    profileAlertCount.textContent = unread > 9 ? "9+" : String(unread);
+    profileAlertCount.textContent = countLabel;
     profileAlertCount.classList.toggle("hidden", unread === 0);
+  }
+  const notificationList = $("#notificationList");
+  if (notificationList) {
+    notificationList.innerHTML = items.length ? items.slice(0, 6).map((item) => `
+      <button class="notification-item notification-shortcut ${item.isNew ? "new" : ""}" data-view-link="${escapeHtml(item.view || "notifications")}" data-target-id="${escapeHtml(item.targetId || "")}" data-post-id="${escapeHtml(item.postId || "")}" data-reply-id="${escapeHtml(item.replyId || "")}" type="button">
+        <strong>${escapeHtml(item.title)}</strong>
+        <span>${escapeHtml(item.detail)}</span>
+      </button>
+    `).join("") : `<div class="notification-item"><strong>Nothing new</strong><span>New approvals, messages and account updates will appear here.</span></div>`;
   }
   renderProfileChatNotifications(items);
   maybeShowLocalPhoneNotification(items);
@@ -2357,10 +2375,11 @@ function renderMessageInbox() {
 }
 
 function setNotificationsOpen(open) {
-  const bell = $("#notificationBell");
+  const bell = $("#topNotificationBell");
   const popover = $("#notificationPopover");
   if (!popover || !bell) return;
   popover.classList.toggle("open", open);
+  popover.setAttribute("aria-hidden", String(!open));
   bell.setAttribute("aria-expanded", String(open));
 }
 
@@ -5847,11 +5866,39 @@ async function boot() {
     setMemberProfileMenuOpen(false);
     setMobileDashboardMenuOpen(false);
   });
+  $("#topNotificationBell")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const willOpen = !$("#notificationPopover")?.classList.contains("open");
+    setMemberProfileMenuOpen(false);
+    setMobileDashboardMenuOpen(false);
+    setNotificationsOpen(willOpen);
+  });
   $("#closeNotifications")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setNotificationsOpen(false);
   });
-  $("#notificationPopover")?.addEventListener("click", (event) => event.stopPropagation());
+  $("#notificationPopover")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const shortcut = event.target.closest?.(".notification-shortcut");
+    if (!shortcut) return;
+    if (shortcut.dataset.postId) {
+      openBoardNotification(shortcut.dataset.postId, shortcut.dataset.replyId || "");
+    } else {
+      personalBoardMode = false;
+      personalQuotesMode = false;
+      renderView(shortcut.dataset.viewLink || "notifications");
+      const targetId = shortcut.dataset.targetId;
+      if (targetId) {
+        window.requestAnimationFrame(() => {
+          const target = document.getElementById(targetId);
+          if (!target) return;
+          if (target.matches("details")) target.open = true;
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+    }
+    setNotificationsOpen(false);
+  });
   document.addEventListener("click", () => {
     setNotificationsOpen(false);
     setMemberProfileMenuOpen(false);
