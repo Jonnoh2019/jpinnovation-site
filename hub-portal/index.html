@@ -175,17 +175,17 @@
           <div class="member-profile-control">
             <button id="memberProfileButton" class="member-chip" type="button" aria-label="Open account menu" aria-controls="memberProfileMenu" aria-expanded="false">
               <span id="memberInitials">JP</span>
-              <div>
-                <span class="member-name-line"><strong id="memberName">Member</strong><span id="memberStatusStarInline" class="member-status-star-inline hidden" aria-hidden="true">&#9733;</span></span>
-                <small id="memberRole">Member</small>
-              </div>
-              <span class="member-chip-alert" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
-                <b id="profileAlertCount" class="member-chip-count hidden">0</b>
-              </span>
             </button>
             <button id="reputationStatusButton" class="member-status-star hidden" type="button" aria-label="Open member verification status" aria-controls="reputationStatusDialog" title="Member verification status">&#9733;</button>
             <div id="memberProfileMenu" class="member-profile-menu" aria-hidden="true">
+              <div class="profile-menu-header">
+                <span id="profileMenuAvatar" class="profile-menu-avatar" aria-hidden="true">JP</span>
+                <span class="profile-menu-identity">
+                  <span class="member-name-line"><strong id="memberName">Member</strong><span id="memberStatusStarInline" class="member-status-star-inline hidden" aria-hidden="true">&#9733;</span></span>
+                  <small id="memberRole">Member</small>
+                </span>
+                <b id="profileAlertCount" class="member-chip-count hidden">0</b>
+              </div>
               <button class="profile-menu-link" data-profile-view="profile" type="button"><span class="profile-menu-icon" aria-hidden="true">&#9675;</span><span><strong>My profile</strong><small>View and edit your details</small></span></button>
               <button id="profileClientWork" class="profile-menu-link" data-profile-view="clientwork" type="button"><span class="profile-menu-icon" aria-hidden="true">&#128188;</span><span><strong>My client work</strong><small>Quotes, projects and JP messages</small></span></button>
               <button id="profileMyPosts" class="profile-menu-link" data-profile-action="my-posts" type="button"><span class="profile-menu-icon" aria-hidden="true">&#128172;</span><span><strong>My posts</strong><small>Your board threads and replies</small></span></button>
