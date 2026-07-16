@@ -480,6 +480,8 @@ ul { margin-top: 0; }
   box-shadow: 0 12px 28px rgba(0,111,230,.28);
 }
 .public-nav .section-switch-button.active svg { stroke: #fff; }
+.hub-member-session [data-client-portal-link],
+.hub-member-session #clientPortalHeaderButton { display: none !important; }
 .section-switch-button svg {
   width: 19px;
   height: 19px;
@@ -1206,6 +1208,31 @@ input:focus, textarea:focus, select:focus {
 }
 .member-chip strong,
 .member-chip small { display: block; }
+.member-name-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+}
+.member-status-star-inline {
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border: 1.5px solid #07101a;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 5px 16px rgba(0,0,0,.32);
+  transform: translateY(-1px);
+}
+.member-status-star-inline.blue { background: #1788ff; }
+.member-status-star-inline.gold { background: linear-gradient(145deg, #ffe27a, #c98b00); color: #241700; }
+.member-status-star-inline.admin { background: conic-gradient(from 215deg, #1788ff, #ffe27a, #f8fbff, #1788ff); color: #06111f; border-color: rgba(255,255,255,.72); }
 .member-chip small { color: var(--soft); }
 .member-chip > div {
   min-width: 0;
@@ -1218,6 +1245,7 @@ input:focus, textarea:focus, select:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.member-name-line #memberName { min-width: 0; }
 .member-chip-alert {
   position: relative;
   display: grid;
@@ -1260,9 +1288,12 @@ input:focus, textarea:focus, select:focus {
   margin-left: auto;
 }
 .member-status-star {
+  display: none !important;
   position: absolute;
-  right: 40px;
-  bottom: 7px;
+  left: auto;
+  right: auto;
+  top: 9px;
+  bottom: auto;
   z-index: 4;
   display: grid;
   place-items: center;
@@ -1279,6 +1310,7 @@ input:focus, textarea:focus, select:focus {
 }
 .member-status-star.blue { background: #1788ff; }
 .member-status-star.gold { background: linear-gradient(145deg, #ffe27a, #c98b00); color: #241700; }
+.member-status-star.admin { background: conic-gradient(from 215deg, #1788ff, #ffe27a, #f8fbff, #1788ff); color: #06111f; border-color: rgba(255,255,255,.72); }
 .member-status-star:hover,
 .member-status-star:focus-visible { transform: scale(1.08); outline: 2px solid rgba(255,255,255,.35); }
 .reputation-badge {
@@ -1306,6 +1338,14 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,194,42,.13);
   color: #ffd66b;
 }
+.reputation-badge.admin {
+  border-color: rgba(255,255,255,.68);
+  background: linear-gradient(135deg, rgba(23,136,255,.22), rgba(255,203,66,.18));
+  color: #f7fbff;
+}
+.member-name-with-badge .reputation-badge,
+.reply-author .reputation-badge,
+.author-reputation .reputation-badge { transform: translateY(-2px); }
 .member-name-with-badge,
 .reply-author {
   display: flex;
@@ -1462,7 +1502,7 @@ input:focus, textarea:focus, select:focus {
   font-weight: 950;
 }
 @media (max-width: 640px) {
-  .member-status-star { right: 37px; bottom: 7px; width: 18px; height: 18px; font-size: 9px; }
+  .member-status-star { left: auto; right: auto; top: 8px; bottom: auto; width: 18px; height: 18px; font-size: 9px; }
   .reputation-dialog-metrics,
   .reputation-tier-guide,
   .reputation-progress-grid { grid-template-columns: 1fr; }
