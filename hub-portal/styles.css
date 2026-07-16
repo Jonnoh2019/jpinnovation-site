@@ -1137,10 +1137,20 @@ input:focus, textarea:focus, select:focus {
   padding-top: 12px;
 }
 .notification-item {
+  width: 100%;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255,255,255,.035);
+  color: var(--ink);
+  text-align: left;
+}
+.notification-shortcut { cursor: pointer; }
+.notification-shortcut:hover,
+.notification-shortcut:focus-visible {
+  border-color: rgba(47,141,255,.42);
+  background: rgba(0,111,230,.12);
+  outline: none;
 }
 .notification-item strong,
 .notification-item span { display: block; }
@@ -1173,17 +1183,17 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   justify-content: center;
   gap: 0;
-  width: 48px;
-  min-width: 48px;
+  width: 56px;
+  min-width: 56px;
   min-height: 48px;
   padding: 3px;
   border: 1px solid var(--line);
-  border-radius: 50%;
+  border-radius: 999px;
   background: rgba(255,255,255,.045);
   color: var(--ink);
   text-align: left;
   font: inherit;
-  max-width: 48px;
+  max-width: 56px;
 }
 .member-chip:hover,
 .member-chip:focus-visible {
@@ -1194,9 +1204,9 @@ input:focus, textarea:focus, select:focus {
 .member-chip #memberInitials {
   display: grid;
   place-items: center;
-  width: 40px;
+  width: 48px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 999px;
   background: linear-gradient(135deg, var(--blue-deep), var(--blue));
   font-weight: 900;
   overflow: hidden;
@@ -3432,6 +3442,12 @@ input:focus, textarea:focus, select:focus {
     font-size: 18px;
     line-height: 1;
   }
+  #clientPortalHeaderButton {
+    grid-column: 2;
+  }
+  #innovationHubHeaderButton {
+    grid-column: 3;
+  }
   .portal-hero,
   .split-section { grid-template-columns: 1fr; }
   .portal-hero { min-height: auto; padding-top: 22px; }
@@ -3564,7 +3580,7 @@ input:focus, textarea:focus, select:focus {
   .application-head {
     display: grid;
   }
-  .member-chip { flex: 0 0 48px; min-width: 48px; }
+  .member-chip { flex: 0 0 56px; min-width: 56px; }
   .member-profile-control { flex: 0 0 auto; min-width: 0; margin-left: auto; }
   .setup-reminder .primary-button {
     justify-self: start;
@@ -3594,6 +3610,12 @@ input:focus, textarea:focus, select:focus {
   .section { padding: 18px 16px; }
   .public-nav a,
   .ghost-button { min-height: 38px; padding: 7px 8px; font-size: 11px; }
+  #clientPortalHeaderButton {
+    grid-column: 2;
+  }
+  #innovationHubHeaderButton {
+    grid-column: 3;
+  }
   .portal-hero { gap: 14px; }
   .page-identity-badge {
     grid-template-columns: 1fr;
@@ -3732,7 +3754,7 @@ input:focus, textarea:focus, select:focus {
   }
   .workspace-header-actions {
     display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-columns: auto auto auto auto;
     align-items: center;
     gap: 8px;
   }
@@ -3740,7 +3762,7 @@ input:focus, textarea:focus, select:focus {
     top: var(--hub-mobile-header-offset, 190px);
     left: 10px;
     right: 10px;
-    max-height: calc(100dvh - var(--hub-mobile-header-offset, 190px) - 10px);
+    max-height: min(340px, calc(100dvh - var(--hub-mobile-header-offset, 190px) - 34px));
   }
   .member-profile-menu {
     position: fixed;
@@ -3748,35 +3770,43 @@ input:focus, textarea:focus, select:focus {
     left: 10px;
     right: 10px;
     width: auto;
-    gap: 7px;
-    max-height: calc(100dvh - var(--hub-mobile-header-offset, 190px) - 10px);
-    padding: 10px;
+    gap: 5px;
+    max-height: min(360px, calc(100dvh - var(--hub-mobile-header-offset, 190px) - 34px));
+    padding: 8px;
     overflow-y: auto;
   }
+  .member-profile-menu .profile-menu-header {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 7px 8px;
+  }
+  .member-profile-menu .profile-menu-avatar {
+    width: 42px;
+    height: 42px;
+  }
   .member-profile-menu .profile-menu-link {
-    grid-template-columns: 34px minmax(0, 1fr);
-    gap: 10px;
-    min-height: 50px;
-    padding: 9px 40px 9px 10px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 8px;
+    min-height: 34px;
+    padding: 5px 34px 5px 8px;
     border-color: rgba(255,255,255,.08);
     background: rgba(255,255,255,.035);
   }
   .member-profile-menu .profile-menu-icon {
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
     border-radius: 9px;
-    font-size: 13px;
+    font-size: 12px;
   }
   .member-profile-menu .profile-menu-link small {
-    display: block;
+    display: none;
     margin-top: 1px;
     font-size: 11px;
     line-height: 1.25;
   }
-  .member-profile-menu .profile-menu-link strong { font-size: 14px; line-height: 1.12; }
-  .member-profile-menu .profile-menu-signout { margin-top: 2px; }
-  .member-profile-menu .profile-chat-notifications { gap: 5px; padding: 4px 0; }
-  .member-profile-menu .profile-chat-summary > summary { padding: 6px 8px; }
+  .member-profile-menu .profile-menu-link strong { font-size: 13px; line-height: 1.08; }
+  .member-profile-menu .profile-menu-signout { margin-top: 1px; }
+  .member-profile-menu .profile-chat-notifications { display: none; }
   .header-icon-button,
   .notification-bell {
     width: 40px;
@@ -3790,15 +3820,15 @@ input:focus, textarea:focus, select:focus {
     height: 20px;
   }
   .member-chip {
-    width: 42px;
-    min-width: 42px;
+    width: 56px;
+    min-width: 56px;
     min-height: 42px;
     padding: 3px;
     gap: 0;
-    max-width: 42px;
+    max-width: 56px;
   }
   .member-chip #memberInitials {
-    width: 34px;
+    width: 48px;
     height: 34px;
     font-size: 13px;
   }
