@@ -12,6 +12,9 @@
       if (["hub", "client"].includes(new URLSearchParams(location.search).get("entry"))) {
         document.documentElement.classList.add("restoring-portal-session");
       }
+      if (localStorage.getItem("jpActiveHubAccess") === "1") {
+        document.documentElement.classList.add("hub-member-session");
+      }
     } catch (error) {}
   </script>
   <link rel="icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711" type="image/svg+xml">
@@ -21,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=pin-board-posts-20260714">
+    <link rel="stylesheet" href="styles.css?v=admin-badge-nav-20260715">
 </head>
 <body>
   <div id="publicShell" class="public-shell">
@@ -173,7 +176,7 @@
             <button id="memberProfileButton" class="member-chip" type="button" aria-label="Open account menu" aria-controls="memberProfileMenu" aria-expanded="false">
               <span id="memberInitials">JP</span>
               <div>
-                <strong id="memberName">Member</strong>
+                <span class="member-name-line"><strong id="memberName">Member</strong><span id="memberStatusStarInline" class="member-status-star-inline hidden" aria-hidden="true">&#9733;</span></span>
                 <small id="memberRole">Member</small>
               </div>
               <span class="member-chip-alert" aria-hidden="true">
