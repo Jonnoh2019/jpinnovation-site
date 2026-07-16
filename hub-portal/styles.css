@@ -1043,6 +1043,23 @@ input:focus, textarea:focus, select:focus {
   justify-content: flex-end;
   gap: 10px;
 }
+.account-control-cluster {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 5px;
+  border: 1px solid rgba(47,141,255,.28);
+  border-radius: 999px;
+  background: rgba(255,255,255,.035);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 14px 34px rgba(0,0,0,.2);
+}
+.account-control-cluster:focus-within {
+  border-color: rgba(47,141,255,.58);
+  background: rgba(0,111,230,.08);
+}
 .notification-centre { position: relative; }
 .header-icon-button,
 .notification-bell {
@@ -1139,7 +1156,7 @@ input:focus, textarea:focus, select:focus {
 .notification-item {
   width: 100%;
   padding: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: rgba(255,255,255,.035);
   color: var(--ink);
@@ -1183,17 +1200,17 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   justify-content: center;
   gap: 0;
-  width: 56px;
-  min-width: 56px;
+  width: 48px;
+  min-width: 48px;
   min-height: 48px;
-  padding: 3px;
-  border: 1px solid var(--line);
+  padding: 2px;
+  border: 1px solid transparent;
   border-radius: 999px;
-  background: rgba(255,255,255,.045);
+  background: transparent;
   color: var(--ink);
   text-align: left;
   font: inherit;
-  max-width: 56px;
+  max-width: 48px;
 }
 .member-chip:hover,
 .member-chip:focus-visible {
@@ -1204,9 +1221,9 @@ input:focus, textarea:focus, select:focus {
 .member-chip #memberInitials {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 40px;
-  border-radius: 999px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--blue-deep), var(--blue));
   font-weight: 900;
   overflow: hidden;
@@ -1611,6 +1628,15 @@ input:focus, textarea:focus, select:focus {
   font-size: 12px;
   line-height: 1;
 }
+.profile-menu-icon.icon-profile { border-color: rgba(47,141,255,.38); background: rgba(47,141,255,.14); color: #78b7ff; }
+.profile-menu-icon.icon-work { border-color: rgba(52,211,153,.34); background: rgba(52,211,153,.12); color: #5ee0ac; }
+.profile-menu-icon.icon-posts { border-color: rgba(168,85,247,.34); background: rgba(168,85,247,.13); color: #c49aff; }
+.profile-menu-icon.icon-quotes { border-color: rgba(250,204,21,.36); background: rgba(250,204,21,.13); color: #f6d45d; }
+.profile-menu-icon.icon-alerts { border-color: rgba(248,113,113,.36); background: rgba(248,113,113,.13); color: #ff9a9a; }
+.profile-menu-icon.icon-messages { border-color: rgba(56,189,248,.36); background: rgba(56,189,248,.13); color: #7ddcff; }
+.profile-menu-icon.icon-settings { border-color: rgba(148,163,184,.38); background: rgba(148,163,184,.13); color: #cbd5e1; }
+.profile-menu-icon.icon-admin { border-color: rgba(45,212,191,.36); background: rgba(45,212,191,.13); color: #64f0df; }
+.profile-menu-icon.icon-signout { border-color: rgba(251,113,133,.36); background: rgba(251,113,133,.13); color: #ff9aad; }
 .profile-menu-link > span:nth-child(2) { min-width: 0; }
 .profile-menu-link:hover,
 .profile-menu-link:focus-visible {
@@ -3536,7 +3562,8 @@ input:focus, textarea:focus, select:focus {
     background: rgba(0,0,0,.62);
   }
   .app-shell.mobile-menu-open .mobile-menu-backdrop { display: block; }
-  body.mobile-dashboard-menu-open { overflow: hidden; }
+body.mobile-dashboard-menu-open,
+body.member-profile-menu-open { overflow: hidden; }
   .workspace { padding: 18px; }
   .workspace-header {
     position: sticky;
@@ -3580,7 +3607,8 @@ input:focus, textarea:focus, select:focus {
   .application-head {
     display: grid;
   }
-  .member-chip { flex: 0 0 56px; min-width: 56px; }
+  .account-control-cluster { margin-left: auto; }
+  .member-chip { flex: 0 0 48px; min-width: 48px; }
   .member-profile-control { flex: 0 0 auto; min-width: 0; margin-left: auto; }
   .setup-reminder .primary-button {
     justify-self: start;
@@ -3754,9 +3782,14 @@ input:focus, textarea:focus, select:focus {
   }
   .workspace-header-actions {
     display: grid;
-    grid-template-columns: auto auto auto auto;
+    grid-template-columns: auto auto minmax(0, 1fr);
     align-items: center;
     gap: 8px;
+  }
+  .account-control-cluster {
+    justify-self: end;
+    gap: 5px;
+    padding: 4px;
   }
   .notification-popover {
     top: var(--hub-mobile-header-offset, 190px);
@@ -3767,36 +3800,44 @@ input:focus, textarea:focus, select:focus {
   .member-profile-menu {
     position: fixed;
     top: var(--hub-mobile-header-offset, 190px);
-    left: 10px;
-    right: 10px;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: auto;
-    gap: 5px;
-    max-height: min(360px, calc(100dvh - var(--hub-mobile-header-offset, 190px) - 34px));
-    padding: 8px;
-    overflow-y: auto;
+    height: calc(100dvh - var(--hub-mobile-header-offset, 190px));
+    gap: 8px;
+    max-height: none;
+    padding: 12px;
+    overflow: hidden;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 0;
+    background: linear-gradient(180deg, rgba(8,15,24,.985), rgba(5,10,16,.985));
   }
   .member-profile-menu .profile-menu-header {
-    grid-template-columns: 42px minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 7px 8px;
+    grid-template-columns: 50px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 10px;
   }
   .member-profile-menu .profile-menu-avatar {
-    width: 42px;
-    height: 42px;
+    width: 50px;
+    height: 50px;
   }
   .member-profile-menu .profile-menu-link {
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 8px;
-    min-height: 34px;
-    padding: 5px 34px 5px 8px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 44px;
+    padding: 7px 38px 7px 10px;
     border-color: rgba(255,255,255,.08);
     background: rgba(255,255,255,.035);
+    border-radius: 12px;
   }
   .member-profile-menu .profile-menu-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 9px;
-    font-size: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    font-size: 13px;
   }
   .member-profile-menu .profile-menu-link small {
     display: none;
@@ -3804,15 +3845,15 @@ input:focus, textarea:focus, select:focus {
     font-size: 11px;
     line-height: 1.25;
   }
-  .member-profile-menu .profile-menu-link strong { font-size: 13px; line-height: 1.08; }
+  .member-profile-menu .profile-menu-link strong { font-size: 14px; line-height: 1.08; }
   .member-profile-menu .profile-menu-signout { margin-top: 1px; }
   .member-profile-menu .profile-chat-notifications { display: none; }
   .header-icon-button,
   .notification-bell {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: rgba(255,255,255,.055);
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: transparent;
   }
   .header-icon-button svg,
   .notification-bell svg {
@@ -3820,16 +3861,16 @@ input:focus, textarea:focus, select:focus {
     height: 20px;
   }
   .member-chip {
-    width: 56px;
-    min-width: 56px;
+    width: 42px;
+    min-width: 42px;
     min-height: 42px;
-    padding: 3px;
+    padding: 0;
     gap: 0;
-    max-width: 56px;
+    max-width: 42px;
   }
   .member-chip #memberInitials {
-    width: 48px;
-    height: 34px;
+    width: 42px;
+    height: 42px;
     font-size: 13px;
   }
   .member-chip strong {
