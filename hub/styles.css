@@ -518,6 +518,8 @@ html.restoring-hub-session body {
   box-shadow: 0 16px 36px rgba(0,111,230,.25);
 }
 .public-nav .section-switch-button.active svg { stroke: #fff; }
+.hub-member-session [data-client-portal-link],
+.hub-member-session #clientPortalHeaderButton { display: none !important; }
 .public-nav .header-portal-button:hover {
   background: linear-gradient(135deg, var(--blue-deep), var(--blue));
   transform: translateY(-1px);
