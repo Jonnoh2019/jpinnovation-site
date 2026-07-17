@@ -1,0 +1,81 @@
+/* Dashboard clean override - compact premium overview */
+html, body, .workspace { max-width: 100%; overflow-x: hidden; }
+.workspace-header { gap: 8px; margin-bottom: 10px; padding: 6px 0 8px; }
+.workspace-heading .eyebrow { margin-bottom: 2px; font-size: 11px; letter-spacing: .12em; }
+.workspace-header h1 { font-size: clamp(22px, 2.1vw, 31px); line-height: 1.05; }
+.workspace-header-actions { align-items: center; gap: 8px; }
+.header-icon-button, .notification-bell, .member-chip { width: 42px; height: 42px; min-width: 42px; min-height: 42px; }
+.account-control-cluster { gap: 5px; padding: 4px; }
+.notification-bell.jp-notification-button img { display: none; }
+.notification-bell.jp-notification-button::before { content: ""; width: 21px; height: 21px; display: block; background: currentColor; mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M12 22a2.8 2.8 0 0 0 2.7-2h-5.4A2.8 2.8 0 0 0 12 22Zm8-6.6-1.6-2.1V9a6.4 6.4 0 0 0-5-6.2V2a1.4 1.4 0 0 0-2.8 0v.8a6.4 6.4 0 0 0-5 6.2v4.3L4 15.4a1.3 1.3 0 0 0 1 2.1h14a1.3 1.3 0 0 0 1-2.1Z"/></svg>') center/contain no-repeat; }
+.view-mount[data-view="dashboard"] { gap: 14px; }
+.view-mount[data-view="dashboard"] .section-card,
+.view-mount[data-view="dashboard"] .dashboard-summary-card,
+.view-mount[data-view="dashboard"] .action-card,
+.view-mount[data-view="dashboard"] .activity-feed-item { border-radius: 16px; border-color: rgba(255,255,255,.12); background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)), rgba(6,12,18,.78); box-shadow: 0 14px 34px rgba(0,0,0,.18); }
+.view-mount[data-view="dashboard"] .dashboard-command-hero { grid-template-columns: 1fr; min-height: 0; padding: 15px; border-left: 1px solid rgba(47,141,255,.28); }
+.view-mount[data-view="dashboard"] .dashboard-hero-main { gap: 10px; }
+.view-mount[data-view="dashboard"] .dashboard-icon,
+.view-mount[data-view="dashboard"] .dashboard-hero-copy,
+.view-mount[data-view="dashboard"] .dashboard-profile-summary,
+.view-mount[data-view="dashboard"] .dashboard-widget-grid,
+.view-mount[data-view="dashboard"] .question-card,
+.view-mount[data-view="dashboard"] .online-members-panel,
+.view-mount[data-view="dashboard"] .launch-focus-panel,
+.view-mount[data-view="dashboard"] .member-momentum,
+.view-mount[data-view="dashboard"] .compact-home,
+.view-mount[data-view="dashboard"] .hub-search-panel,
+.view-mount[data-view="dashboard"] .dashboard-live-grid > .dashboard-widget-grid,
+.view-mount[data-view="dashboard"] em { display: none !important; }
+.view-mount[data-view="dashboard"] .dashboard-live-grid { display: block; }
+.view-mount[data-view="dashboard"] .activity-feed-panel { padding: 14px; }
+.view-mount[data-view="dashboard"] .activity-feed-panel .list-title h2 { font-size: 20px; }
+.view-mount[data-view="dashboard"] .activity-feed-panel .list-title p { font-size: 13px; }
+.view-mount[data-view="dashboard"] .dashboard-greeting-row h2 { font-size: clamp(24px, 3vw, 34px); line-height: 1.05; }
+.view-mount[data-view="dashboard"] .dashboard-today-list { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.view-mount[data-view="dashboard"] .dashboard-today-list li { min-width: 0; padding: 10px; border-radius: 13px; }
+.view-mount[data-view="dashboard"] .dashboard-today-list strong { font-size: 24px; line-height: 1; }
+.view-mount[data-view="dashboard"] .dashboard-today-list small { font-size: 11px; line-height: 1.2; }
+.view-mount[data-view="dashboard"] .hero-button-row { gap: 9px; }
+.view-mount[data-view="dashboard"] .hero-button-row .primary-button,
+.view-mount[data-view="dashboard"] .hero-button-row .secondary-button { min-height: 42px; padding: 9px 15px; }
+.view-mount[data-view="dashboard"] .dashboard-quick-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.view-mount[data-view="dashboard"] .dashboard-quick-actions .action-card { min-height: 88px; height: 100%; padding: 12px; align-content: start; }
+.view-mount[data-view="dashboard"] .dashboard-quick-actions .action-card:nth-child(4) { display: none; }
+.view-mount[data-view="dashboard"] .action-icon { width: 30px; height: 30px; border-radius: 10px; font-size: 14px; }
+.view-mount[data-view="dashboard"] .action-card strong { font-size: 15px; line-height: 1.15; }
+.view-mount[data-view="dashboard"] .action-card small { font-size: 12px; }
+.view-mount[data-view="dashboard"] .dashboard-summary-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.view-mount[data-view="dashboard"] .dashboard-summary-card { min-height: 88px; padding: 12px; gap: 6px; }
+.view-mount[data-view="dashboard"] .dashboard-summary-card::before { display: none; }
+.view-mount[data-view="dashboard"] .dashboard-stat-head { align-items: center; justify-content: flex-start; gap: 7px; font-size: 10px; }
+.view-mount[data-view="dashboard"] .dashboard-stat-head > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 8px; background: rgba(47,141,255,.13); color: var(--blue-soft); font-size: 11px; }
+.view-mount[data-view="dashboard"] .dashboard-summary-card strong { font-size: 28px; }
+.view-mount[data-view="dashboard"] .dashboard-summary-card small { font-size: 11px; }
+.view-mount[data-view="dashboard"] .activity-feed-list { gap: 7px; }
+.view-mount[data-view="dashboard"] .activity-feed-item { grid-template-columns: 10px minmax(0, 1fr) auto; padding: 9px 10px; }
+.view-mount[data-view="dashboard"] .activity-feed-item strong,
+.view-mount[data-view="dashboard"] .activity-feed-item small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.view-mount[data-view="dashboard"] .compact-section-toggle { min-height: 38px; padding: 7px 10px; border-radius: 12px; background: rgba(255,255,255,.035); border-color: rgba(255,255,255,.11); }
+.view-mount[data-view="dashboard"] .compact-section-toggle b { color: transparent; position: relative; }
+.view-mount[data-view="dashboard"] .compact-section-toggle b::before { content: "⌄"; color: var(--silver); position: absolute; inset: 0; display: grid; place-items: center; }
+.view-mount[data-view="dashboard"] .compact-collapsible.is-collapsed .compact-section-toggle b::before { content: "›"; }
+@media (max-width: 980px) { .view-mount[data-view="dashboard"] .dashboard-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .workspace-header { padding: 6px 0 8px; gap: 7px; }
+  .workspace-mobile-logo img { width: min(100%, 220px); max-height: 72px; }
+  .workspace-header-actions { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 7px; }
+  .workspace-heading { margin-top: 0; }
+  .workspace-header h1 { font-size: 21px; }
+  .mobile-dashboard-menu { min-height: 38px; padding: 7px 9px; }
+  .header-icon-button, .notification-bell, .member-chip { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+  .view-mount[data-view="dashboard"] .dashboard-command-hero { padding: 12px; }
+  .view-mount[data-view="dashboard"] .dashboard-greeting-row h2 { font-size: 23px; }
+  .view-mount[data-view="dashboard"] .dashboard-today-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .view-mount[data-view="dashboard"] .dashboard-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .view-mount[data-view="dashboard"] .dashboard-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .view-mount[data-view="dashboard"] .dashboard-summary-card { min-height: 82px; padding: 10px; }
+  .view-mount[data-view="dashboard"] .dashboard-summary-card strong { font-size: 24px; }
+  .view-mount[data-view="dashboard"] .activity-feed-item { grid-template-columns: 9px minmax(0, 1fr); }
+}
+@media (max-width: 420px) { .workspace { padding-left: 12px; padding-right: 12px; } }
