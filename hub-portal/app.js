@@ -1887,13 +1887,34 @@ async function syncSecureSession() {
     saveState();
     return null;
   }
-  const { data: profileRows, error: profileError } = await portalBackend
-    .from("profiles")
-    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
-    .eq("user_id", authUser.id)
-    .limit(1);
-  if (profileError) throw profileError;
-  const profile = Array.isArray(profileRows) ? profileRows[0] || null : profileRows || null;
+  let profile = null;
+  let profileError = null;
+  {
+    const { data: basicRows, error: basicError } = await portalBackend
+      .from("profiles")
+      .select("user_id,email,full_name,business,account_type,membership_status,status")
+      .eq("user_id", authUser.id)
+      .limit(1);
+    if (basicError) {
+      profileError = basicError;
+    } else {
+      profile = Array.isArray(basicRows) ? basicRows[0] || null : basicRows || null;
+    }
+  }
+  if (profile) {
+    const { data: fullRows, error: fullError } = await portalBackend
+      .from("profiles")
+      .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
+      .eq("user_id", authUser.id)
+      .limit(1);
+    if (fullError) {
+      console.warn("Full profile details could not be loaded. Continuing with basic login profile.", fullError);
+    } else {
+      profile = Array.isArray(fullRows) ? fullRows[0] || profile : fullRows || profile;
+    }
+  } else if (profileError) {
+    console.warn("Profile could not be loaded. Continuing with the authenticated email only.", profileError);
+  }
   const fallbackEmail = String(authUser.email || "").toLowerCase();
   const profileData = profile || {
     user_id: authUser.id,
