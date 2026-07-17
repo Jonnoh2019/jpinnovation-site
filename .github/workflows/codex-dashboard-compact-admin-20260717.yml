@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/codex-dashboard-compact-admin-20260717.yml'
+      - '.codex-dashboard-compact-admin-trigger'
   workflow_dispatch:
 
 permissions:
@@ -43,9 +44,10 @@ jobs:
                 <div id="profileChatNotifications" class="profile-chat-notifications" aria-live="polite"></div>
                 <button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><span class="profile-menu-icon icon-messages" aria-hidden="true">&#9993;</span><span><strong>My messages</strong><small>Open your private inbox</small></span><span id="messageCount" class="menu-count hidden">0</span></button>
                 <button class="profile-menu-link" data-profile-view="settings" type="button"><span class="profile-menu-icon icon-settings" aria-hidden="true">&#9881;</span><span><strong>Account settings</strong><small>Preferences and security</small></span></button>'''
-          if old not in html:
+          if old in html:
+              html = html.replace(old, new)
+          elif 'profile-menu-priority' not in html:
               raise SystemExit('Profile menu block not found')
-          html = html.replace(old, new)
           html = html.replace('dashboard-clean.css?v=dashboard-mobile-redesign-20260717', 'dashboard-clean.css?v=dashboard-compact-admin-20260717')
           index_path.write_text(html, encoding='utf-8')
 
