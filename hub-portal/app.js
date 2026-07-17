@@ -1887,12 +1887,13 @@ async function syncSecureSession() {
     saveState();
     return null;
   }
-  const { data: profile, error: profileError } = await portalBackend
+  const { data: profileRows, error: profileError } = await portalBackend
     .from("profiles")
     .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
     .eq("user_id", authUser.id)
-    .single();
-  if (profileError && profileError.code !== "PGRST116") throw profileError;
+    .limit(1);
+  if (profileError) throw profileError;
+  const profile = Array.isArray(profileRows) ? profileRows[0] || null : profileRows || null;
   const fallbackEmail = String(authUser.email || "").toLowerCase();
   const profileData = profile || {
     user_id: authUser.id,
