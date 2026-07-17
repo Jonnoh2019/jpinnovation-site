@@ -7,6 +7,8 @@ html, body, .app-shell, .workspace, .view-mount { max-width: 100%; overflow-x: h
 .workspace-header-actions { align-items: center; gap: 7px; }
 .header-icon-button, .notification-bell, .member-chip { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
 .account-control-cluster { gap: 5px; padding: 4px; }
+.app-toast.error { border-color: rgba(248,113,113,.48); background: #1b0d10; }
+.app-toast.error > span { background: #f87171; color: #230509; }
 
 /* Keep admin tools high in the profile menu without needing a markup change. */
 .member-profile-menu { display: flex; flex-direction: column; gap: 7px; }
@@ -40,7 +42,48 @@ html, body, .app-shell, .workspace, .view-mount { max-width: 100%; overflow-x: h
 .view-mount[data-view="dashboard"] .dashboard-summary-grid,
 .view-mount[data-view="dashboard"] em { display: none !important; }
 
-/* New premium dashboard structure */
+/* Admin control panel dashboard */
+.admin-dashboard-shell { display: grid; gap: 12px; width: 100%; }
+.admin-overview-card,
+.admin-panel-card { border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: linear-gradient(145deg, rgba(255,255,255,.06), rgba(255,255,255,.022)); box-shadow: 0 14px 36px rgba(0,0,0,.22); }
+.admin-overview-card { display: grid; gap: 12px; padding: 14px; border-left: 1px solid rgba(47,141,255,.78); }
+.admin-panel-card { display: grid; gap: 10px; padding: 12px; }
+.admin-overview-head,
+.admin-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.admin-overview-head h2,
+.admin-section-head h2 { margin: 0; font-size: 17px; line-height: 1.1; letter-spacing: -.02em; }
+.admin-section-head p { margin: 3px 0 0; color: var(--silver, #aeb8c6); font-size: 11px; line-height: 1.2; }
+.admin-overview-head .secondary-button { min-height: 30px; padding: 6px 9px; border-radius: 999px; font-size: 11px; }
+.admin-overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.admin-overview-stat { display: grid; align-content: center; gap: 4px; min-width: 0; min-height: 58px; padding: 7px; border: 1px solid rgba(255,255,255,.075); border-radius: 13px; background: rgba(2,8,14,.32); color: #fff; text-align: left; }
+.admin-overview-stat span { color: var(--blue-soft, #2f8dff); }
+.admin-overview-stat svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.admin-overview-stat strong { font-size: 18px; line-height: 1; }
+.admin-overview-stat small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--silver, #aeb8c6); font-size: 8.5px; line-height: 1.05; }
+.admin-task-list { display: grid; gap: 7px; }
+.admin-task-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; min-height: 46px; padding: 8px 9px; border: 1px solid rgba(255,255,255,.075); border-radius: 13px; background: rgba(2,8,14,.28); color: #fff; text-align: left; }
+.admin-task-row strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 1.15; }
+.admin-task-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; color: var(--silver, #aeb8c6); font-size: 10px; }
+.admin-task-row b { color: rgba(255,255,255,.52); }
+.admin-task-value { display: grid; place-items: center; min-width: 32px; height: 28px; padding: 0 7px; border-radius: 999px; background: rgba(47,141,255,.13); color: #7fc3ff; font-size: 11px; font-weight: 900; }
+.admin-task-value.warn { background: rgba(245,158,11,.13); color: #f8c15d; }
+.admin-empty-state { padding: 10px; border: 1px dashed rgba(255,255,255,.12); border-radius: 13px; color: #fff; }
+.admin-empty-state strong,
+.admin-empty-state small { display: block; }
+.admin-empty-state small { margin-top: 3px; color: var(--silver, #aeb8c6); font-size: 11px; }
+.admin-quick-actions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.admin-quick-actions button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 7px 8px; border: 1px solid rgba(255,255,255,.09); border-radius: 13px; background: rgba(47,141,255,.08); color: #fff; font-size: 11px; font-weight: 900; }
+.admin-quick-actions span { display: grid; place-items: center; width: 18px; height: 18px; color: #5fb7ff; }
+.admin-quick-actions svg,
+.admin-metric-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.admin-metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.admin-metric-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 50px; padding: 8px; border: 1px solid rgba(255,255,255,.075); border-radius: 13px; background: rgba(2,8,14,.28); color: #fff; text-align: left; }
+.admin-metric-icon { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 10px; background: rgba(47,141,255,.12); color: #5fb7ff; }
+.admin-metric-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 1.1; }
+.admin-metric-card small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; color: var(--silver, #aeb8c6); font-size: 9px; }
+.admin-metric-card b { font-size: 15px; }
+
+/* Member dashboard structure */
 .view-mount[data-view="dashboard"] .mobile-saas-dashboard { display: grid; gap: 12px; width: 100%; max-width: 100%; }
 .view-mount[data-view="dashboard"] .mobile-saas-dashboard button { font-family: inherit; }
 .saas-welcome-card,
@@ -97,7 +140,7 @@ html, body, .app-shell, .workspace, .view-mount { max-width: 100%; overflow-x: h
 .dashboard-thin-reminder button { border: 0; color: var(--blue-soft, #2f8dff); background: transparent; font-weight: 900; }
 
 @media (max-width: 760px) {
-  .workspace { padding-left: 11px !important; padding-right: 11px !important; }
+  .workspace { padding-left: 20px !important; padding-right: 20px !important; }
   .workspace-header { gap: 4px; margin-bottom: 5px; padding: 3px 0 5px; }
   .workspace-mobile-logo img { width: min(100%, 172px); max-height: 48px; }
   .workspace-header-actions { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 7px; align-items: center; width: 100%; }
@@ -110,6 +153,17 @@ html, body, .app-shell, .workspace, .view-mount { max-width: 100%; overflow-x: h
   .mobile-dashboard-menu { padding: 7px 9px; border-radius: 15px; }
   .header-icon-button { border-radius: 15px; }
   .account-control-cluster { justify-self: end; border-radius: 999px; }
+  .admin-dashboard-shell { gap: 12px; }
+  .admin-overview-card,
+  .admin-panel-card { border-radius: 16px; }
+  .admin-overview-card { padding: 12px; }
+  .admin-panel-card { padding: 12px; }
+  .admin-overview-grid { gap: 6px; }
+  .admin-overview-stat { min-height: 52px; padding: 6px; }
+  .admin-overview-stat strong { font-size: 16px; }
+  .admin-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-section-head p { display: none; }
   .view-mount[data-view="dashboard"] .mobile-saas-dashboard { gap: 10px; }
   .saas-welcome-card { padding: 11px; border-radius: 18px; }
   .saas-welcome-card h2 { font-size: 21px; }
@@ -131,6 +185,9 @@ html, body, .app-shell, .workspace, .view-mount { max-width: 100%; overflow-x: h
   .saas-split-grid { grid-template-columns: 1fr; gap: 10px; }
 }
 @media (max-width: 380px) {
+  .workspace { padding-left: 14px !important; padding-right: 14px !important; }
+  .admin-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-metrics-grid { grid-template-columns: 1fr; }
   .saas-status-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .saas-quick-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .saas-quick-actions > button { min-height: 58px; display: grid; grid-template-columns: 1fr; }
