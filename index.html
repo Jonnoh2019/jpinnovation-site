@@ -134,14 +134,16 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
+      flex-wrap: wrap;
     }
     .nav a {
       color: #dce6f2;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 700;
-      padding: 10px 12px;
+      padding: 8px 7px;
       border-radius: var(--radius);
+      white-space: nowrap;
     }
     .nav a:hover,
     .nav a:focus-visible {
@@ -149,7 +151,7 @@
       background: rgba(255,255,255,.1);
       outline: none;
     }
-    .nav-menu-extra { display: none; }
+    .nav-menu-extra { display: inline-flex; }
     .header-actions {
       display: flex;
       justify-content: flex-end;
@@ -1653,14 +1655,15 @@
         <img src="assets/jp-innovation-logo-clear.svg" alt="JP Innovation Ltd">
       </a>
       <nav class="nav" id="siteNav" aria-label="Main navigation">
-        <a class="nav-menu-extra" href="#top">Home</a>
+        <a class="nav-menu-extra nav-home-link" href="#top">Home</a>
         <a href="#services">Services</a>
         <a href="#process">Process</a>
-        <a href="#projects">Projects</a>
+        <a href="#projects">Work</a>
+        <a class="nav-menu-extra" href="#why-jp">Why JP</a>
         <a href="#industries">Industries</a>
         <a class="nav-menu-extra" href="#testimonials">Reviews</a>
         <a class="nav-menu-extra" href="#about">About</a>
-        <a class="nav-menu-extra" href="#innovation-hub-preview">Hub preview</a>
+        <a class="nav-menu-extra" href="#innovation-hub-preview">Hub</a>
         <a href="#faq">FAQ</a>
         <a href="#contact">Contact</a>
       </nav>
@@ -1749,7 +1752,7 @@
         <p class="section-copy">Each project is shown as an engineering problem: the challenge, route to manufacture and final output.</p>
         <div class="projects">
           <article class="project case-study">
-            <img src="assets/case-study-fixture-bracket.png" alt="Precision fixture bracket CAD render">
+            <img src="assets/case-study-fixture-bracket.webp" alt="Precision fixture bracket CAD render" loading="lazy" decoding="async">
             <div class="case-body">
               <h3>Precision Fixture Bracket</h3>
               <div class="case-meta">
@@ -1762,7 +1765,7 @@
             </div>
           </article>
           <article class="project case-study">
-            <img src="assets/case-study-linkage-assembly.png" alt="Compact mechanical linkage CAD assembly">
+            <img src="assets/case-study-linkage-assembly.webp" alt="Compact mechanical linkage CAD assembly">
             <div class="case-body">
               <h3>Mechanical Linkage Assembly</h3>
               <div class="case-meta">
@@ -1785,7 +1788,7 @@
         <h2>Engineering support across multiple sectors.</h2>
         <p class="section-copy">Support is tailored around the product, application and manufacturing route rather than limited to one industry.</p>
         <div class="industry-grid">
-          <span>Automotive</span><span>Motorsport</span><span>Manufacturing</span><span>Robotics & Automation</span><span>Industrial Equipment</span><span>Consumer Products</span><span>Start-ups & Inventors</span>
+          <span>Automotive</span><span>Motorsport</span><span>Manufacturing</span><span>Robotics & Automation</span><span>Industrial Equipment</span><span>Consumer Products</span><span>Start-ups & Inventors</span><span>Medical & Lab Equipment</span>
         </div>
       </div>
     </section>
