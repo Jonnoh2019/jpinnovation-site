@@ -174,8 +174,8 @@
           </button>
           <div class="account-control-cluster">
             <div class="notification-centre">
-              <button id="topNotificationBell" class="notification-bell" type="button" aria-label="Open notification popout" aria-controls="notificationPopover" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+              <button id="topNotificationBell" class="notification-bell jp-notification-button" type="button" aria-label="Open JP notifications" aria-controls="notificationPopover" aria-expanded="false">
+                <img class="jp-notification-symbol" src="../assets/jp-app-icon.svg" alt="" aria-hidden="true">
                 <span id="notificationCountTop" class="notification-count hidden">0</span>
               </button>
               <div id="notificationPopover" class="notification-popover" aria-hidden="true">
@@ -228,7 +228,20 @@
     </section>
   </div>
 
+  <div id="confirmDialog" class="auth-dialog confirm-dialog" aria-hidden="true">
+    <section class="auth-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle">
+      <button id="closeConfirmDialog" class="auth-close" type="button" aria-label="Cancel">&times;</button>
+      <p class="eyebrow">Please confirm</p>
+      <h2 id="confirmDialogTitle">Are you sure?</h2>
+      <p id="confirmDialogMessage" class="muted">This action needs confirmation.</p>
+      <div class="confirm-actions">
+        <button id="confirmDialogCancel" class="secondary-button" type="button">Cancel</button>
+        <button id="confirmDialogConfirm" class="primary-button" type="button">OK</button>
+      </div>
+    </section>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=landing-popup-delay-20260714"></script>
+  <script src="app.js?v=jp-notification-metrics-confirm-20260717"></script>
 </body>
 </html>
