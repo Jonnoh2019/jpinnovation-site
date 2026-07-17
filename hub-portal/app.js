@@ -6,7 +6,9 @@ const portalBackend = window.supabase?.createClient(supabaseUrl, supabasePublish
 });
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
-const serviceWorkerPath = "/jp-service-worker.js?v=phone-alerts-20260714";
+const serviceWorkerPath = "/jp-service-worker.js?v=jp-notification-20260717";
+const notificationIconPath = "/assets/jp-app-icon-192.png?v=jp-notification-20260717";
+const notificationBadgePath = "/assets/jp-notification-badge.svg?v=jp-notification-20260717";
 const pushPublicKey = window.JP_INNOVATION_PUSH_PUBLIC_KEY || "";
 
 const boardCategories = [
@@ -61,6 +63,13 @@ let contentBackendAvailable = false;
 let sharedWorkspaceBackendAvailable = false;
 let reputationBackendAvailable = false;
 let secureAdminProfiles = [];
+let adminPresenceRows = [];
+let adminModerationQueue = [];
+let adminPersistentNotifications = [];
+let adminAuditRows = [];
+let reliableAdminBackendAvailable = false;
+let presenceHeartbeatTimer = null;
+const presenceHeartbeatMs = 45000;
 let adminProfilesStatus = "idle";
 let adminProfilesMessage = "Connecting to live account records...";
 const entryParams = new URLSearchParams(window.location.search);
@@ -178,6 +187,70 @@ function showSuccessToast(title, detail = "") {
   toast.classList.add("show");
   window.clearTimeout(showSuccessToast.timer);
   showSuccessToast.timer = window.setTimeout(() => toast.classList.remove("show"), 4200);
+}
+
+function openConfirmDialog({ title = "Are you sure?", message = "", confirmLabel = "OK", cancelLabel = "Cancel", danger = false } = {}) {
+  let dialog = $("#confirmDialog");
+  if (!dialog) {
+    dialog = document.createElement("div");
+    dialog.id = "confirmDialog";
+    dialog.className = "auth-dialog confirm-dialog";
+    dialog.setAttribute("aria-hidden", "true");
+    dialog.innerHTML = `
+      <section class="auth-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle">
+        <button id="closeConfirmDialog" class="auth-close" type="button" aria-label="Cancel">&times;</button>
+        <p class="eyebrow">Please confirm</p>
+        <h2 id="confirmDialogTitle">Are you sure?</h2>
+        <p id="confirmDialogMessage" class="muted">This action needs confirmation.</p>
+        <div class="confirm-actions">
+          <button id="confirmDialogCancel" class="secondary-button" type="button">Cancel</button>
+          <button id="confirmDialogConfirm" class="primary-button" type="button">OK</button>
+        </div>
+      </section>
+    `;
+    document.body.appendChild(dialog);
+  }
+  const titleNode = $("#confirmDialogTitle");
+  const messageNode = $("#confirmDialogMessage");
+  const confirmButton = $("#confirmDialogConfirm");
+  const cancelButton = $("#confirmDialogCancel");
+  const closeButton = $("#closeConfirmDialog");
+  if (!dialog || !titleNode || !messageNode || !confirmButton || !cancelButton) {
+    return Promise.resolve(false);
+  }
+  titleNode.textContent = title;
+  messageNode.textContent = message;
+  confirmButton.textContent = confirmLabel;
+  cancelButton.textContent = cancelLabel;
+  confirmButton.classList.toggle("danger-action", danger);
+  dialog.classList.add("open");
+  dialog.setAttribute("aria-hidden", "false");
+  confirmButton.focus();
+  return new Promise((resolve) => {
+    const finish = (result) => {
+      dialog.classList.remove("open");
+      dialog.setAttribute("aria-hidden", "true");
+      confirmButton.removeEventListener("click", onConfirm);
+      cancelButton.removeEventListener("click", onCancel);
+      closeButton?.removeEventListener("click", onCancel);
+      dialog.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKeydown);
+      resolve(result);
+    };
+    const onConfirm = () => finish(true);
+    const onCancel = () => finish(false);
+    const onBackdrop = (event) => {
+      if (event.target === dialog) finish(false);
+    };
+    const onKeydown = (event) => {
+      if (event.key === "Escape") finish(false);
+    };
+    confirmButton.addEventListener("click", onConfirm);
+    cancelButton.addEventListener("click", onCancel);
+    closeButton?.addEventListener("click", onCancel);
+    dialog.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKeydown);
+  });
 }
 
 function cleanEmailValue(value = "") {
@@ -320,8 +393,8 @@ async function enablePhoneNotifications() {
   }
   await registration.showNotification("JP Innovation alerts enabled", {
     body: "You will be able to receive admin tasks, messages and Hub updates here.",
-    icon: "/assets/jp-app-icon-192.png",
-    badge: "/assets/jp-app-icon-180.png",
+    icon: notificationIconPath,
+    badge: notificationBadgePath,
     tag: "jp-alerts-enabled",
     data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
   });
@@ -349,8 +422,8 @@ async function maybeShowLocalPhoneNotification(items = []) {
     const registration = await registerNotificationServiceWorker();
     await registration.showNotification(`JP Innovation: ${item.title}`, {
       body: item.detail || "Open JP Innovation to view the update.",
-      icon: "/assets/jp-app-icon-192.png",
-      badge: "/assets/jp-app-icon-180.png",
+      icon: notificationIconPath,
+      badge: notificationBadgePath,
       tag: `jp-${String(item.view || "notification")}`,
       data: { url: `/hub-portal/index.html?entry=${isClientPortalContext(user) ? "client" : "hub"}&view=${encodeURIComponent(item.view || "notifications")}` }
     });
@@ -474,10 +547,10 @@ function normaliseState() {
   state.activeProjectId ||= state.projects[0]?.id || "";
   state.projects.forEach((project) => {
     if (project.image === "../assets/hub-mini-restoration.png") {
-      project.image = "../assets/case-study-fixture-bracket.png";
+      project.image = "../assets/case-study-fixture-bracket.webp";
     }
     if (project.image === "../assets/hub-key-locker.png") {
-      project.image = "../assets/cad-machined-bracket.png";
+      project.image = "../assets/cad-machined-bracket.webp";
     }
     project.updates ||= [
       { id: uid("update"), title: "Project opened", body: "Initial project record created for member feedback and support.", created: project.status || "Planning" }
@@ -786,7 +859,7 @@ function seedState() {
         status: "In Progress",
         author: "MK Restorations",
         authorEmail: "restoration@local",
-        image: "../assets/case-study-fixture-bracket.png",
+        image: "../assets/case-study-fixture-bracket.webp",
         likes: 18,
         comments: 6,
         points: 42,
@@ -813,7 +886,7 @@ function seedState() {
         status: "Planning",
         author: "Secure Workshop Systems",
         authorEmail: "secure@local",
-        image: "../assets/cad-machined-bracket.png",
+        image: "../assets/cad-machined-bracket.webp",
         likes: 11,
         comments: 4,
         points: 31,
@@ -1249,16 +1322,23 @@ async function loadSecureSubmissions() {
 
 function secureDirectoryMember(row) {
   const role = row.account_type || "member";
+  const membershipStatus = row.membership_status || (role === "member" ? "active" : "free");
   return {
     id: row.user_id,
     email: cleanEmailValue(row.email || ""),
     name: row.full_name || row.email || "Hub member",
     business: row.business || "",
     role,
-    membershipStatus: "active",
+    membershipStatus,
     level: role === "admin" ? "JP Admin" : (role === "member" ? "Innovation Hub member" : "Client Portal"),
     approved: true,
     verified: role === "admin",
+    status: row.status || "active",
+    removedAt: row.removed_at || "",
+    removalReason: row.removal_reason || "",
+    profilePhotoUrl: row.profile_photo_url || "",
+    profilePhotoPendingUrl: row.profile_photo_pending_url || "",
+    profilePhotoStatus: row.profile_photo_status || "none",
     directoryVisible: true,
     example: false
   };
@@ -1303,7 +1383,7 @@ function mapSecureMessage(row, user = currentUser()) {
 async function loadSecureWorkspace() {
   const user = currentUser();
   if (!portalBackend || !user) return false;
-  const [messagesResult, directoryResult, resourcesResult, eventsResult, interestsResult, updatesResult, partsResult, commentsResult, reputationResult, reviewsResult] = await Promise.all([
+  const [messagesResult, directoryResult, resourcesResult, eventsResult, interestsResult, updatesResult, partsResult, commentsResult, presenceResult, reputationResult, reviewsResult] = await Promise.all([
     portalBackend.from("hub_messages").select("*").order("created_at", { ascending: false }),
     portalBackend.rpc("hub_message_directory"),
     portalBackend.from("hub_resources").select("*").order("created_at", { ascending: false }),
@@ -1312,6 +1392,7 @@ async function loadSecureWorkspace() {
     portalBackend.from("hub_project_updates").select("*").order("created_at", { ascending: false }),
     portalBackend.from("hub_project_parts").select("*").order("created_at", { ascending: true }),
     portalBackend.from("hub_project_comments").select("*").order("created_at", { ascending: false }),
+    portalBackend.from("hub_presence").select("*").gte("last_active_at", new Date(Date.now() - 5 * 60 * 1000).toISOString()).order("last_active_at", { ascending: false }),
     portalBackend.rpc("hub_member_reputation"),
     portalBackend.from("member_reviews").select("*").order("created_at", { ascending: false })
   ]);
@@ -1358,6 +1439,14 @@ async function loadSecureWorkspace() {
     const userRecord = state.users.find((item) => item.id === member.id || item.email === member.email);
     if (userRecord) Object.assign(userRecord, member);
   });
+  if (!presenceResult.error) {
+    (presenceResult.data || []).map(mapPresenceRow).forEach((presence) => {
+      const existingMember = state.members.find((member) => member.id === presence.id || member.email === presence.email);
+      if (existingMember) Object.assign(existingMember, { online: presence.online, lastActiveAt: presence.lastActiveAt, currentSection: presence.currentSection });
+      const existingUser = state.users.find((item) => item.id === presence.id || item.email === presence.email);
+      if (existingUser) Object.assign(existingUser, { online: presence.online, lastActiveAt: presence.lastActiveAt, currentSection: presence.currentSection });
+    });
+  }
   state.messages = (messagesResult.data || []).map((row) => mapSecureMessage(row, user));
   state.resources = (resourcesResult.data || []).map((row) => ({
     id: row.id, type: row.resource_type, title: row.title, detail: row.detail,
@@ -1396,6 +1485,8 @@ async function loadSecureUserData() {
   await loadSecureBoards();
   await loadSecureSubmissions();
   await loadSecureWorkspace();
+  await touchHubPresence(currentView);
+  if (currentUser()?.role === "admin") await loadReliableAdminData();
 }
 
 async function createSecureResource(data, user) {
@@ -1445,6 +1536,128 @@ async function markSecureMessagesRead() {
   const { error } = await portalBackend.rpc("mark_hub_messages_read");
   if (error) throw error;
   return true;
+}
+
+function mapPresenceRow(row) {
+  return {
+    id: row.user_id,
+    email: cleanEmailValue(row.email || ""),
+    name: row.full_name || row.email || "Hub member",
+    role: row.account_type || "member",
+    membershipStatus: row.membership_status || "free",
+    currentSection: row.current_section || "dashboard",
+    lastActiveAt: row.last_active_at || "",
+    online: row.is_online === true
+  };
+}
+
+function mapModerationQueueItem(row) {
+  return {
+    id: row.id,
+    submissionId: row.submission_id,
+    submissionType: row.submission_type,
+    sourceTable: row.source_table,
+    memberId: row.member_id,
+    memberName: row.member_name || "Hub member",
+    memberEmail: cleanEmailValue(row.member_email || ""),
+    title: row.title || "Untitled submission",
+    description: row.description || "",
+    fileName: row.file_name || "",
+    fileType: row.file_type || "",
+    uploadPath: row.upload_path || "",
+    previewUrl: row.preview_url || "",
+    status: row.status || "Pending Review",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    resolvedAt: row.resolved_at || "",
+    notes: row.moderation_notes || ""
+  };
+}
+
+function mapAdminNotification(row) {
+  return {
+    id: row.id,
+    title: row.title || "JP Innovation Hub",
+    detail: row.body || "New item awaiting review.",
+    submissionType: row.submission_type || "",
+    submissionId: row.submission_id || "",
+    moderationItemId: row.moderation_item_id || "",
+    isNew: !row.read_at && !row.resolved_at,
+    createdAt: row.created_at,
+    view: "admin",
+    targetId: "adminModerationQueue"
+  };
+}
+
+async function touchHubPresence(section = currentView) {
+  const user = currentUser();
+  if (!portalBackend || !user) return false;
+  try {
+    const { error } = await portalBackend.rpc("touch_hub_presence", { p_section: section || "dashboard" });
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.warn("Hub presence update failed", error);
+    return false;
+  }
+}
+
+function startPresenceHeartbeat() {
+  if (presenceHeartbeatTimer) window.clearInterval(presenceHeartbeatTimer);
+  if (!currentUser() || !portalBackend) return;
+  touchHubPresence(currentView);
+  presenceHeartbeatTimer = window.setInterval(() => touchHubPresence(currentView), presenceHeartbeatMs);
+}
+
+async function markHubOffline() {
+  if (presenceHeartbeatTimer) window.clearInterval(presenceHeartbeatTimer);
+  presenceHeartbeatTimer = null;
+  if (!portalBackend || !currentUser()) return;
+  try { await portalBackend.rpc("mark_hub_offline"); } catch (error) { console.warn("Hub offline marker failed", error); }
+}
+
+async function loadReliableAdminData() {
+  const user = currentUser();
+  if (!portalBackend || user?.role !== "admin") return false;
+  const [presenceResult, queueResult, notificationsResult, auditResult] = await Promise.all([
+    portalBackend.rpc("admin_presence_overview"),
+    portalBackend.from("moderation_queue").select("*").order("created_at", { ascending: false }).limit(200),
+    portalBackend.from("admin_notifications").select("*").order("created_at", { ascending: false }).limit(100),
+    portalBackend.from("admin_audit_log").select("*").order("created_at", { ascending: false }).limit(50)
+  ]);
+  if (presenceResult.error || queueResult.error || notificationsResult.error || auditResult.error) {
+    reliableAdminBackendAvailable = false;
+    return false;
+  }
+  reliableAdminBackendAvailable = true;
+  adminPresenceRows = (presenceResult.data || []).map(mapPresenceRow);
+  adminModerationQueue = (queueResult.data || []).map(mapModerationQueueItem);
+  adminPersistentNotifications = (notificationsResult.data || []).map(mapAdminNotification);
+  adminAuditRows = auditResult.data || [];
+  return true;
+}
+
+async function resolveModerationSubmission(submissionType, submissionId, status, notes = "") {
+  if (!portalBackend || !reliableAdminBackendAvailable || !submissionType || !submissionId) return false;
+  const { error } = await portalBackend.rpc("resolve_moderation_item", {
+    p_submission_type: submissionType,
+    p_submission_id: String(submissionId),
+    p_status: status,
+    p_notes: notes
+  });
+  if (error) throw error;
+  await loadReliableAdminData();
+  return true;
+}
+
+async function removeMemberSecure(member, reason = "") {
+  if (!portalBackend || !member?.id) throw new Error("This member is not connected to a live account record yet.");
+  const { data, error } = await portalBackend.rpc("admin_remove_member", {
+    target_user: member.id,
+    removal_reason: reason || "Removed by JP Innovation admin"
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
 }
 
 async function submitMemberReview(reviewedUserId, rating, comment) {
@@ -1676,7 +1889,7 @@ async function syncSecureSession() {
   }
   const { data: profile, error: profileError } = await portalBackend
     .from("profiles")
-    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points")
+    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
     .eq("user_id", authUser.id)
     .single();
   if (profileError && profileError.code !== "PGRST116") throw profileError;
@@ -1722,11 +1935,23 @@ async function syncSecureSession() {
     membershipStatus: profileData.membership_status || "free",
     vetted: Boolean(profileData.vetted_at),
     reputationPoints: Number(profileData.reputation_points || 0),
+    status: profileData.status || "active",
+    removedAt: profileData.removed_at || "",
+    removalReason: profileData.removal_reason || "",
+    profilePhotoUrl: profileData.profile_photo_url || user.profilePhotoUrl || "",
+    profilePhotoPendingUrl: profileData.profile_photo_pending_url || user.profilePhotoPendingUrl || "",
+    profilePhotoStatus: profileData.profile_photo_status || user.profilePhotoStatus || "none",
+    profilePhotoSubmittedAt: profileData.profile_photo_submitted_at || user.profilePhotoSubmittedAt || "",
     verified: accountType === "admin" || (accountType === "member" && profileData.membership_status === "active" && Boolean(profileData.vetted_at)),
     approved: true,
-    suspended: false
+    suspended: profileData.status === "removed" || profileData.membership_status === "suspended"
   });
   delete user.password;
+  if (user.status === "removed" || user.membershipStatus === "removed") {
+    state.sessionEmail = "";
+    saveState();
+    throw new Error("This account has been removed by JP Innovation. Please contact JP Innovation if this looks wrong.");
+  }
   state.sessionEmail = email;
   syncMember(user);
   saveState();
@@ -2188,10 +2413,12 @@ async function signIn(data) {
     if (!accessError) user = await syncSecureSession();
   }
   await loadSecureUserData();
+  startPresenceHeartbeat();
   return user;
 }
 
 async function signOut() {
+  await markHubOffline();
   if (portalBackend) await portalBackend.auth.signOut();
   try { window.localStorage.removeItem("jpActiveHubAccess"); } catch {}
   state.sessionEmail = "";
@@ -2283,6 +2510,7 @@ function notificationItems(user = currentUser()) {
   const unreadMessages = unreadMessageCount(user);
   if (unreadMessages) items.push({ title: `${unreadMessages} unread message${unreadMessages === 1 ? "" : "s"}`, detail: "Open Messages to review them.", isNew: true, view: "messages" });
   if (user.role === "admin") {
+    adminPersistentNotifications.filter((item) => item.isNew).slice(0, 8).forEach((item) => items.push(item));
     const pendingAccess = secureAdminProfiles.filter((profile) => profile.membership_status === "pending").length;
     const pendingPosts = state.posts.filter((post) => post.moderationStatus === "pending").length;
     const pendingReplies = state.posts.flatMap((post) => (post.responses || []).filter((reply) => reply.moderationStatus === "pending").map((reply) => ({ post, reply })));
@@ -2484,6 +2712,7 @@ function prepareCompactSections(view) {
   const mobile = window.matchMedia("(max-width: 560px)").matches;
   $all("#viewMount > .section-card").forEach((section, index) => {
     if (section.matches("details")) return;
+    if (view === "dashboard" && section.matches(".dashboard-command-hero")) return;
     const heading = section.querySelector("h2, h3");
     if (!heading) return;
     section.classList.add("compact-collapsible");
@@ -2571,9 +2800,6 @@ function renderClientWork(user) {
 function renderDashboard(user) {
   if (isClientPortalContext(user)) return renderClientDashboard(user);
   const unread = unreadMessageCount(user);
-  const quotes = state.quotes.length;
-  const projects = state.projects.length;
-  const posts = state.posts.length;
   const completion = profileCompletion(user);
   const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
   const activeProjects = (state.projects || []).filter((project) => !["complete", "completed", "closed"].includes(String(project.status || "").toLowerCase()));
@@ -2587,6 +2813,8 @@ function renderDashboard(user) {
   const activityItems = dashboardActivityFeed(user);
   const onlineMembers = dashboardOnlineMembers(user);
   const question = engineeringQuestionOfDay();
+  const greeting = dashboardGreeting(user);
+  const dashboardWidgets = dashboardWidgetItems({ user, activeProject, openQuotes, upcomingEvents, question, onlineMembers });
   return `
     ${user.role !== "admin" && completion < 80 ? `
       <section class="section-card setup-reminder">
@@ -2598,65 +2826,83 @@ function renderDashboard(user) {
         <button class="primary-button dashboard-link" data-view-link="onboarding" type="button">Continue setup</button>
       </section>
     ` : ""}
-    <section class="home-hero section-card dashboard-visual-hero">
-      <div>
-        <p class="eyebrow">Today's summary</p>
-        <h2>Welcome back, ${escapeHtml(user.name.split(" ")[0] || user.name)}</h2>
-        <p class="muted">Your engineering workspace at a glance: messages, discussions, quotes, projects and events that need attention.</p>
-        <div class="meta-row">
-          <span class="pill good">Private Innovation Hub area</span>
-          <span class="pill">${escapeHtml(roleLabel(user))}</span>
-          <span class="pill"><span class="online-dot" aria-hidden="true"></span>${onlineMembers.length} online now</span>
+    <section class="section-card dashboard-command-hero">
+      <div class="dashboard-hero-main">
+        <div class="dashboard-greeting-row">
+          <span class="dashboard-icon" aria-hidden="true">◎</span>
+          <div>
+            <p class="eyebrow">${escapeHtml(greeting.date)}</p>
+            <h2>${escapeHtml(greeting.text)}, ${escapeHtml(user.name.split(" ")[0] || user.name)} 👋</h2>
+          </div>
         </div>
+        <p class="dashboard-hero-copy">Your engineering operating system for discussions, quotes, projects, files and member activity.</p>
+        <ul class="dashboard-today-list">
+          <li><span>🔔</span><strong>${notificationCount}</strong><small>new notification${notificationCount === 1 ? "" : "s"}</small></li>
+          <li><span>💬</span><strong>${unread}</strong><small>unread message${unread === 1 ? "" : "s"}</small></li>
+          <li><span>🧩</span><strong>${adminModerationQueue.filter((item) => item.status === "Pending Review").length || activeProjects.length}</strong><small>${user.role === "admin" ? "approval item" : "active project"}${(user.role === "admin" ? adminModerationQueue.filter((item) => item.status === "Pending Review").length : activeProjects.length) === 1 ? "" : "s"}</small></li>
+          <li><span>⚡</span><strong>${question.replyCount}</strong><small>replies on today’s topic</small></li>
+        </ul>
         <div class="hero-button-row">
-          <button class="primary-button dashboard-link" data-view-link="boards" type="button">Open discussions</button>
-          <button class="secondary-button dashboard-link" data-view-link="messages" type="button">Check messages</button>
+          <button class="primary-button dashboard-link" data-view-link="boards" type="button">Open Discussions</button>
+          <button class="secondary-button dashboard-link" data-view-link="messages" type="button">Messages</button>
         </div>
       </div>
-      <div class="dashboard-image-card">
-        <img src="../assets/cad-machined-bracket.png" alt="">
-        <div>
-          <span class="badge">Featured workflow</span>
-          <strong>From idea to quoted project</strong>
-          <p>Members can share concepts, collect practical feedback and prepare work for private supplier quotes.</p>
+      <aside class="dashboard-profile-summary">
+        <div class="profile-summary-top">
+          <span class="profile-summary-avatar">${profileAvatarMarkup(user, "profile-avatar")}</span>
+          <div>
+            <strong>${escapeHtml(user.name)}</strong>
+            <small>${escapeHtml(roleLabel(user))}</small>
+          </div>
         </div>
-      </div>
+        <div class="profile-summary-stats">
+          <span><b>${Number(user.reputationPoints ?? user.points ?? 0)}</b><small>Reputation</small></span>
+          <span><b>${activeProjects.length}</b><small>Projects</small></span>
+          <span><b>${state.posts.filter((post) => post.authorId === user.id || post.authorEmail === user.email).length}</b><small>Posts</small></span>
+        </div>
+        <button class="online-members-button dashboard-link" data-view-link="directory" type="button">
+          <span class="online-dot" aria-hidden="true"></span><strong>${onlineMembers.length} members online</strong>
+        </button>
+      </aside>
     </section>
-    <section class="dashboard-summary-grid">
+    <section class="dashboard-quick-actions" aria-label="Quick actions">
+      ${quickAction("+", "New Discussion", "Ask or share engineering insight.", "boards", "💬")}
+      ${quickAction("+", "New Project", "Start a project workspace.", "projects", "🧩")}
+      ${quickAction("+", "Request Quote", "Prepare work for JP review.", "quotes", "£")}
+      ${quickAction("↥", "Upload Files", "Add drawings, photos or CAD.", "resources", "📎")}
+      ${quickAction("✉", "Message Member", "Start a useful conversation.", "messages", "✉")}
+    </section>
+    <section class="dashboard-summary-grid premium-stats-grid">
       ${summaryItems.map((item) => dashboardSummaryCard(item)).join("")}
     </section>
-    <section class="section-card question-card section-cyan">
+    <section class="dashboard-live-grid">
+      <section class="section-card activity-feed-panel section-blue">
+        <div class="list-title"><div><h2><span aria-hidden="true">⌁</span> Recent activity</h2><p>Live Hub movement, member updates and engineering activity.</p></div><button class="secondary-button dashboard-link" data-view-link="notifications" type="button">View all</button></div>
+        <div class="activity-feed-list">
+          ${activityItems.length ? activityItems.map(activityFeedItem).join("") : `<div class="empty-dashboard-state"><strong>No activity yet</strong><p>New posts, replies, projects and quote activity will appear here.</p></div>`}
+        </div>
+      </section>
+      <section class="dashboard-widget-grid">
+        ${dashboardWidgets.map(dashboardWidget).join("")}
+      </section>
+    </section>
+    <section class="section-card question-card section-cyan dashboard-collapsible-card">
       <div>
-        <p class="eyebrow">Today's engineering question</p>
+        <p class="eyebrow">💡 Engineering tip of the day</p>
         <h2>${escapeHtml(question.title)}</h2>
         <p class="muted">${escapeHtml(question.detail)}</p>
         <div class="meta-row"><span class="pill">${question.replyCount} replies</span><span class="pill">Pinned discussion</span></div>
       </div>
       <button class="primary-button dashboard-link" data-view-link="boards" type="button">Join discussion</button>
     </section>
-    <section class="section-card activity-feed-panel section-blue">
-      <div class="list-title"><div><h2>Activity feed</h2><p>Recent Hub movement, member updates and engineering activity.</p></div><button class="secondary-button dashboard-link" data-view-link="notifications" type="button">View notifications</button></div>
-      <div class="activity-feed-list">
-        ${activityItems.length ? activityItems.map(activityFeedItem).join("") : `<p class="muted">New posts, replies, projects and quote activity will appear here.</p>`}
-      </div>
-    </section>
-    <section class="section-card online-members-panel section-lime">
+    <section class="section-card online-members-panel section-lime dashboard-collapsible-card">
       <div class="list-title"><div><h2>Members online</h2><p>People currently active or recently available in the Hub.</p></div><button class="secondary-button dashboard-link" data-view-link="directory" type="button">Open directory</button></div>
       <div class="online-member-row">
         ${onlineMembers.length ? onlineMembers.map((member) => `<span class="online-member-pill"><span class="online-dot" aria-hidden="true"></span>${escapeHtml(member.name)}</span>`).join("") : `<span class="muted">No other members appear online yet.</span>`}
       </div>
     </section>
-    <section class="section-card dashboard-actions">
-      <div class="list-title"><div><h2>Quick actions</h2><p>Jump straight into the work members use most.</p></div></div>
-      <div class="action-grid">
-        ${quickAction("Q1", "Create discussion post", "Ask a technical question or start a focused engineering discussion.", "boards")}
-        ${quickAction("Q2", "Add project", "Share a build, product idea or prototype for member input.", "projects")}
-        ${quickAction("Q3", "Create quote request", "Prepare a private request for JP review or member quoting.", "quotes")}
-        ${quickAction("MSG", "Open messages", "Read replies, member contact and project updates.", "messages")}
-      </div>
-    </section>
-    <section class="section-card launch-focus-panel">
-      <div class="list-title"><div><h2>Your next best steps</h2><p>A simple route through the Hub without hunting through every section.</p></div></div>
+    <section class="section-card launch-focus-panel dashboard-collapsible-card">
+      <div class="list-title"><div><h2>🧭 Recommended next steps</h2><p>A simple route through the Hub without hunting through every section.</p></div></div>
       <div class="attention-list">
         ${nextActions.map((item) => `
           <button class="attention-item dashboard-link" data-view-link="${escapeHtml(item.view)}" type="button">
@@ -2667,11 +2913,11 @@ function renderDashboard(user) {
         `).join("")}
       </div>
     </section>
-    <section class="section-card member-momentum section-teal">
-      <div class="list-title"><div><h2>Current engineering activity</h2><p>A quick read of what is moving inside the Hub.</p></div></div>
+    <section class="section-card member-momentum section-teal dashboard-collapsible-card">
+      <div class="list-title"><div><h2>🛠 Current engineering activity</h2><p>A quick read of what is moving inside the Hub.</p></div></div>
       <div class="momentum-grid">
         <article>
-          <img src="${escapeHtml(activeProject?.image || "../assets/case-study-fixture-bracket.png")}" alt="">
+          <img src="${escapeHtml(activeProject?.image || "../assets/case-study-fixture-bracket.webp")}" alt="" loading="lazy" decoding="async">
           <div>
             <span class="badge">Active project</span>
             <h3>${escapeHtml(activeProject?.title || "No active project")}</h3>
@@ -2687,8 +2933,8 @@ function renderDashboard(user) {
         </article>
       </div>
     </section>
-    <section class="section-card compact-home section-blue">
-      <div class="list-title"><div><h2>Member sections</h2><p>Each section opens separately to keep the Hub tidy and simple to navigate.</p></div></div>
+    <section class="section-card compact-home section-blue dashboard-collapsible-card">
+      <div class="list-title"><div><h2>▦ Member sections</h2><p>Each section opens separately to keep the Hub tidy and simple to navigate.</p></div></div>
       <div class="section-link-grid">
         ${portalSections.map((section) => `
           <button class="section-link dashboard-link" data-view-link="${section.view}" type="button">
@@ -2698,8 +2944,8 @@ function renderDashboard(user) {
         `).join("")}
       </div>
     </section>
-    <section class="section-card hub-search-panel section-violet">
-      <div class="list-title"><div><h2>Find help fast</h2><p>Search people, skills, threads, projects, quotes and events.</p></div></div>
+    <section class="section-card hub-search-panel section-violet dashboard-collapsible-card">
+      <div class="list-title"><div><h2>⌕ Find help fast</h2><p>Search people, skills, threads, projects, quotes and events.</p></div></div>
       <label class="wide">Search Hub <input id="hubSearchInput" placeholder="Try CAD, Mini, welding, Milton Keynes, quote..."></label>
       <div id="hubSearchResults" class="search-results">
         <p class="muted">Start typing to find useful help across the Hub.</p>
@@ -2712,10 +2958,17 @@ function metric(label, value) {
   return `<article class="metric-card"><span class="badge">${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`;
 }
 
-function quickAction(code, title, detail, view) {
+function dashboardGreeting(user = currentUser()) {
+  const hour = new Date().getHours();
+  const text = hour < 12 ? "Good morning" : (hour < 17 ? "Good afternoon" : "Good evening");
+  const date = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  return { text, date };
+}
+
+function quickAction(code, title, detail, view, icon = "") {
   return `
     <button class="action-card dashboard-link" data-view-link="${escapeHtml(view)}" type="button">
-      <span class="action-icon">${escapeHtml(code)}</span>
+      <span class="action-icon">${escapeHtml(icon || code)}</span>
       <strong>${escapeHtml(title)}</strong>
       <small>${escapeHtml(detail)}</small>
     </button>
@@ -2724,21 +2977,47 @@ function quickAction(code, title, detail, view) {
 
 function dashboardSummaryItems({ notificationCount, unread, openQuotes, activeProjects, recentReplies, upcomingEvents }) {
   return [
-    { label: "Notifications", value: notificationCount, detail: notificationCount ? "New alerts needing attention" : "No new alerts", view: "notifications", tone: notificationCount ? "warn" : "good" },
-    { label: "Unread messages", value: unread, detail: unread ? "Open conversations waiting" : "Inbox is clear", view: "messages", tone: unread ? "warn" : "good" },
-    { label: "Open quote requests", value: openQuotes, detail: "Live quote opportunities", view: "quotes", tone: openQuotes ? "" : "good" },
-    { label: "Active projects", value: activeProjects, detail: "Projects currently moving", view: "projects", tone: activeProjects ? "" : "good" },
-    { label: "Recent replies", value: recentReplies, detail: "Discussion replies to review", view: "boards", tone: recentReplies ? "" : "good" },
-    { label: "Upcoming events", value: upcomingEvents, detail: "Workshops, visits or challenges", view: "events", tone: upcomingEvents ? "" : "good" }
+    { label: "Notifications", icon: "🔔", value: notificationCount, detail: notificationCount ? "New alerts" : "No new alerts", trend: notificationCount ? "Needs review" : "All caught up", view: "notifications", tone: notificationCount ? "warn" : "good", accent: "blue" },
+    { label: "Messages", icon: "✉", value: unread, detail: unread ? "Unread inbox" : "Inbox is clear", trend: unread ? "Reply due" : "Clear", view: "messages", tone: unread ? "warn" : "good", accent: "green" },
+    { label: "Quotes", icon: "£", value: openQuotes, detail: "Open requests", trend: openQuotes ? "Active" : "No active quotes", view: "quotes", tone: openQuotes ? "" : "good", accent: "orange" },
+    { label: "Projects", icon: "🧩", value: activeProjects, detail: "Moving now", trend: activeProjects ? "In progress" : "Start one", view: "projects", tone: activeProjects ? "" : "good", accent: "green" },
+    { label: "Replies", icon: "↩", value: recentReplies, detail: "Recent discussion replies", trend: recentReplies ? "Fresh activity" : "Quiet", view: "boards", tone: recentReplies ? "" : "good", accent: "purple" },
+    { label: "Events", icon: "📅", value: upcomingEvents, detail: "Upcoming sessions", trend: upcomingEvents ? "Scheduled" : "None booked", view: "events", tone: upcomingEvents ? "" : "good", accent: "turquoise" }
   ];
 }
 
 function dashboardSummaryCard(item) {
   return `
-    <button class="dashboard-summary-card dashboard-link ${escapeHtml(item.tone || "")}" data-view-link="${escapeHtml(item.view)}" type="button">
-      <span class="badge">${escapeHtml(item.label)}</span>
+    <button class="dashboard-summary-card dashboard-link ${escapeHtml(item.tone || "")} accent-${escapeHtml(item.accent || "blue")}" data-view-link="${escapeHtml(item.view)}" type="button">
+      <span class="dashboard-stat-head"><span aria-hidden="true">${escapeHtml(item.icon || "•")}</span><b>${escapeHtml(item.label)}</b></span>
       <strong>${escapeHtml(item.value)}</strong>
       <small>${escapeHtml(item.detail)}</small>
+      <em>${escapeHtml(item.trend || "Updated")}</em>
+    </button>
+  `;
+}
+
+function dashboardWidgetItems({ user, activeProject, openQuotes, upcomingEvents, question, onlineMembers }) {
+  const latestResource = (state.resources || [])[0];
+  const newestMember = (state.members || []).filter((member) => member.email !== user.email).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0];
+  const recentFile = (state.resources || []).find((resource) => /file|download|cad|drawing|template/i.test(`${resource.type} ${resource.title}`));
+  return [
+    { icon: "📅", accent: "blue", title: "Upcoming events", value: upcomingEvents || "0", detail: upcomingEvents ? "Sessions on the calendar" : "No events scheduled", view: "events" },
+    { icon: "📚", accent: "turquoise", title: "Latest resource", value: latestResource?.title || "Templates", detail: latestResource?.detail || "Add downloads and calculators here.", view: "resources" },
+    { icon: "🔥", accent: "purple", title: "Trending discussion", value: question.title, detail: `${question.replyCount} replies today`, view: "boards" },
+    { icon: "🟢", accent: "green", title: "Online members", value: `${onlineMembers.length} active`, detail: "Open the directory to contact them.", view: "directory" },
+    { icon: "£", accent: "orange", title: "Quote requests", value: openQuotes, detail: openQuotes ? "Awaiting action" : "No open quotes", view: "quotes" },
+    { icon: "📎", accent: "blue", title: "Recent files", value: recentFile?.title || "No files yet", detail: recentFile?.detail || "Uploads and templates will appear here.", view: "resources" },
+    { icon: "👤", accent: "green", title: "Newest member", value: newestMember?.name || "No new member", detail: newestMember?.skill || newestMember?.business || "Approved members appear here.", view: "directory" },
+    { icon: "🛠", accent: "turquoise", title: "Active project", value: activeProject?.title || "No active project", detail: activeProject?.nextStep || "Start your first project.", view: "projects" }
+  ];
+}
+
+function dashboardWidget(item) {
+  return `
+    <button class="dashboard-widget dashboard-link accent-${escapeHtml(item.accent || "blue")}" data-view-link="${escapeHtml(item.view)}" type="button">
+      <span class="dashboard-widget-icon" aria-hidden="true">${escapeHtml(item.icon || "•")}</span>
+      <span><small>${escapeHtml(item.title)}</small><strong>${escapeHtml(item.value)}</strong><em>${escapeHtml(item.detail)}</em></span>
     </button>
   `;
 }
@@ -2821,6 +3100,8 @@ function isMemberOnline(member, user = currentUser()) {
 }
 
 function dashboardOnlineMembers(user = currentUser()) {
+  const liveRows = adminPresenceRows.length ? adminPresenceRows.filter((row) => row.online) : [];
+  if (liveRows.length) return liveRows.map((row) => memberForIdentity({ id: row.id, email: row.email, name: row.name }) || row).slice(0, 8);
   const members = (state.members || []).filter((member) => member.directoryVisible !== false);
   const online = members.filter((member) => isMemberOnline(member, user));
   if (online.length) return online.slice(0, 8);
@@ -2843,6 +3124,21 @@ function dashboardNextActions(user, counts) {
 
 function analyticsMetric(label, value, detail = "") {
   return `<article class="metric-card"><span class="badge">${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</article>`;
+}
+
+function analyticsResetControls() {
+  return `
+    <div class="analytics-reset-panel">
+      <div>
+        <strong>Reset visitor analytics</strong>
+        <small>Clears page-view history only. Member accounts, posts, quotes and projects are not deleted.</small>
+      </div>
+      <div class="analytics-reset-actions">
+        <button class="secondary-button analytics-reset-button" data-reset-scope="today" type="button">Reset today</button>
+        <button class="secondary-button danger-action analytics-reset-button" data-reset-scope="all" type="button">Reset all visits</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderAnalyticsRows(rows = []) {
@@ -2922,6 +3218,7 @@ async function loadSiteAnalytics() {
       return { day: entry.day, views: entry.views, visitors: entry.visitors.size, topPage };
     });
     mount.innerHTML = `
+      ${analyticsResetControls()}
       <div class="metrics-grid">
         ${analyticsMetric("Total website visits", totals.total_website_visits || 0, "all recorded page views")}
         ${analyticsMetric("Unique visitors", totals.unique_visitors || 0, "anonymous browser IDs")}
@@ -2936,12 +3233,39 @@ async function loadSiteAnalytics() {
         ${dailyRows.length ? renderAnalyticsRows(dailyRows) : `<p class="muted">No page views have been recorded yet.</p>`}
       </div>
     `;
+    bindAnalyticsResetButtons();
   } catch (error) {
     mount.innerHTML = `
       <p class="muted">Live metrics are unavailable. No placeholder totals are being shown.</p>
       <p class="form-status">${escapeHtml(error.message || "Database metrics are not available yet.")}</p>
     `;
   }
+}
+
+function bindAnalyticsResetButtons() {
+  $all(".analytics-reset-button").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const scope = button.dataset.resetScope || "all";
+      const label = scope === "today" ? "today's visitor metrics" : "all visitor analytics history";
+      const confirmed = await openConfirmDialog({
+        title: "Reset website metrics?",
+        message: `Are you sure you want to reset ${label}? This clears page-view analytics only. It will not delete members, posts, quotes or projects.`,
+        confirmLabel: scope === "today" ? "Reset today" : "Reset all visits",
+        cancelLabel: "Cancel",
+        danger: true
+      });
+      if (!confirmed) return;
+      try {
+        if (!portalBackend) throw new Error("Secure backend is unavailable.");
+        const { error } = await portalBackend.rpc("admin_reset_site_analytics", { p_scope: scope });
+        if (error) throw error;
+        showSuccessToast("Metrics reset.", scope === "today" ? "Today's visitor analytics were cleared." : "Visitor analytics history was cleared.");
+        await loadSiteAnalytics();
+      } catch (error) {
+        window.alert(error.message || "Metrics could not be reset.");
+      }
+    });
+  });
 }
 
 function renderOnboarding(user) {
@@ -3858,13 +4182,13 @@ async function loadSecureAdminProfiles(force = false) {
   adminProfilesMessage = "Loading registrations and account access from the secure database...";
   const { data, error } = await portalBackend
     .from("profiles")
-    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points")
+    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
     .order("email", { ascending: true });
   if (error) {
     adminProfilesStatus = "error";
     adminProfilesMessage = "Live account permissions still need enabling in Supabase. The admin setup script must be run before launch.";
   } else {
-    secureAdminProfiles = Array.isArray(data) ? data : [];
+    secureAdminProfiles = Array.isArray(data) ? data.filter((profile) => profile.status !== "removed" && profile.membership_status !== "removed") : [];
     adminProfilesStatus = "ready";
     adminProfilesMessage = `${secureAdminProfiles.length} registered account${secureAdminProfiles.length === 1 ? "" : "s"} loaded from Supabase. Approvals made here change real Hub access.`;
     secureAdminProfiles.forEach((profile) => {
@@ -3914,6 +4238,8 @@ function renderAdmin(user) {
         ${metric("Member reviews", pendingMemberReviews.length)}
         ${metric("Photo reviews", photoApprovals.length)}
         ${metric("Quote reviews", state.quotes.filter((quote) => quote.status === "jp-review").length)}
+        ${metric("Pending approvals", adminModerationQueue.filter((item) => item.status === "Pending Review").length)}
+        ${metric("Online now", adminPresenceRows.filter((item) => item.online).length)}
         ${metric("Suspended", suspendedAccounts)}
       </div>
     </section>
@@ -3929,6 +4255,27 @@ function renderAdmin(user) {
       <div id="analyticsPanel">
         <p class="muted">Loading private site analytics...</p>
       </div>
+    </details>
+    <details id="adminModerationQueue" class="section-card admin-fold section-rose" ${adminModerationQueue.some((item) => item.status === "Pending Review") ? "open" : ""}>
+      <summary class="list-title"><div><h2>Central moderation queue</h2><p>All reviewable member submissions from the live backend.</p></div><span class="pill ${adminModerationQueue.filter((item) => item.status === "Pending Review").length ? "warn" : "good"}">${adminModerationQueue.filter((item) => item.status === "Pending Review").length} pending</span></summary>
+      <div class="feed-list">${reliableAdminBackendAvailable ? (adminModerationQueue.length ? adminModerationQueue.map((item) => `
+        <article class="feed-item moderation-queue-row">
+          <span class="badge">${escapeHtml(item.submissionType.replaceAll("_", " "))}</span>
+          <h3>${escapeHtml(item.title)}</h3>
+          <p>${escapeHtml(item.memberName)} &middot; ${escapeHtml(item.memberEmail)} &middot; ${escapeHtml(relativeDateLabel(item.createdAt))}</p>
+          ${item.fileName ? `<p><strong>File:</strong> ${escapeHtml(item.fileName)} ${escapeHtml(item.fileType)}</p>` : ""}
+          ${item.description ? renderFormattedPostText(item.description) : ""}
+          <div class="meta-row"><span class="pill ${item.status === "Pending Review" ? "warn" : "good"}">${escapeHtml(item.status)}</span><span class="pill">${escapeHtml(item.sourceTable)}</span></div>
+        </article>`).join("") : `<p class="muted">No moderation items yet.</p>`) : `<p class="muted">Run supabase-reliable-admin-notifications.sql in Supabase to enable the central queue.</p>`}</div>
+    </details>
+    <details id="adminPresenceView" class="section-card admin-fold section-lime">
+      <summary class="list-title"><div><h2>Member presence</h2><p>Live online status, last active time and current Hub section.</p></div><span class="pill good">${adminPresenceRows.filter((row) => row.online).length} online</span></summary>
+      <div class="feed-list">${reliableAdminBackendAvailable ? (adminPresenceRows.length ? adminPresenceRows.map((row) => `
+        <article class="feed-item admin-presence-row"><div><h3><span class="online-dot ${row.online ? "" : "offline"}" aria-hidden="true"></span>${escapeHtml(row.name)}</h3><p>${escapeHtml(row.email)} &middot; ${escapeHtml(row.currentSection || "Unknown section")}</p><small>${row.online ? "Online now" : "Offline"} - last active ${escapeHtml(relativeDateLabel(row.lastActiveAt))}</small></div></article>`).join("") : `<p class="muted">No presence data yet.</p>`) : `<p class="muted">Live presence will appear after the reliable admin SQL is run.</p>`}</div>
+    </details>
+    <details id="adminNotificationLog" class="section-card admin-fold section-blue">
+      <summary class="list-title"><div><h2>Admin notification log</h2><p>Persistent in-Hub notifications linked to review items.</p></div><span class="pill ${adminPersistentNotifications.filter((item) => item.isNew).length ? "warn" : "good"}">${adminPersistentNotifications.filter((item) => item.isNew).length} unread</span></summary>
+      <div class="feed-list">${adminPersistentNotifications.length ? adminPersistentNotifications.map((item) => `<article class="feed-item"><span class="badge">${item.isNew ? "Unread" : "Read"}</span><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.detail)}</p><small>${escapeHtml(relativeDateLabel(item.createdAt))}</small></article>`).join("") : `<p class="muted">No persistent admin notifications yet.</p>`}</div>
     </details>
     <details id="adminAccessRequests" class="section-card admin-fold section-violet" ${pendingApplications ? "open" : ""}>
       <summary class="list-title"><div><h2>Access applications</h2><p>Approve or reject Innovation Hub access.</p></div><span class="pill warn">${pendingApplications} pending</span></summary>
@@ -4127,7 +4474,7 @@ function renderAdmin(user) {
               <button class="secondary-button admin-action" data-admin-action="verify" data-email="${escapeHtml(member.email)}" data-user-id="${escapeHtml(member.id || "")}" type="button">Verify</button>
               <button class="secondary-button admin-action" data-admin-action="warn" data-email="${escapeHtml(member.email)}" type="button">Warn</button>
               <button class="secondary-button admin-action" data-admin-action="${member.suspended ? "restore" : "suspend"}" data-email="${escapeHtml(member.email)}" type="button">${member.suspended ? "Restore" : "Suspend"}</button>
-              ${member.role === "admin" ? "" : `<button class="secondary-button admin-action danger-action" data-admin-action="remove" data-email="${escapeHtml(member.email)}" type="button">Remove</button>`}
+              ${member.role === "admin" ? "" : `<button class="secondary-button admin-action danger-action" data-admin-action="remove" data-email="${escapeHtml(member.email)}" data-member-name="${escapeHtml(member.name)}" type="button">Remove</button>`}
             </div>
           </article>
         `).join("") || `<p class="muted">No member accounts have been created yet.</p>`}
@@ -4827,8 +5174,8 @@ function bindPhoneAlertControls() {
       const registration = await registerNotificationServiceWorker();
       await registration.showNotification("JP Innovation test alert", {
         body: "This is how admin tasks, messages and Hub updates will appear.",
-        icon: "/assets/jp-app-icon-192.png",
-        badge: "/assets/jp-app-icon-180.png",
+        icon: notificationIconPath,
+        badge: notificationBadgePath,
         tag: `jp-test-${Date.now()}`,
         data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
       });
@@ -4951,7 +5298,6 @@ function bindAdminActions() {
           if (action === "verify") await updateSecureProfileAccess(member.id, { membership_status: "active", vetted_at: new Date().toISOString() });
           if (action === "suspend") await updateSecureProfileAccess(member.id, { membership_status: "suspended" });
           if (action === "restore") await updateSecureProfileAccess(member.id, { membership_status: member.role === "client" ? "free" : "active" });
-          if (action === "remove") await updateSecureProfileAccess(member.id, { account_type: "client", membership_status: "suspended" });
         }
       } catch (error) {
         adminProfilesMessage = `Account update failed: ${error.message}`;
@@ -4993,8 +5339,27 @@ function bindAdminActions() {
         member.suspended = false;
       }
       if (action === "remove") {
-        state.users = state.users.filter((user) => user.email !== member.email);
-        state.members = state.members.filter((item) => item.email !== member.email);
+        const confirmed = await openConfirmDialog({
+          title: "Remove this account?",
+          message: `Are you sure you want to remove ${member.name} (${member.email}) from account management? Hub access will be revoked and the account will disappear from this list.`,
+          confirmLabel: "Remove account",
+          cancelLabel: "Cancel",
+          danger: true
+        });
+        if (!confirmed) return;
+        try {
+          await removeMemberSecure(member, "Removed by JP Innovation admin");
+          state.users = state.users.filter((user) => user.email !== member.email);
+          state.members = state.members.filter((item) => item.email !== member.email);
+          secureAdminProfiles = secureAdminProfiles.filter((profile) => cleanEmailValue(profile.email || "") !== member.email);
+          await loadSecureAdminProfiles(true);
+          secureAdminProfiles = secureAdminProfiles.filter((profile) => cleanEmailValue(profile.email || "") !== member.email);
+          await loadReliableAdminData();
+          adminProfilesMessage = `${member.name} has been removed and Hub access has been revoked.`;
+          showSuccessToast("Member removed.", "Hub access has been revoked and the admin audit log has been updated.");
+        } catch (error) {
+          adminProfilesMessage = `Member removal failed: ${error.message}`;
+        }
         saveState();
         renderView("admin");
         return;
@@ -5052,6 +5417,7 @@ function bindPostModerationActions() {
       try {
         await moderateBoardPostRecord(post, moderationStatus, currentUser());
         if (boardBackendAvailable) await loadSecureBoards();
+        await resolveModerationSubmission("discussion_post", post.id, moderationStatus === "approved" ? "Approved" : "Rejected").catch(() => {});
         saveState();
         renderNotifications();
         showSuccessToast(
@@ -5104,6 +5470,7 @@ function bindReplyModerationActions() {
           if (error) throw error;
         }
         reply.moderationStatus = moderationStatus;
+        await resolveModerationSubmission("discussion_reply", reply.id, moderationStatus === "approved" ? "Approved" : "Rejected").catch(() => {});
         if (boardBackendAvailable) await loadSecureBoards();
         saveState();
         renderNotifications();
@@ -5137,6 +5504,7 @@ function bindProjectModerationActions() {
         return;
       }
       project.moderationStatus = moderationStatus;
+      await resolveModerationSubmission("project_submission", project.id, moderationStatus === "approved" ? "Approved" : "Rejected").catch(() => {});
       saveState();
       renderNotifications();
       renderView("admin");
@@ -5811,6 +6179,13 @@ function syncMember(user) {
 async function boot() {
   trackPageView();
   if (portalBackend) {
+    window.addEventListener("focus", () => touchHubPresence(currentView));
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) touchHubPresence(currentView);
+    });
+    window.addEventListener("beforeunload", () => {
+      if (currentUser()) portalBackend.rpc("mark_hub_offline").catch(() => {});
+    });
     portalBackend.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") openPasswordReset();
     });
@@ -5818,6 +6193,7 @@ async function boot() {
   try {
     await syncSecureSession();
     await loadSecureUserData();
+    startPresenceHeartbeat();
   } catch (error) {
     state.sessionEmail = "";
     saveState();
