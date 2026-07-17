@@ -2835,65 +2835,168 @@ function renderDashboard(user) {
   const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
   const activeProjects = (state.projects || []).filter((project) => !["complete", "completed", "closed"].includes(String(project.status || "").toLowerCase()));
   const notificationCount = notificationItems(user).filter((item) => item.isNew).length;
-  const recentReplies = recentDashboardReplies(user).length;
-  const upcomingEvents = upcomingDashboardEvents().length;
   const pendingApprovals = user.role === "admin" ? adminModerationQueue.filter((item) => item.status === "Pending Review").length : 0;
-  const summaryItems = dashboardSummaryItems({ notificationCount, unread, openQuotes, activeProjects: activeProjects.length, recentReplies, upcomingEvents });
-  const activityItems = dashboardActivityFeed(user).slice(0, 4);
+  const activityItems = dashboardActivityFeed(user).slice(0, 3);
   const onlineMembers = dashboardOnlineMembers(user);
   const greeting = dashboardGreeting(user);
+  const firstName = user.name.split(" ")[0] || user.name;
+  const recentDiscussions = (typeof visibleBoardPosts === "function" ? visibleBoardPosts() : (state.posts || []))
+    .slice()
+    .sort((a, b) => String(b.updatedAt || b.createdAt || b.created || "").localeCompare(String(a.updatedAt || a.createdAt || a.created || "")))
+    .slice(0, 3);
+  const projectItems = activeProjects.slice(0, 2);
+  const quoteItems = (state.quotes || []).filter((quote) => quote.status !== "closed").slice(0, 2);
+  const eventItems = upcomingDashboardEvents().slice(0, 2);
+  const messageItems = (state.messages || []).filter((message) => user.role !== "client" || message.ownerEmail === user.email).slice(0, 2);
+  const icon = {
+    bell: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`,
+    mail: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>`,
+    check: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>`,
+    chat: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>`,
+    project: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V6h6l2 2h8v11z"/><path d="M8 13h8"/></svg>`,
+    quote: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>`,
+    event: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v15H5z"/><path d="M8 3v4M16 3v4M5 10h14"/></svg>`,
+    pulse: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2-6 4 10 2-4h4"/></svg>`
+  };
+  const miniStatus = [
+    { icon: icon.bell, value: notificationCount, label: notificationCount ? "new alerts" : "alerts clear", view: "notifications" },
+    { icon: icon.mail, value: unread, label: unread ? "unread messages" : "inbox clear", view: "messages" },
+    ...(user.role === "admin" ? [{ icon: icon.check, value: pendingApprovals, label: pendingApprovals ? "pending approvals" : "approvals clear", view: "admin" }] : []),
+    { icon: `<span class="online-dot"></span>`, value: onlineMembers.length, label: "online", view: "directory" }
+  ];
+  const dashboardRow = (item = {}, options = {}) => `
+    <button class="dashboard-feed-row dashboard-link" data-view-link="${escapeHtml(options.view || item.view || "dashboard")}" type="button">
+      <span class="feed-row-icon ${escapeHtml(options.tone || "")}" aria-hidden="true">${options.icon || icon.pulse}</span>
+      <span>
+        <strong>${escapeHtml(options.title || item.title || item.service || "Untitled")}</strong>
+        <small>${escapeHtml(options.detail || item.detail || item.description || "Open for details")}</small>
+      </span>
+      <b aria-hidden="true">›</b>
+    </button>
+  `;
+  const emptyState = (title, detail, view, cta = "Open") => `
+    <button class="dashboard-empty-row dashboard-link" data-view-link="${escapeHtml(view)}" type="button">
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(detail)}</small>
+      <span>${escapeHtml(cta)} ›</span>
+    </button>
+  `;
   return `
-    ${user.role !== "admin" && completion < 80 ? `
-      <section class="section-card setup-reminder">
+    <div class="mobile-saas-dashboard">
+      ${user.role !== "admin" && completion < 80 ? `
+        <section class="dashboard-thin-reminder">
+          <span>${completion}% profile complete</span>
+          <button class="dashboard-link" data-view-link="onboarding" type="button">Finish setup</button>
+        </section>
+      ` : ""}
+      <section class="saas-welcome-card">
         <div>
-          <span class="badge">Profile setup</span>
-          <h2>${completion}% complete</h2>
-          <p class="muted">Finish your profile so JP Innovation can match you with the right discussions, members and quote opportunities.</p>
+          <p class="dashboard-date">${escapeHtml(greeting.date)}</p>
+          <h2>${escapeHtml(greeting.text)}, ${escapeHtml(firstName)}</h2>
+          <p>Private engineering workspace for discussions, projects, quotes and member updates.</p>
         </div>
-        <button class="primary-button dashboard-link" data-view-link="onboarding" type="button">Continue setup</button>
-      </section>
-    ` : ""}
-    <section class="section-card dashboard-command-hero">
-      <div class="dashboard-hero-main">
-        <div class="dashboard-greeting-row">
-          <div>
-            <p class="eyebrow">${escapeHtml(greeting.date)}</p>
-            <h2>${escapeHtml(greeting.text)}, ${escapeHtml(user.name.split(" ")[0] || user.name)}</h2>
-          </div>
+        <div class="saas-status-strip">
+          ${miniStatus.map((item) => `
+            <button class="dashboard-link" data-view-link="${escapeHtml(item.view)}" type="button">
+              <span aria-hidden="true">${item.icon}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+              <small>${escapeHtml(item.label)}</small>
+            </button>
+          `).join("")}
         </div>
-        <ul class="dashboard-today-list">
-          <li><span aria-hidden="true">Bell</span><strong>${notificationCount}</strong><small>Notifications</small></li>
-          <li><span aria-hidden="true">Mail</span><strong>${unread}</strong><small>Messages</small></li>
-          ${user.role === "admin" ? `<li><span aria-hidden="true">OK</span><strong>${pendingApprovals}</strong><small>Pending approvals</small></li>` : ""}
-          <li><span class="online-dot" aria-hidden="true"></span><strong>${onlineMembers.length}</strong><small>Members online</small></li>
-        </ul>
-        <div class="hero-button-row">
+        <div class="saas-hero-actions">
           <button class="primary-button dashboard-link" data-view-link="boards" type="button">Discussions</button>
           <button class="secondary-button dashboard-link" data-view-link="messages" type="button">Messages</button>
         </div>
-      </div>
-    </section>
-    <section class="dashboard-quick-actions" aria-label="Quick actions">
-      ${quickAction("+", "New Discussion", "Start a thread.", "boards", "Chat")}
-      ${quickAction("+", "New Project", "Create a workspace.", "projects", "Proj")}
-      ${quickAction("+", "Request Quote", "Send a request.", "quotes", "GBP")}
-      ${quickAction("Mail", "Message", "Open inbox.", "messages", "Mail")}
-    </section>
-    <section class="dashboard-summary-grid premium-stats-grid">
-      ${summaryItems.map((item) => dashboardSummaryCard(item)).join("")}
-    </section>
-    <section class="section-card activity-feed-panel">
-      <div class="list-title">
-        <div>
-          <h2>Recent activity</h2>
-          <p>Latest Hub updates only.</p>
+      </section>
+      <section class="saas-quick-actions" aria-label="Quick actions">
+        <button class="dashboard-link" data-view-link="boards" type="button"><span>${icon.chat}</span><strong>New discussion</strong><small>Start a thread</small></button>
+        <button class="dashboard-link" data-view-link="projects" type="button"><span>${icon.project}</span><strong>New project</strong><small>Create workspace</small></button>
+        <button class="dashboard-link" data-view-link="quotes" type="button"><span>${icon.quote}</span><strong>Request quote</strong><small>Send request</small></button>
+      </section>
+      <section class="saas-content-card">
+        <div class="saas-section-head">
+          <div><h2>Recent discussions</h2><p>Latest board conversations</p></div>
+          <button class="dashboard-link" data-view-link="boards" type="button">View all</button>
         </div>
-        <button class="secondary-button dashboard-link" data-view-link="notifications" type="button">View all</button>
-      </div>
-      <div class="activity-feed-list">
-        ${activityItems.length ? activityItems.map(activityFeedItem).join("") : `<div class="empty-dashboard-state"><strong>No activity yet</strong><p>Posts, replies, projects and quotes will appear here.</p></div>`}
-      </div>
-    </section>
+        <div class="dashboard-feed-list">
+          ${recentDiscussions.length ? recentDiscussions.map((post) => dashboardRow(post, {
+            view: "boards",
+            icon: icon.chat,
+            tone: "cyan",
+            title: post.title,
+            detail: `${post.author || "Member"} · ${(visibleBoardReplies(post, user) || []).length} replies`
+          })).join("") : emptyState("No discussions yet.", "Start the first engineering conversation.", "boards", "Start")}
+        </div>
+      </section>
+      <section class="saas-content-card">
+        <div class="saas-section-head">
+          <div><h2>Recent activity</h2><p>What changed in the Hub</p></div>
+          <button class="dashboard-link" data-view-link="notifications" type="button">View all</button>
+        </div>
+        <div class="dashboard-feed-list">
+          ${activityItems.length ? activityItems.map((item) => dashboardRow(item, {
+            view: item.view,
+            icon: icon.pulse,
+            tone: item.accent || "blue",
+            title: item.title,
+            detail: `${item.detail} · ${relativeDateLabel(item.when)}`
+          })).join("") : emptyState("No activity yet.", "Posts, replies, projects and quotes will appear here.", "boards", "Explore")}
+        </div>
+      </section>
+      <section class="saas-split-grid">
+        <article class="saas-content-card">
+          <div class="saas-section-head"><div><h2>Projects</h2><p>Active workspaces</p></div><button class="dashboard-link" data-view-link="projects" type="button">Open</button></div>
+          <div class="dashboard-feed-list">
+            ${projectItems.length ? projectItems.map((project) => dashboardRow(project, {
+              view: "projects",
+              icon: icon.project,
+              tone: "green",
+              title: project.title,
+              detail: project.nextStep || project.description || "Project workspace"
+            })).join("") : emptyState("No active projects.", "Create a workspace when work begins.", "projects", "Create")}
+          </div>
+        </article>
+        <article class="saas-content-card">
+          <div class="saas-section-head"><div><h2>Quotes</h2><p>Open requests</p></div><button class="dashboard-link" data-view-link="quotes" type="button">Open</button></div>
+          <div class="dashboard-feed-list">
+            ${quoteItems.length ? quoteItems.map((quote) => dashboardRow(quote, {
+              view: "quotes",
+              icon: icon.quote,
+              tone: "orange",
+              title: quote.service || quote.title,
+              detail: `${quoteStatusLabel(quote.status)} · ${quote.deadline || "Deadline TBC"}`
+            })).join("") : emptyState("No quote requests.", "Requests will appear here when submitted.", "quotes", "Request")}
+          </div>
+        </article>
+      </section>
+      <section class="saas-split-grid">
+        <article class="saas-content-card">
+          <div class="saas-section-head"><div><h2>Events</h2><p>What’s coming up</p></div><button class="dashboard-link" data-view-link="events" type="button">Open</button></div>
+          <div class="dashboard-feed-list">
+            ${eventItems.length ? eventItems.map((event) => dashboardRow(event, {
+              view: "events",
+              icon: icon.event,
+              tone: "purple",
+              title: event.title,
+              detail: `${event.date || event.startsAt || "Date TBC"} · ${event.location || "Location TBC"}`
+            })).join("") : emptyState("No upcoming events.", "Events and workshops will appear here.", "events", "View")}
+          </div>
+        </article>
+        <article class="saas-content-card">
+          <div class="saas-section-head"><div><h2>Messages</h2><p>Recent inbox</p></div><button class="dashboard-link" data-view-link="messages" type="button">Open</button></div>
+          <div class="dashboard-feed-list">
+            ${messageItems.length ? messageItems.map((message) => dashboardRow(message, {
+              view: "messages",
+              icon: icon.mail,
+              tone: message.unread ? "blue" : "",
+              title: message.subject || message.from || "Message",
+              detail: `${message.from || "Member"} · ${String(message.body || "").slice(0, 70)}`
+            })).join("") : emptyState("No messages yet.", "Your inbox is clear.", "messages", "Open")}
+          </div>
+        </article>
+      </section>
+    </div>
   `;
 }
 function metric(label, value) {
