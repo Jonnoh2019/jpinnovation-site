@@ -6193,12 +6193,18 @@ async function boot() {
   }
   try {
     await syncSecureSession();
-    await loadSecureUserData();
-    startPresenceHeartbeat();
   } catch (error) {
     state.sessionEmail = "";
     saveState();
     console.error("Secure session could not be loaded.", error);
+  }
+  if (currentUser()) {
+    try {
+      await loadSecureUserData();
+    } catch (error) {
+      console.warn("Hub data could not be fully loaded. Keeping the signed-in session active.", error);
+    }
+    startPresenceHeartbeat();
   }
   if (entryMode === "client" && hasActiveHubAccess(currentUser()) && currentUser()?.role !== "admin") {
     window.location.replace("index.html?entry=hub");
