@@ -1,0 +1,53 @@
+name: Codex Hub Profile Fallback Deploy
+
+on:
+  push:
+    paths:
+      - .codex-trigger-hub-profile-fallback-20260717
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Hub login fallback
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          portal = Path('hub-portal/app.js')
+          text = portal.read_text(encoding='utf-8')
+          old = """  const { data: profileRows, error: profileError } = await portalBackend\n    .from(\"profiles\")\n    .select(\"user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at\")\n    .eq(\"user_id\", authUser.id)\n    .limit(1);\n  if (profileError) throw profileError;\n  const profile = Array.isArray(profileRows) ? profileRows[0] || null : profileRows || null;"""
+          new = """  let profile = null;\n  let profileError = null;\n  {\n    const { data: basicRows, error: basicError } = await portalBackend\n      .from(\"profiles\")\n      .select(\"user_id,email,full_name,business,account_type,membership_status,status\")\n      .eq(\"user_id\", authUser.id)\n      .limit(1);\n    if (basicError) {\n      profileError = basicError;\n    } else {\n      profile = Array.isArray(basicRows) ? basicRows[0] || null : basicRows || null;\n    }\n  }\n  if (profile) {\n    const { data: fullRows, error: fullError } = await portalBackend\n      .from(\"profiles\")\n      .select(\"user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at\")\n      .eq(\"user_id\", authUser.id)\n      .limit(1);\n    if (fullError) {\n      console.warn(\"Full profile details could not be loaded. Continuing with basic login profile.\", fullError);\n    } else {\n      profile = Array.isArray(fullRows) ? fullRows[0] || profile : fullRows || profile;\n    }\n  } else if (profileError) {\n    console.warn(\"Profile could not be loaded. Continuing with the authenticated email only.\", profileError);\n  }"""
+          if old in text:
+              text = text.replace(old, new)
+          elif 'let profile = null;' not in text:
+              raise SystemExit('Expected profile block was not found')
+          portal.write_text(text, encoding='utf-8')
+
+          replacements = {
+              'hub-portal/index.html': [('app.js?v=hub-loop-fix-20260717', 'app.js?v=hub-profile-fallback-20260717')],
+              'hub/app.js': [('hub-loop-fix-20260717', 'hub-profile-fallback-20260717')],
+              'hub/index.html': [('app.js?v=hub-loop-fix-20260717', 'app.js?v=hub-profile-fallback-20260717')],
+          }
+          for file, pairs in replacements.items():
+              path = Path(file)
+              text = path.read_text(encoding='utf-8')
+              for old, new in pairs:
+                  text = text.replace(old, new)
+              path.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "codex-bot"
+          git config user.email "codex-bot@users.noreply.github.com"
+          git add hub-portal/app.js hub-portal/index.html hub/app.js hub/index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Fix Hub profile fallback during login"
+            git push
+          fi
