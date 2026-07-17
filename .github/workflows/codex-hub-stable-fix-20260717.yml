@@ -1,0 +1,58 @@
+name: Codex Hub Stable Handoff Fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/codex-hub-stable-fix-20260717.yml'
+      - '.codex-trigger-hub-stable-fix-20260717'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch hub landing handoff and cache keys
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              'hub/index.html': [
+                  ('styles.css?v=admin-badge-nav-20260715', 'styles.css?v=hub-dashboard-stable-20260717'),
+                  ('app.js?v=hub-profile-fallback-20260717', 'app.js?v=hub-dashboard-stable-20260717'),
+              ],
+              'hub/app.js': [
+                  ('../hub-portal/index.html?entry=hub&signin=1&v=hub-profile-fallback-20260717', '../hub-portal/index.html?entry=hub&v=hub-dashboard-stable-20260717'),
+                  ('../hub-portal/index.html?entry=hub&v=hub-profile-fallback-20260717', '../hub-portal/index.html?entry=hub&v=hub-dashboard-stable-20260717'),
+              ],
+          }
+
+          changed = False
+          for filename, pairs in replacements.items():
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              original = text
+              for old, new in pairs:
+                  text = text.replace(old, new)
+              if text != original:
+                  path.write_text(text, encoding='utf-8')
+                  changed = True
+                  print(f'patched {filename}')
+              else:
+                  print(f'no change needed {filename}')
+
+          Path('.codex-trigger-hub-stable-fix-20260717').write_text('hub stable handoff fix applied\n', encoding='utf-8')
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hub/index.html hub/app.js .codex-trigger-hub-stable-fix-20260717
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "Stabilise hub login handoff and cache keys"
+          git push
