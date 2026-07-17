@@ -1,0 +1,91 @@
+name: Codex Header Login Fix
+
+on:
+  push:
+    paths:
+      - .codex-header-login-trigger
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch homepage header and Hub login
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          index = Path('index.html')
+          text = index.read_text(encoding='utf-8')
+          replacements = [
+            ("""    .header-inner {\n      max-width: 1180px;\n      margin: 0 auto;\n      min-height: 82px;\n      padding: 14px 22px;\n      display: grid;\n      grid-template-columns: minmax(190px, 320px) 1fr auto;\n      align-items: center;\n      gap: 22px;\n    }\n    .brand {\n""", """    .header-inner {\n      max-width: 1180px;\n      margin: 0 auto;\n      min-height: 0;\n      padding: 12px 22px 10px;\n      display: grid;\n      grid-template-columns: minmax(190px, 320px) 1fr;\n      grid-template-areas:\n        \"brand actions\"\n        \"nav nav\";\n      align-items: center;\n      gap: 10px 18px;\n    }\n    .brand {\n      grid-area: brand;\n"""),
+            ("""    .nav {\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      gap: 4px;\n      flex-wrap: wrap;\n    }\n    .nav a {\n      color: #dce6f2;\n      font-size: 12px;\n      font-weight: 700;\n      padding: 8px 7px;\n""", """    .nav {\n      grid-area: nav;\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      gap: 6px;\n      flex-wrap: nowrap;\n      width: 100%;\n      max-width: 100%;\n      overflow-x: auto;\n      scrollbar-width: none;\n    }\n    .nav::-webkit-scrollbar { display: none; }\n    .nav a {\n      color: #dce6f2;\n      font-size: 13px;\n      font-weight: 700;\n      padding: 8px 10px;\n"""),
+            ("""    .header-actions {\n      display: flex;\n      justify-content: flex-end;\n      align-items: center;\n      gap: 10px;\n    }\n""", """    .header-actions {\n      grid-area: actions;\n      display: flex;\n      justify-content: flex-end;\n      align-items: center;\n      gap: 10px;\n      justify-self: end;\n    }\n"""),
+            ("""    @media (max-width: 1060px) {\n      .header-inner {\n        grid-template-columns: minmax(190px, 280px) 1fr auto;\n      }\n""", """    @media (max-width: 1060px) {\n      .header-inner {\n        grid-template-columns: minmax(190px, 280px) 1fr;\n      }\n"""),
+            ("""      .header-inner {\n        min-height: 74px;\n        grid-template-columns: 1fr auto;\n        padding: 12px 16px;\n        gap: 12px;\n      }\n      .brand img { width: clamp(150px, 36vw, 220px); }\n""", """      .header-inner {\n        min-height: 74px;\n        grid-template-columns: 1fr auto;\n        grid-template-areas: none;\n        padding: 12px 16px;\n        gap: 12px;\n      }\n      .brand,\n      .nav,\n      .header-actions { grid-area: auto; }\n      .brand img { width: clamp(150px, 36vw, 220px); }\n"""),
+          ]
+          for old, new in replacements:
+            if old in text and new not in text:
+              text = text.replace(old, new)
+          index.write_text(text, encoding='utf-8')
+
+          app = Path('hub/app.js')
+          text = app.read_text(encoding='utf-8')
+          helper = """
+async function loadHubProfile(userId) {
+  if (!hubBackend || !userId) return null;
+  const { data, error } = await hubBackend
+    .from("profiles")
+    .select("account_type,membership_status")
+    .eq("user_id", userId)
+    .limit(1);
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] || null : data || null;
+}
+"""
+          if 'async function loadHubProfile' not in text:
+            text = text.replace("\nfunction setHubAuthTab(mode = \"signin\") {", helper + "\nfunction setHubAuthTab(mode = \"signin\") {")
+          text = text.replace("""  const { data: profile, error: profileError } = await hubBackend
+    .from("profiles")
+    .select("account_type,membership_status")
+    .eq("user_id", result.user.id)
+    .single();
+  if (profileError) throw profileError;
+""", """  const profile = await loadHubProfile(result.user.id);
+""")
+          text = text.replace("""  window.location.href = "../hub-portal/index.html?entry=hub";
+""", """  syncHubLandingNav(profile);
+  window.location.replace("../hub-portal/index.html?entry=hub&signin=1&v=hub-login-fix-20260717");
+""")
+          text = text.replace("""  const { data: profile } = await hubBackend
+    .from("profiles")
+    .select("account_type,membership_status")
+    .eq("user_id", data.session.user.id)
+    .single();
+""", """  const profile = await loadHubProfile(data.session.user.id);
+""")
+          text = text.replace("""  window.location.replace("../hub-portal/index.html?entry=hub");
+""", """  window.location.replace("../hub-portal/index.html?entry=hub&v=hub-login-fix-20260717");
+""")
+          app.write_text(text, encoding='utf-8')
+
+          hub_index = Path('hub/index.html')
+          text = hub_index.read_text(encoding='utf-8')
+          text = text.replace('app.js?v=landing-popup-delay-20260714', 'app.js?v=hub-login-fix-20260717')
+          hub_index.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "JP Innovation Codex"
+          git config user.email "actions@github.com"
+          git add index.html hub/app.js hub/index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Fix homepage header and Hub login redirect"
+            git push
+          fi
