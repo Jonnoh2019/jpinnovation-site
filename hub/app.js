@@ -285,7 +285,7 @@ async function signInToHub(data) {
     throw new Error("Your Innovation Hub access request has been sent to JP Innovation. Your free Client Portal remains available while approval is pending.");
   }
   syncHubLandingNav(profile);
-  window.location.replace("../hub-portal/index.html?entry=hub&signin=1&v=hub-profile-fallback-20260717");
+  window.location.replace("../hub-portal/index.html?entry=hub&v=hub-dashboard-stable-20260717");
 }
 
 async function registerHubAccount(data) {
@@ -421,7 +421,7 @@ async function restoreHubSession() {
   const profile = await loadHubProfile(data.session.user.id);
   syncHubLandingNav(profile);
   if (!profileHasHubAccess(profile)) return false;
-  window.location.replace("../hub-portal/index.html?entry=hub&v=hub-profile-fallback-20260717");
+  window.location.replace("../hub-portal/index.html?entry=hub&v=hub-dashboard-stable-20260717");
   return true;
 }
 
