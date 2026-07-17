@@ -6,14 +6,12 @@ html, body, .workspace { max-width: 100%; overflow-x: hidden; }
 .workspace-header-actions { align-items: center; gap: 8px; }
 .header-icon-button, .notification-bell, .member-chip { width: 42px; height: 42px; min-width: 42px; min-height: 42px; }
 .account-control-cluster { gap: 5px; padding: 4px; }
-.notification-bell.jp-notification-button img { display: none; }
-.notification-bell.jp-notification-button::before { content: ""; width: 21px; height: 21px; display: block; background: currentColor; mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M12 22a2.8 2.8 0 0 0 2.7-2h-5.4A2.8 2.8 0 0 0 12 22Zm8-6.6-1.6-2.1V9a6.4 6.4 0 0 0-5-6.2V2a1.4 1.4 0 0 0-2.8 0v.8a6.4 6.4 0 0 0-5 6.2v4.3L4 15.4a1.3 1.3 0 0 0 1 2.1h14a1.3 1.3 0 0 0 1-2.1Z"/></svg>') center/contain no-repeat; }
-.view-mount[data-view="dashboard"] { gap: 14px; }
+.view-mount[data-view="dashboard"] { gap: 14px; width: 100%; max-width: 100%; overflow: hidden; }
 .view-mount[data-view="dashboard"] .section-card,
 .view-mount[data-view="dashboard"] .dashboard-summary-card,
 .view-mount[data-view="dashboard"] .action-card,
 .view-mount[data-view="dashboard"] .activity-feed-item { border-radius: 16px; border-color: rgba(255,255,255,.12); background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)), rgba(6,12,18,.78); box-shadow: 0 14px 34px rgba(0,0,0,.18); }
-.view-mount[data-view="dashboard"] .dashboard-command-hero { grid-template-columns: 1fr; min-height: 0; padding: 15px; border-left: 1px solid rgba(47,141,255,.28); }
+.view-mount[data-view="dashboard"] .dashboard-command-hero { display: block; min-height: 0; padding: 15px; border-left: 1px solid rgba(47,141,255,.28); }
 .view-mount[data-view="dashboard"] .dashboard-hero-main { gap: 10px; }
 .view-mount[data-view="dashboard"] .dashboard-icon,
 .view-mount[data-view="dashboard"] .dashboard-hero-copy,
@@ -32,28 +30,29 @@ html, body, .workspace { max-width: 100%; overflow-x: hidden; }
 .view-mount[data-view="dashboard"] .activity-feed-panel .list-title h2 { font-size: 20px; }
 .view-mount[data-view="dashboard"] .activity-feed-panel .list-title p { font-size: 13px; }
 .view-mount[data-view="dashboard"] .dashboard-greeting-row h2 { font-size: clamp(24px, 3vw, 34px); line-height: 1.05; }
-.view-mount[data-view="dashboard"] .dashboard-today-list { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.view-mount[data-view="dashboard"] .dashboard-today-list li { min-width: 0; padding: 10px; border-radius: 13px; }
+.view-mount[data-view="dashboard"] .dashboard-today-list { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0; margin: 10px 0 0; list-style: none; }
+.view-mount[data-view="dashboard"] .dashboard-today-list li { display: grid !important; grid-template-columns: auto 1fr; align-items: center; min-width: 0; padding: 10px; border-radius: 13px; gap: 6px; }
+.view-mount[data-view="dashboard"] .dashboard-today-list li::marker { content: ""; }
 .view-mount[data-view="dashboard"] .dashboard-today-list strong { font-size: 24px; line-height: 1; }
-.view-mount[data-view="dashboard"] .dashboard-today-list small { font-size: 11px; line-height: 1.2; }
-.view-mount[data-view="dashboard"] .hero-button-row { gap: 9px; }
+.view-mount[data-view="dashboard"] .dashboard-today-list small { font-size: 11px; line-height: 1.2; min-width: 0; }
+.view-mount[data-view="dashboard"] .hero-button-row { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 .view-mount[data-view="dashboard"] .hero-button-row .primary-button,
-.view-mount[data-view="dashboard"] .hero-button-row .secondary-button { min-height: 42px; padding: 9px 15px; }
-.view-mount[data-view="dashboard"] .dashboard-quick-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.view-mount[data-view="dashboard"] .dashboard-quick-actions .action-card { min-height: 88px; height: 100%; padding: 12px; align-content: start; }
+.view-mount[data-view="dashboard"] .hero-button-row .secondary-button { min-height: 42px; padding: 9px 15px; width: 100%; }
+.view-mount[data-view="dashboard"] .dashboard-quick-actions { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.view-mount[data-view="dashboard"] .dashboard-quick-actions .action-card { min-width: 0 !important; width: auto !important; min-height: 88px; height: auto; padding: 12px; align-content: start; }
 .view-mount[data-view="dashboard"] .dashboard-quick-actions .action-card:nth-child(4) { display: none; }
 .view-mount[data-view="dashboard"] .action-icon { width: 30px; height: 30px; border-radius: 10px; font-size: 14px; }
 .view-mount[data-view="dashboard"] .action-card strong { font-size: 15px; line-height: 1.15; }
-.view-mount[data-view="dashboard"] .action-card small { font-size: 12px; }
-.view-mount[data-view="dashboard"] .dashboard-summary-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
-.view-mount[data-view="dashboard"] .dashboard-summary-card { min-height: 88px; padding: 12px; gap: 6px; }
+.view-mount[data-view="dashboard"] .action-card small { font-size: 12px; line-height: 1.25; }
+.view-mount[data-view="dashboard"] .dashboard-summary-grid { display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.view-mount[data-view="dashboard"] .dashboard-summary-card { min-width: 0 !important; width: auto !important; min-height: 88px; padding: 12px; gap: 6px; }
 .view-mount[data-view="dashboard"] .dashboard-summary-card::before { display: none; }
 .view-mount[data-view="dashboard"] .dashboard-stat-head { align-items: center; justify-content: flex-start; gap: 7px; font-size: 10px; }
 .view-mount[data-view="dashboard"] .dashboard-stat-head > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 8px; background: rgba(47,141,255,.13); color: var(--blue-soft); font-size: 11px; }
-.view-mount[data-view="dashboard"] .dashboard-summary-card strong { font-size: 28px; }
-.view-mount[data-view="dashboard"] .dashboard-summary-card small { font-size: 11px; }
+.view-mount[data-view="dashboard"] .dashboard-summary-card strong { font-size: 28px; line-height: 1; }
+.view-mount[data-view="dashboard"] .dashboard-summary-card small { font-size: 11px; line-height: 1.2; }
 .view-mount[data-view="dashboard"] .activity-feed-list { gap: 7px; }
-.view-mount[data-view="dashboard"] .activity-feed-item { grid-template-columns: 10px minmax(0, 1fr) auto; padding: 9px 10px; }
+.view-mount[data-view="dashboard"] .activity-feed-item { display: grid !important; grid-template-columns: 10px minmax(0, 1fr) auto; padding: 9px 10px; }
 .view-mount[data-view="dashboard"] .activity-feed-item strong,
 .view-mount[data-view="dashboard"] .activity-feed-item small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .view-mount[data-view="dashboard"] .compact-section-toggle { min-height: 38px; padding: 7px 10px; border-radius: 12px; background: rgba(255,255,255,.035); border-color: rgba(255,255,255,.11); }
@@ -62,20 +61,46 @@ html, body, .workspace { max-width: 100%; overflow-x: hidden; }
 .view-mount[data-view="dashboard"] .compact-collapsible.is-collapsed .compact-section-toggle b::before { content: "›"; }
 @media (max-width: 980px) { .view-mount[data-view="dashboard"] .dashboard-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
-  .workspace-header { padding: 6px 0 8px; gap: 7px; }
-  .workspace-mobile-logo img { width: min(100%, 220px); max-height: 72px; }
-  .workspace-header-actions { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 7px; }
+  html, body, .app-shell, .workspace, .view-mount { width: 100% !important; max-width: 100% !important; overflow-x: hidden !important; }
+  .workspace { padding-left: 14px !important; padding-right: 14px !important; }
+  .workspace-header { padding: 4px 0 8px; gap: 6px; margin-bottom: 8px; }
+  .workspace-mobile-logo img { width: min(100%, 210px); max-height: 62px; }
+  .workspace-header-actions { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 7px; align-items: center; width: 100%; }
   .workspace-heading { margin-top: 0; }
-  .workspace-header h1 { font-size: 21px; }
+  .workspace-heading .eyebrow { font-size: 10px; margin-bottom: 2px; }
+  .workspace-header h1 { font-size: 22px; line-height: 1.05; }
   .mobile-dashboard-menu { min-height: 38px; padding: 7px 9px; }
   .header-icon-button, .notification-bell, .member-chip { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
-  .view-mount[data-view="dashboard"] .dashboard-command-hero { padding: 12px; }
-  .view-mount[data-view="dashboard"] .dashboard-greeting-row h2 { font-size: 23px; }
-  .view-mount[data-view="dashboard"] .dashboard-today-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .view-mount[data-view="dashboard"] .dashboard-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .view-mount[data-view="dashboard"] .dashboard-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .view-mount[data-view="dashboard"] .dashboard-summary-card { min-height: 82px; padding: 10px; }
-  .view-mount[data-view="dashboard"] .dashboard-summary-card strong { font-size: 24px; }
-  .view-mount[data-view="dashboard"] .activity-feed-item { grid-template-columns: 9px minmax(0, 1fr); }
+  .view-mount[data-view="dashboard"] { gap: 12px; }
+  .view-mount[data-view="dashboard"] .dashboard-command-hero { padding: 12px; border-radius: 15px; }
+  .view-mount[data-view="dashboard"] .dashboard-greeting-row h2 { font-size: 22px; line-height: 1.08; }
+  .view-mount[data-view="dashboard"] .dashboard-greeting-row .eyebrow { font-size: 11px; }
+  .view-mount[data-view="dashboard"] .dashboard-today-list { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 7px; }
+  .view-mount[data-view="dashboard"] .dashboard-today-list li { padding: 8px; gap: 5px; }
+  .view-mount[data-view="dashboard"] .dashboard-today-list strong { font-size: 20px; }
+  .view-mount[data-view="dashboard"] .dashboard-today-list small { font-size: 10px; }
+  .view-mount[data-view="dashboard"] .hero-button-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .view-mount[data-view="dashboard"] .hero-button-row .primary-button,
+  .view-mount[data-view="dashboard"] .hero-button-row .secondary-button { min-height: 40px; padding: 8px 10px; font-size: 14px; }
+  .view-mount[data-view="dashboard"] .dashboard-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+  .view-mount[data-view="dashboard"] .dashboard-quick-actions .action-card { min-height: 78px; padding: 10px; border-radius: 14px; }
+  .view-mount[data-view="dashboard"] .action-icon { width: 26px; height: 26px; font-size: 12px; border-radius: 9px; }
+  .view-mount[data-view="dashboard"] .action-card strong { font-size: 14px; }
+  .view-mount[data-view="dashboard"] .action-card small { font-size: 11px; }
+  .view-mount[data-view="dashboard"] .dashboard-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+  .view-mount[data-view="dashboard"] .dashboard-summary-card { min-height: 70px; padding: 10px; border-radius: 14px; }
+  .view-mount[data-view="dashboard"] .dashboard-stat-head { font-size: 9px; gap: 5px; }
+  .view-mount[data-view="dashboard"] .dashboard-stat-head > span { width: 20px; height: 20px; font-size: 10px; }
+  .view-mount[data-view="dashboard"] .dashboard-summary-card strong { font-size: 21px; }
+  .view-mount[data-view="dashboard"] .dashboard-summary-card small { font-size: 10px; }
+  .view-mount[data-view="dashboard"] .activity-feed-panel { padding: 10px; border-radius: 14px; }
+  .view-mount[data-view="dashboard"] .activity-feed-panel .list-title { gap: 8px; }
+  .view-mount[data-view="dashboard"] .activity-feed-panel .list-title h2 { font-size: 18px; }
+  .view-mount[data-view="dashboard"] .activity-feed-panel .list-title p { display: none; }
+  .view-mount[data-view="dashboard"] .activity-feed-item { grid-template-columns: 8px minmax(0, 1fr); padding: 8px; }
 }
-@media (max-width: 420px) { .workspace { padding-left: 12px; padding-right: 12px; } }
+@media (max-width: 420px) {
+  .workspace { padding-left: 12px !important; padding-right: 12px !important; }
+  .view-mount[data-view="dashboard"] .dashboard-quick-actions .action-card { min-height: 72px; }
+  .view-mount[data-view="dashboard"] .dashboard-summary-card { min-height: 66px; }
+}
