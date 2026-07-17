@@ -2742,21 +2742,30 @@ function prepareCompactSections(view) {
     const toggle = document.createElement("button");
     toggle.className = "compact-section-toggle";
     toggle.type = "button";
-    toggle.innerHTML = `<span>${escapeHtml(heading.textContent.trim())}</span><b aria-hidden="true">−</b>`;
+    toggle.innerHTML = `<span>${escapeHtml(heading.textContent.trim())}</span><b aria-hidden="true">⌄</b>`;
     const collapsed = mobile && index > 0;
     section.classList.toggle("is-collapsed", collapsed);
     toggle.setAttribute("aria-expanded", String(!collapsed));
-    toggle.querySelector("b").textContent = collapsed ? "+" : "−";
+    toggle.querySelector("b").textContent = collapsed ? "›" : "⌄";
     toggle.addEventListener("click", () => {
       const willCollapse = !section.classList.contains("is-collapsed");
+      if (!willCollapse) {
+        $all("#viewMount > .compact-collapsible").forEach((other) => {
+          if (other === section) return;
+          other.classList.add("is-collapsed");
+          const otherToggle = other.querySelector(".compact-section-toggle");
+          otherToggle?.setAttribute("aria-expanded", "false");
+          const otherIcon = otherToggle?.querySelector("b");
+          if (otherIcon) otherIcon.textContent = "›";
+        });
+      }
       section.classList.toggle("is-collapsed", willCollapse);
       toggle.setAttribute("aria-expanded", String(!willCollapse));
-      toggle.querySelector("b").textContent = willCollapse ? "+" : "−";
+      toggle.querySelector("b").textContent = willCollapse ? "›" : "⌄";
     });
     section.prepend(toggle);
   });
 }
-
 function renderClientDashboard(user) {
   const quotes = state.quotes.filter((quote) => quote.authorEmail === user.email);
   const messages = state.messages.filter((message) => message.ownerEmail === user.email);
@@ -2825,18 +2834,14 @@ function renderDashboard(user) {
   const completion = profileCompletion(user);
   const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
   const activeProjects = (state.projects || []).filter((project) => !["complete", "completed", "closed"].includes(String(project.status || "").toLowerCase()));
-  const activeProject = state.projects.find((project) => project.id === state.activeProjectId) || activeProjects[0] || state.projects[0];
-  const unresolvedPosts = state.posts.filter((post) => !countHelpfulReplies(post)).length;
-  const nextActions = dashboardNextActions(user, { completion, unread, unresolvedPosts, openQuotes });
   const notificationCount = notificationItems(user).filter((item) => item.isNew).length;
   const recentReplies = recentDashboardReplies(user).length;
   const upcomingEvents = upcomingDashboardEvents().length;
+  const pendingApprovals = user.role === "admin" ? adminModerationQueue.filter((item) => item.status === "Pending Review").length : 0;
   const summaryItems = dashboardSummaryItems({ notificationCount, unread, openQuotes, activeProjects: activeProjects.length, recentReplies, upcomingEvents });
-  const activityItems = dashboardActivityFeed(user);
+  const activityItems = dashboardActivityFeed(user).slice(0, 4);
   const onlineMembers = dashboardOnlineMembers(user);
-  const question = engineeringQuestionOfDay();
   const greeting = dashboardGreeting(user);
-  const dashboardWidgets = dashboardWidgetItems({ user, activeProject, openQuotes, upcomingEvents, question, onlineMembers });
   return `
     ${user.role !== "admin" && completion < 80 ? `
       <section class="section-card setup-reminder">
@@ -2851,131 +2856,46 @@ function renderDashboard(user) {
     <section class="section-card dashboard-command-hero">
       <div class="dashboard-hero-main">
         <div class="dashboard-greeting-row">
-          <span class="dashboard-icon" aria-hidden="true">◎</span>
           <div>
             <p class="eyebrow">${escapeHtml(greeting.date)}</p>
-            <h2>${escapeHtml(greeting.text)}, ${escapeHtml(user.name.split(" ")[0] || user.name)} 👋</h2>
+            <h2>${escapeHtml(greeting.text)}, ${escapeHtml(user.name.split(" ")[0] || user.name)}</h2>
           </div>
         </div>
-        <p class="dashboard-hero-copy">Your engineering operating system for discussions, quotes, projects, files and member activity.</p>
         <ul class="dashboard-today-list">
-          <li><span>🔔</span><strong>${notificationCount}</strong><small>new notification${notificationCount === 1 ? "" : "s"}</small></li>
-          <li><span>💬</span><strong>${unread}</strong><small>unread message${unread === 1 ? "" : "s"}</small></li>
-          <li><span>🧩</span><strong>${adminModerationQueue.filter((item) => item.status === "Pending Review").length || activeProjects.length}</strong><small>${user.role === "admin" ? "approval item" : "active project"}${(user.role === "admin" ? adminModerationQueue.filter((item) => item.status === "Pending Review").length : activeProjects.length) === 1 ? "" : "s"}</small></li>
-          <li><span>⚡</span><strong>${question.replyCount}</strong><small>replies on today’s topic</small></li>
+          <li><span aria-hidden="true">Bell</span><strong>${notificationCount}</strong><small>Notifications</small></li>
+          <li><span aria-hidden="true">Mail</span><strong>${unread}</strong><small>Messages</small></li>
+          ${user.role === "admin" ? `<li><span aria-hidden="true">OK</span><strong>${pendingApprovals}</strong><small>Pending approvals</small></li>` : ""}
+          <li><span class="online-dot" aria-hidden="true"></span><strong>${onlineMembers.length}</strong><small>Members online</small></li>
         </ul>
         <div class="hero-button-row">
-          <button class="primary-button dashboard-link" data-view-link="boards" type="button">Open Discussions</button>
+          <button class="primary-button dashboard-link" data-view-link="boards" type="button">Discussions</button>
           <button class="secondary-button dashboard-link" data-view-link="messages" type="button">Messages</button>
         </div>
       </div>
-      <aside class="dashboard-profile-summary">
-        <div class="profile-summary-top">
-          <span class="profile-summary-avatar">${profileAvatarMarkup(user, "profile-avatar")}</span>
-          <div>
-            <strong>${escapeHtml(user.name)}</strong>
-            <small>${escapeHtml(roleLabel(user))}</small>
-          </div>
-        </div>
-        <div class="profile-summary-stats">
-          <span><b>${Number(user.reputationPoints ?? user.points ?? 0)}</b><small>Reputation</small></span>
-          <span><b>${activeProjects.length}</b><small>Projects</small></span>
-          <span><b>${state.posts.filter((post) => post.authorId === user.id || post.authorEmail === user.email).length}</b><small>Posts</small></span>
-        </div>
-        <button class="online-members-button dashboard-link" data-view-link="directory" type="button">
-          <span class="online-dot" aria-hidden="true"></span><strong>${onlineMembers.length} members online</strong>
-        </button>
-      </aside>
     </section>
     <section class="dashboard-quick-actions" aria-label="Quick actions">
-      ${quickAction("+", "New Discussion", "Ask or share engineering insight.", "boards", "💬")}
-      ${quickAction("+", "New Project", "Start a project workspace.", "projects", "🧩")}
-      ${quickAction("+", "Request Quote", "Prepare work for JP review.", "quotes", "£")}
-      ${quickAction("↥", "Upload Files", "Add drawings, photos or CAD.", "resources", "📎")}
-      ${quickAction("✉", "Message Member", "Start a useful conversation.", "messages", "✉")}
+      ${quickAction("+", "New Discussion", "Start a thread.", "boards", "Chat")}
+      ${quickAction("+", "New Project", "Create a workspace.", "projects", "Proj")}
+      ${quickAction("+", "Request Quote", "Send a request.", "quotes", "GBP")}
+      ${quickAction("Mail", "Message", "Open inbox.", "messages", "Mail")}
     </section>
     <section class="dashboard-summary-grid premium-stats-grid">
       ${summaryItems.map((item) => dashboardSummaryCard(item)).join("")}
     </section>
-    <section class="dashboard-live-grid">
-      <section class="section-card activity-feed-panel section-blue">
-        <div class="list-title"><div><h2><span aria-hidden="true">⌁</span> Recent activity</h2><p>Live Hub movement, member updates and engineering activity.</p></div><button class="secondary-button dashboard-link" data-view-link="notifications" type="button">View all</button></div>
-        <div class="activity-feed-list">
-          ${activityItems.length ? activityItems.map(activityFeedItem).join("") : `<div class="empty-dashboard-state"><strong>No activity yet</strong><p>New posts, replies, projects and quote activity will appear here.</p></div>`}
+    <section class="section-card activity-feed-panel">
+      <div class="list-title">
+        <div>
+          <h2>Recent activity</h2>
+          <p>Latest Hub updates only.</p>
         </div>
-      </section>
-      <section class="dashboard-widget-grid">
-        ${dashboardWidgets.map(dashboardWidget).join("")}
-      </section>
-    </section>
-    <section class="section-card question-card section-cyan dashboard-collapsible-card">
-      <div>
-        <p class="eyebrow">💡 Engineering tip of the day</p>
-        <h2>${escapeHtml(question.title)}</h2>
-        <p class="muted">${escapeHtml(question.detail)}</p>
-        <div class="meta-row"><span class="pill">${question.replyCount} replies</span><span class="pill">Pinned discussion</span></div>
+        <button class="secondary-button dashboard-link" data-view-link="notifications" type="button">View all</button>
       </div>
-      <button class="primary-button dashboard-link" data-view-link="boards" type="button">Join discussion</button>
-    </section>
-    <section class="section-card online-members-panel section-lime dashboard-collapsible-card">
-      <div class="list-title"><div><h2>Members online</h2><p>People currently active or recently available in the Hub.</p></div><button class="secondary-button dashboard-link" data-view-link="directory" type="button">Open directory</button></div>
-      <div class="online-member-row">
-        ${onlineMembers.length ? onlineMembers.map((member) => `<span class="online-member-pill"><span class="online-dot" aria-hidden="true"></span>${escapeHtml(member.name)}</span>`).join("") : `<span class="muted">No other members appear online yet.</span>`}
-      </div>
-    </section>
-    <section class="section-card launch-focus-panel dashboard-collapsible-card">
-      <div class="list-title"><div><h2>🧭 Recommended next steps</h2><p>A simple route through the Hub without hunting through every section.</p></div></div>
-      <div class="attention-list">
-        ${nextActions.map((item) => `
-          <button class="attention-item dashboard-link" data-view-link="${escapeHtml(item.view)}" type="button">
-            <span class="pill ${escapeHtml(item.tone || "")}">${escapeHtml(item.label)}</span>
-            <strong>${escapeHtml(item.title)}</strong>
-            <small>${escapeHtml(item.detail)}</small>
-          </button>
-        `).join("")}
-      </div>
-    </section>
-    <section class="section-card member-momentum section-teal dashboard-collapsible-card">
-      <div class="list-title"><div><h2>🛠 Current engineering activity</h2><p>A quick read of what is moving inside the Hub.</p></div></div>
-      <div class="momentum-grid">
-        <article>
-          <img src="${escapeHtml(activeProject?.image || "../assets/case-study-fixture-bracket.webp")}" alt="" loading="lazy" decoding="async">
-          <div>
-            <span class="badge">Active project</span>
-            <h3>${escapeHtml(activeProject?.title || "No active project")}</h3>
-            <p>${escapeHtml(activeProject?.nextStep || activeProject?.description || "Create a project to begin collecting member input.")}</p>
-            <button class="secondary-button dashboard-link" data-view-link="projects" type="button">Open project</button>
-          </div>
-        </article>
-        <article class="reward-highlight">
-          <span class="badge">${escapeHtml(state.rewardMonth)} competition</span>
-          <strong>${escapeHtml(state.rewardPrize)}</strong>
-          <p>Members earn points when their feedback is marked helpful by the person who posted.</p>
-          <button class="secondary-button dashboard-link" data-view-link="rewards" type="button">View rewards</button>
-        </article>
-      </div>
-    </section>
-    <section class="section-card compact-home section-blue dashboard-collapsible-card">
-      <div class="list-title"><div><h2>▦ Member sections</h2><p>Each section opens separately to keep the Hub tidy and simple to navigate.</p></div></div>
-      <div class="section-link-grid">
-        ${portalSections.map((section) => `
-          <button class="section-link dashboard-link" data-view-link="${section.view}" type="button">
-            <strong>${escapeHtml(section.title)}</strong>
-            <span>${escapeHtml(section.detail)}</span>
-          </button>
-        `).join("")}
-      </div>
-    </section>
-    <section class="section-card hub-search-panel section-violet dashboard-collapsible-card">
-      <div class="list-title"><div><h2>⌕ Find help fast</h2><p>Search people, skills, threads, projects, quotes and events.</p></div></div>
-      <label class="wide">Search Hub <input id="hubSearchInput" placeholder="Try CAD, Mini, welding, Milton Keynes, quote..."></label>
-      <div id="hubSearchResults" class="search-results">
-        <p class="muted">Start typing to find useful help across the Hub.</p>
+      <div class="activity-feed-list">
+        ${activityItems.length ? activityItems.map(activityFeedItem).join("") : `<div class="empty-dashboard-state"><strong>No activity yet</strong><p>Posts, replies, projects and quotes will appear here.</p></div>`}
       </div>
     </section>
   `;
 }
-
 function metric(label, value) {
   return `<article class="metric-card"><span class="badge">${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`;
 }
@@ -2999,22 +2919,20 @@ function quickAction(code, title, detail, view, icon = "") {
 
 function dashboardSummaryItems({ notificationCount, unread, openQuotes, activeProjects, recentReplies, upcomingEvents }) {
   return [
-    { label: "Notifications", icon: "🔔", value: notificationCount, detail: notificationCount ? "New alerts" : "No new alerts", trend: notificationCount ? "Needs review" : "All caught up", view: "notifications", tone: notificationCount ? "warn" : "good", accent: "blue" },
-    { label: "Messages", icon: "✉", value: unread, detail: unread ? "Unread inbox" : "Inbox is clear", trend: unread ? "Reply due" : "Clear", view: "messages", tone: unread ? "warn" : "good", accent: "green" },
-    { label: "Quotes", icon: "£", value: openQuotes, detail: "Open requests", trend: openQuotes ? "Active" : "No active quotes", view: "quotes", tone: openQuotes ? "" : "good", accent: "orange" },
-    { label: "Projects", icon: "🧩", value: activeProjects, detail: "Moving now", trend: activeProjects ? "In progress" : "Start one", view: "projects", tone: activeProjects ? "" : "good", accent: "green" },
-    { label: "Replies", icon: "↩", value: recentReplies, detail: "Recent discussion replies", trend: recentReplies ? "Fresh activity" : "Quiet", view: "boards", tone: recentReplies ? "" : "good", accent: "purple" },
-    { label: "Events", icon: "📅", value: upcomingEvents, detail: "Upcoming sessions", trend: upcomingEvents ? "Scheduled" : "None booked", view: "events", tone: upcomingEvents ? "" : "good", accent: "turquoise" }
+    { label: "Notifications", icon: "!", value: notificationCount, detail: notificationCount ? "New alerts" : "No new alerts", view: "notifications", tone: notificationCount ? "warn" : "good", accent: "blue" },
+    { label: "Messages", icon: "M", value: unread, detail: unread ? "Unread inbox" : "Inbox is clear", view: "messages", tone: unread ? "warn" : "good", accent: "green" },
+    { label: "Quotes", icon: "GBP", value: openQuotes, detail: "Open requests", view: "quotes", tone: openQuotes ? "" : "good", accent: "orange" },
+    { label: "Projects", icon: "P", value: activeProjects, detail: "Active projects", view: "projects", tone: activeProjects ? "" : "good", accent: "green" },
+    { label: "Replies", icon: "R", value: recentReplies, detail: "Recent replies", view: "boards", tone: recentReplies ? "" : "good", accent: "purple" },
+    { label: "Events", icon: "E", value: upcomingEvents, detail: "Upcoming events", view: "events", tone: upcomingEvents ? "" : "good", accent: "turquoise" }
   ];
 }
-
 function dashboardSummaryCard(item) {
   return `
     <button class="dashboard-summary-card dashboard-link ${escapeHtml(item.tone || "")} accent-${escapeHtml(item.accent || "blue")}" data-view-link="${escapeHtml(item.view)}" type="button">
       <span class="dashboard-stat-head"><span aria-hidden="true">${escapeHtml(item.icon || "•")}</span><b>${escapeHtml(item.label)}</b></span>
       <strong>${escapeHtml(item.value)}</strong>
       <small>${escapeHtml(item.detail)}</small>
-      <em>${escapeHtml(item.trend || "Updated")}</em>
     </button>
   `;
 }
@@ -3024,26 +2942,25 @@ function dashboardWidgetItems({ user, activeProject, openQuotes, upcomingEvents,
   const newestMember = (state.members || []).filter((member) => member.email !== user.email).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0];
   const recentFile = (state.resources || []).find((resource) => /file|download|cad|drawing|template/i.test(`${resource.type} ${resource.title}`));
   return [
-    { icon: "📅", accent: "blue", title: "Upcoming events", value: upcomingEvents || "0", detail: upcomingEvents ? "Sessions on the calendar" : "No events scheduled", view: "events" },
-    { icon: "📚", accent: "turquoise", title: "Latest resource", value: latestResource?.title || "Templates", detail: latestResource?.detail || "Add downloads and calculators here.", view: "resources" },
-    { icon: "🔥", accent: "purple", title: "Trending discussion", value: question.title, detail: `${question.replyCount} replies today`, view: "boards" },
-    { icon: "🟢", accent: "green", title: "Online members", value: `${onlineMembers.length} active`, detail: "Open the directory to contact them.", view: "directory" },
-    { icon: "£", accent: "orange", title: "Quote requests", value: openQuotes, detail: openQuotes ? "Awaiting action" : "No open quotes", view: "quotes" },
-    { icon: "📎", accent: "blue", title: "Recent files", value: recentFile?.title || "No files yet", detail: recentFile?.detail || "Uploads and templates will appear here.", view: "resources" },
-    { icon: "👤", accent: "green", title: "Newest member", value: newestMember?.name || "No new member", detail: newestMember?.skill || newestMember?.business || "Approved members appear here.", view: "directory" },
-    { icon: "🛠", accent: "turquoise", title: "Active project", value: activeProject?.title || "No active project", detail: activeProject?.nextStep || "Start your first project.", view: "projects" }
+    { icon: "E", accent: "blue", title: "Upcoming events", value: upcomingEvents || "0", detail: upcomingEvents ? "Sessions on the calendar" : "No events scheduled", view: "events" },
+    { icon: "R", accent: "turquoise", title: "Latest resource", value: latestResource?.title || "Templates", detail: latestResource?.detail || "Add downloads and calculators here.", view: "resources" },
+    { icon: "T", accent: "purple", title: "Trending discussion", value: question.title, detail: `${question.replyCount} replies today`, view: "boards" },
+    { icon: "O", accent: "green", title: "Online members", value: `${onlineMembers.length} active`, detail: "Open the directory to contact them.", view: "directory" },
+    { icon: "GBP", accent: "orange", title: "Quote requests", value: openQuotes, detail: openQuotes ? "Awaiting action" : "No open quotes", view: "quotes" },
+    { icon: "F", accent: "blue", title: "Recent files", value: recentFile?.title || "No files yet", detail: recentFile?.detail || "Uploads and templates will appear here.", view: "resources" },
+    { icon: "M", accent: "green", title: "Newest member", value: newestMember?.name || "No new member", detail: newestMember?.skill || newestMember?.business || "Approved members appear here.", view: "directory" },
+    { icon: "P", accent: "turquoise", title: "Active project", value: activeProject?.title || "No active project", detail: activeProject?.nextStep || "Start your first project.", view: "projects" }
   ];
 }
 
 function dashboardWidget(item) {
   return `
     <button class="dashboard-widget dashboard-link accent-${escapeHtml(item.accent || "blue")}" data-view-link="${escapeHtml(item.view)}" type="button">
-      <span class="dashboard-widget-icon" aria-hidden="true">${escapeHtml(item.icon || "•")}</span>
+      <span class="dashboard-widget-icon" aria-hidden="true">${escapeHtml(item.icon || "-")}</span>
       <span><small>${escapeHtml(item.title)}</small><strong>${escapeHtml(item.value)}</strong><em>${escapeHtml(item.detail)}</em></span>
     </button>
   `;
 }
-
 function recentDashboardReplies(user = currentUser()) {
   const email = user?.email || "";
   return (state.posts || []).flatMap((post) => (post.responses || []).map((reply) => ({ post, reply })))

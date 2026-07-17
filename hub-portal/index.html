@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=admin-badge-nav-20260715">
+    <link rel="stylesheet" href="styles.css?v=dashboard-clean-20260717">
     <link rel="stylesheet" href="dashboard-clean.css?v=dashboard-clean-20260717">
 </head>
 <body>
@@ -175,8 +175,11 @@
           </button>
           <div class="account-control-cluster">
             <div class="notification-centre">
-              <button id="topNotificationBell" class="notification-bell jp-notification-button" type="button" aria-label="Open JP notifications" aria-controls="notificationPopover" aria-expanded="false">
-                <img class="jp-notification-symbol" src="../assets/jp-app-icon.svg" alt="" aria-hidden="true">
+              <button id="topNotificationBell" class="notification-bell" type="button" aria-label="Open notifications" aria-controls="notificationPopover" aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
+                  <path d="M10 20a2 2 0 0 0 4 0"/>
+                </svg>
                 <span id="notificationCountTop" class="notification-count hidden">0</span>
               </button>
               <div id="notificationPopover" class="notification-popover" aria-hidden="true">
@@ -243,6 +246,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=hub-profile-fallback-20260717"></script>
+  <script src="app.js?v=dashboard-clean-20260717"></script>
 </body>
 </html>
