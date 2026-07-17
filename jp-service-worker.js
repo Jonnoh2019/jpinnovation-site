@@ -8,7 +8,7 @@ self.addEventListener("activate", (event) => {
 
 function notificationPayload(event) {
   const jpIcon = "/assets/jp-app-icon-192.png?v=jp-notification-20260717";
-  const jpBadge = "/assets/jp-notification-badge.png?v=jp-notification-20260717";
+  const jpBadge = "/assets/jp-notification-badge.svg?v=jp-notification-20260717";
   if (!event.data) {
     return {
       title: "JP Innovation",
