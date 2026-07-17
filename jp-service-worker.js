@@ -7,12 +7,17 @@ self.addEventListener("activate", (event) => {
 });
 
 function notificationPayload(event) {
+  const jpIcon = "/assets/jp-app-icon-192.png?v=jp-notification-20260717";
+  const jpBadge = "/assets/jp-notification-badge.png?v=jp-notification-20260717";
   if (!event.data) {
     return {
       title: "JP Innovation",
       options: {
         body: "You have a new Hub update.",
-        url: "/hub-portal/index.html?entry=hub&view=notifications"
+        icon: jpIcon,
+        badge: jpBadge,
+        tag: "jp-innovation-alert",
+        data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
       }
     };
   }
@@ -22,8 +27,8 @@ function notificationPayload(event) {
       title: payload.title || "JP Innovation",
       options: {
         body: payload.body || payload.message || "You have a new Hub update.",
-        icon: payload.icon || "/assets/jp-app-icon-192.png",
-        badge: payload.badge || "/assets/jp-app-icon-180.png",
+        icon: payload.icon || jpIcon,
+        badge: payload.badge || jpBadge,
         tag: payload.tag || "jp-innovation-alert",
         renotify: true,
         data: { url: payload.url || "/hub-portal/index.html?entry=hub&view=notifications" }
@@ -34,8 +39,8 @@ function notificationPayload(event) {
       title: "JP Innovation",
       options: {
         body: event.data.text() || "You have a new Hub update.",
-        icon: "/assets/jp-app-icon-192.png",
-        badge: "/assets/jp-app-icon-180.png",
+        icon: jpIcon,
+        badge: jpBadge,
         tag: "jp-innovation-alert",
         data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
       }
