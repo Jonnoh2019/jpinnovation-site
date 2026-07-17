@@ -111,14 +111,18 @@
     .header-inner {
       max-width: 1180px;
       margin: 0 auto;
-      min-height: 82px;
-      padding: 14px 22px;
+      min-height: 0;
+      padding: 12px 22px 10px;
       display: grid;
-      grid-template-columns: minmax(190px, 320px) 1fr auto;
+      grid-template-columns: minmax(190px, 320px) 1fr;
+      grid-template-areas:
+        "brand actions"
+        "nav nav";
       align-items: center;
-      gap: 22px;
+      gap: 10px 18px;
     }
     .brand {
+      grid-area: brand;
       display: inline-flex;
       align-items: center;
       min-width: 0;
@@ -131,17 +135,23 @@
       mask-image: radial-gradient(ellipse 98% 96% at center, #000 68%, rgba(0,0,0,.94) 82%, transparent 100%);
     }
     .nav {
+      grid-area: nav;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 4px;
-      flex-wrap: wrap;
+      gap: 6px;
+      flex-wrap: nowrap;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
+    .nav::-webkit-scrollbar { display: none; }
     .nav a {
       color: #dce6f2;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
-      padding: 8px 7px;
+      padding: 8px 10px;
       border-radius: var(--radius);
       white-space: nowrap;
     }
@@ -153,10 +163,12 @@
     }
     .nav-menu-extra { display: inline-flex; }
     .header-actions {
+      grid-area: actions;
       display: flex;
       justify-content: flex-end;
       align-items: center;
       gap: 10px;
+      justify-self: end;
     }
     .section-switcher {
       display: flex;
@@ -1233,7 +1245,7 @@
 
     @media (max-width: 1060px) {
       .header-inner {
-        grid-template-columns: minmax(190px, 280px) 1fr auto;
+        grid-template-columns: minmax(190px, 280px) 1fr;
       }
       .intro-panel,
       .about-panel,
@@ -1273,9 +1285,13 @@
       .header-inner {
         min-height: 74px;
         grid-template-columns: 1fr auto;
+        grid-template-areas: none;
         padding: 12px 16px;
         gap: 12px;
       }
+      .brand,
+      .nav,
+      .header-actions { grid-area: auto; }
       .brand img { width: clamp(150px, 36vw, 220px); }
       .header-actions { gap: 6px; }
       .section-switcher { gap: 5px; }

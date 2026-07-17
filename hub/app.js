@@ -117,6 +117,17 @@ function syncHubLandingNav(profile) {
   });
 }
 
+async function loadHubProfile(userId) {
+  if (!hubBackend || !userId) return null;
+  const { data, error } = await hubBackend
+    .from("profiles")
+    .select("account_type,membership_status")
+    .eq("user_id", userId)
+    .limit(1);
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] || null : data || null;
+}
+
 function setHubAuthTab(mode = "signin") {
   const isRegister = mode === "register";
   const signinForm = $("#hubSigninForm");
@@ -267,18 +278,14 @@ async function signInToHub(data) {
   });
   if (error) throw error;
 
-  const { data: profile, error: profileError } = await hubBackend
-    .from("profiles")
-    .select("account_type,membership_status")
-    .eq("user_id", result.user.id)
-    .single();
-  if (profileError) throw profileError;
+  const profile = await loadHubProfile(result.user.id);
   if (!profileHasHubAccess(profile)) {
     await hubBackend.rpc("request_hub_access");
     await hubBackend.auth.signOut();
     throw new Error("Your Innovation Hub access request has been sent to JP Innovation. Your free Client Portal remains available while approval is pending.");
   }
-  window.location.href = "../hub-portal/index.html?entry=hub";
+  syncHubLandingNav(profile);
+  window.location.replace("../hub-portal/index.html?entry=hub&signin=1&v=hub-login-fix-20260717");
 }
 
 async function registerHubAccount(data) {
@@ -411,14 +418,10 @@ async function restoreHubSession() {
   if (!hubBackend) return false;
   const { data, error } = await hubBackend.auth.getSession();
   if (error || !data?.session?.user) return false;
-  const { data: profile } = await hubBackend
-    .from("profiles")
-    .select("account_type,membership_status")
-    .eq("user_id", data.session.user.id)
-    .single();
+  const profile = await loadHubProfile(data.session.user.id);
   syncHubLandingNav(profile);
   if (!profileHasHubAccess(profile)) return false;
-  window.location.replace("../hub-portal/index.html?entry=hub");
+  window.location.replace("../hub-portal/index.html?entry=hub&v=hub-login-fix-20260717");
   return true;
 }
 
