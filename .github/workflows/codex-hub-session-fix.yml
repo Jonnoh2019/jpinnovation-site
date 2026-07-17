@@ -21,21 +21,8 @@ jobs:
 
           app = Path('hub-portal/app.js')
           text = app.read_text(encoding='utf-8')
-          old = '''  const { data: profile, error: profileError } = await portalBackend
-    .from("profiles")
-    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
-    .eq("user_id", authUser.id)
-    .single();
-  if (profileError && profileError.code !== "PGRST116") throw profileError;
-'''
-          new = '''  const { data: profileRows, error: profileError } = await portalBackend
-    .from("profiles")
-    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
-    .eq("user_id", authUser.id)
-    .limit(1);
-  if (profileError) throw profileError;
-  const profile = Array.isArray(profileRows) ? profileRows[0] || null : profileRows || null;
-'''
+          old = "  const { data: profile, error: profileError } = await portalBackend\n    .from(\"profiles\")\n    .select(\"user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at\")\n    .eq(\"user_id\", authUser.id)\n    .single();\n  if (profileError && profileError.code !== \"PGRST116\") throw profileError;\n"
+          new = "  const { data: profileRows, error: profileError } = await portalBackend\n    .from(\"profiles\")\n    .select(\"user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at\")\n    .eq(\"user_id\", authUser.id)\n    .limit(1);\n  if (profileError) throw profileError;\n  const profile = Array.isArray(profileRows) ? profileRows[0] || null : profileRows || null;\n"
           if old in text:
               text = text.replace(old, new)
           app.write_text(text, encoding='utf-8')
