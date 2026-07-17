@@ -1,0 +1,131 @@
+name: Codex compact dashboard and admin menu patch
+
+on:
+  push:
+    paths:
+      - '.github/workflows/codex-dashboard-compact-admin-20260717.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compact dashboard and prioritise admin menu
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          index_path = Path('hub-portal/index.html')
+          css_path = Path('hub-portal/dashboard-clean.css')
+
+          html = index_path.read_text(encoding='utf-8')
+          old = '''                <button class="profile-menu-link" data-profile-view="profile" type="button"><span class="profile-menu-icon icon-profile" aria-hidden="true">&#9675;</span><span><strong>My profile</strong><small>View and edit your details</small></span></button>
+                <button id="profileClientWork" class="profile-menu-link" data-profile-view="clientwork" type="button"><span class="profile-menu-icon icon-work" aria-hidden="true">&#128188;</span><span><strong>My client work</strong><small>Quotes, projects and JP messages</small></span></button>
+                <button id="profileMyPosts" class="profile-menu-link" data-profile-action="my-posts" type="button"><span class="profile-menu-icon icon-posts" aria-hidden="true">&#128172;</span><span><strong>My posts</strong><small>Your board threads and replies</small></span></button>
+                <button class="profile-menu-link" data-profile-action="my-quotes" type="button"><span class="profile-menu-icon icon-quotes" aria-hidden="true">&#163;</span><span><strong>My quotes</strong><small>Your requests and responses</small></span></button>
+                <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications"><span class="profile-menu-icon icon-alerts" aria-hidden="true">&#9679;</span><span><strong>Notifications</strong><small>Approvals and account updates</small></span><span id="notificationCount" class="menu-count hidden">0</span></button>
+                <div id="profileChatNotifications" class="profile-chat-notifications" aria-live="polite"></div>
+                <button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><span class="profile-menu-icon icon-messages" aria-hidden="true">&#9993;</span><span><strong>My messages</strong><small>Open your private inbox</small></span><span id="messageCount" class="menu-count hidden">0</span></button>
+                <button class="profile-menu-link" data-profile-view="settings" type="button"><span class="profile-menu-icon icon-settings" aria-hidden="true">&#9881;</span><span><strong>Account settings</strong><small>Preferences and security</small></span></button>
+                <button id="profileAdminLink" class="profile-menu-link hidden" data-profile-view="admin" type="button"><span class="profile-menu-icon icon-admin" aria-hidden="true">&#10003;</span><span><strong>Admin review</strong><small>Approvals, moderation and account access</small></span></button>
+                <button id="profileMetricsLink" class="profile-menu-link hidden" data-profile-view="metrics" type="button"><span class="profile-menu-icon icon-metrics" aria-hidden="true">&#128200;</span><span><strong>Website metrics</strong><small>Visits, registrations and activity</small></span></button>'''
+          new = '''                <button id="profileAdminLink" class="profile-menu-link profile-menu-priority hidden" data-profile-view="admin" type="button"><span class="profile-menu-icon icon-admin" aria-hidden="true">&#10003;</span><span><strong>Admin review</strong><small>Approvals and moderation</small></span></button>
+                <button id="profileMetricsLink" class="profile-menu-link profile-menu-priority hidden" data-profile-view="metrics" type="button"><span class="profile-menu-icon icon-metrics" aria-hidden="true">&#128200;</span><span><strong>Website metrics</strong><small>Visits and registrations</small></span></button>
+                <button class="profile-menu-link" data-profile-view="profile" type="button"><span class="profile-menu-icon icon-profile" aria-hidden="true">&#9675;</span><span><strong>My profile</strong><small>View and edit your details</small></span></button>
+                <button id="profileClientWork" class="profile-menu-link" data-profile-view="clientwork" type="button"><span class="profile-menu-icon icon-work" aria-hidden="true">&#128188;</span><span><strong>My client work</strong><small>Quotes, projects and JP messages</small></span></button>
+                <button id="profileMyPosts" class="profile-menu-link" data-profile-action="my-posts" type="button"><span class="profile-menu-icon icon-posts" aria-hidden="true">&#128172;</span><span><strong>My posts</strong><small>Your board threads and replies</small></span></button>
+                <button class="profile-menu-link" data-profile-action="my-quotes" type="button"><span class="profile-menu-icon icon-quotes" aria-hidden="true">&#163;</span><span><strong>My quotes</strong><small>Your requests and responses</small></span></button>
+                <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications"><span class="profile-menu-icon icon-alerts" aria-hidden="true">&#9679;</span><span><strong>Notifications</strong><small>Approvals and account updates</small></span><span id="notificationCount" class="menu-count hidden">0</span></button>
+                <div id="profileChatNotifications" class="profile-chat-notifications" aria-live="polite"></div>
+                <button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><span class="profile-menu-icon icon-messages" aria-hidden="true">&#9993;</span><span><strong>My messages</strong><small>Open your private inbox</small></span><span id="messageCount" class="menu-count hidden">0</span></button>
+                <button class="profile-menu-link" data-profile-view="settings" type="button"><span class="profile-menu-icon icon-settings" aria-hidden="true">&#9881;</span><span><strong>Account settings</strong><small>Preferences and security</small></span></button>'''
+          if old not in html:
+              raise SystemExit('Profile menu block not found')
+          html = html.replace(old, new)
+          html = html.replace('dashboard-clean.css?v=dashboard-mobile-redesign-20260717', 'dashboard-clean.css?v=dashboard-compact-admin-20260717')
+          index_path.write_text(html, encoding='utf-8')
+
+          css = css_path.read_text(encoding='utf-8')
+          marker = '/* Dashboard tighter mobile density pass */'
+          if marker not in css:
+              css += r'''
+
+/* Dashboard tighter mobile density pass */
+.profile-menu-priority { border-color: rgba(47,141,255,.34) !important; background: linear-gradient(135deg, rgba(47,141,255,.16), rgba(255,255,255,.035)) !important; }
+.profile-menu-priority .profile-menu-icon { background: rgba(47,141,255,.2) !important; color: #6fc0ff !important; }
+.view-mount[data-view="dashboard"] .mobile-saas-dashboard { gap: 12px; }
+.saas-welcome-card { gap: 10px; padding: 14px; border-radius: 21px; border-left-width: 1px; }
+.saas-welcome-card::before { height: 120px; opacity: .7; }
+.dashboard-date { margin-bottom: 4px; font-size: 10px; letter-spacing: .12em; }
+.saas-welcome-card h2 { font-size: clamp(21px, 3.2vw, 30px); line-height: 1.03; }
+.saas-welcome-card p:not(.dashboard-date) { margin-top: 5px; font-size: 12px; line-height: 1.32; }
+.saas-status-strip { gap: 6px; }
+.saas-status-strip button { padding: 7px 8px; border-radius: 13px; gap: 2px 6px; }
+.saas-status-strip svg { width: 15px; height: 15px; }
+.saas-status-strip strong { font-size: 17px; }
+.saas-status-strip small { font-size: 9px; }
+.saas-hero-actions { gap: 8px; }
+.saas-hero-actions .primary-button,
+.saas-hero-actions .secondary-button { min-height: 36px; padding: 8px 10px; border-radius: 13px; font-size: 13px; }
+.saas-quick-actions { gap: 8px; }
+.saas-quick-actions > button { min-height: 68px; padding: 9px; border-radius: 16px; gap: 6px; }
+.saas-quick-actions span { width: 24px; height: 24px; border-radius: 9px; }
+.saas-quick-actions svg { width: 14px; height: 14px; }
+.saas-quick-actions strong { font-size: 12px; line-height: 1.08; }
+.saas-quick-actions small { font-size: 9px; line-height: 1.1; }
+.saas-content-card { gap: 8px; padding: 10px; border-radius: 17px; }
+.saas-section-head h2 { font-size: 15px; }
+.saas-section-head p { margin-top: 2px; font-size: 10px; }
+.saas-section-head button { min-height: 28px; padding: 5px 8px; font-size: 11px; }
+.dashboard-feed-list { gap: 6px; }
+.dashboard-feed-row,
+.dashboard-empty-row { min-height: 48px; padding: 7px 8px; gap: 8px; border-radius: 13px; }
+.feed-row-icon { width: 26px; height: 26px; border-radius: 10px; }
+.feed-row-icon svg { width: 14px; height: 14px; }
+.dashboard-feed-row strong,
+.dashboard-empty-row strong { font-size: 12px; }
+.dashboard-feed-row small,
+.dashboard-empty-row small { margin-top: 2px; font-size: 10px; }
+.saas-split-grid { gap: 10px; }
+@media (max-width: 760px) {
+  .workspace { padding-left: 11px !important; padding-right: 11px !important; }
+  .workspace-header { gap: 4px; margin-bottom: 5px; padding-bottom: 5px; }
+  .workspace-mobile-logo img { width: min(100%, 172px); max-height: 48px; }
+  .workspace-header h1 { font-size: 21px; }
+  .view-mount[data-view="dashboard"] .mobile-saas-dashboard { gap: 10px; }
+  .saas-welcome-card { padding: 11px; border-radius: 18px; }
+  .saas-welcome-card h2 { font-size: 21px; }
+  .saas-welcome-card p:not(.dashboard-date) { display: none; }
+  .saas-status-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .saas-status-strip button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-height: 48px; padding: 6px; }
+  .saas-status-strip button > span { min-height: 15px; }
+  .saas-status-strip strong { font-size: 16px; }
+  .saas-status-strip small { width: 100%; font-size: 8px; }
+  .saas-quick-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .saas-quick-actions > button { min-height: 61px; padding: 8px; }
+  .saas-quick-actions small { display: none; }
+  .saas-content-card { padding: 9px; }
+  .saas-section-head p { display: none; }
+  .dashboard-feed-row,
+  .dashboard-empty-row { min-height: 44px; }
+  .saas-split-grid { grid-template-columns: 1fr; gap: 10px; }
+}
+@media (max-width: 380px) {
+  .saas-status-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .saas-quick-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .saas-quick-actions > button { min-height: 58px; display: grid; grid-template-columns: 1fr; }
+}
+'''
+          css_path.write_text(css, encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "codex-app[bot]"
+          git config user.email "codex-app[bot]@users.noreply.github.com"
+          git add hub-portal/index.html hub-portal/dashboard-clean.css
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "Compact Hub dashboard and prioritise admin menu"
+          git push
