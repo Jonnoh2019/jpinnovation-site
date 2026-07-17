@@ -1,0 +1,69 @@
+name: Codex Hub Session Fix
+
+on:
+  push:
+    paths:
+      - .codex-hub-session-trigger
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Hub session restore
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          app = Path('hub-portal/app.js')
+          text = app.read_text(encoding='utf-8')
+          old = '''  const { data: profile, error: profileError } = await portalBackend
+    .from("profiles")
+    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
+    .eq("user_id", authUser.id)
+    .single();
+  if (profileError && profileError.code !== "PGRST116") throw profileError;
+'''
+          new = '''  const { data: profileRows, error: profileError } = await portalBackend
+    .from("profiles")
+    .select("user_id,email,full_name,business,account_type,membership_status,vetted_at,reputation_points,status,removed_at,removal_reason,profile_photo_url,profile_photo_pending_url,profile_photo_status,profile_photo_submitted_at,profile_photo_reviewed_at")
+    .eq("user_id", authUser.id)
+    .limit(1);
+  if (profileError) throw profileError;
+  const profile = Array.isArray(profileRows) ? profileRows[0] || null : profileRows || null;
+'''
+          if old in text:
+              text = text.replace(old, new)
+          app.write_text(text, encoding='utf-8')
+
+          portal_index = Path('hub-portal/index.html')
+          text = portal_index.read_text(encoding='utf-8')
+          text = text.replace('app.js?v=jp-notification-metrics-confirm-20260717', 'app.js?v=hub-session-fix-20260717')
+          portal_index.write_text(text, encoding='utf-8')
+
+          hub_app = Path('hub/app.js')
+          text = hub_app.read_text(encoding='utf-8')
+          text = text.replace('entry=hub&signin=1&v=hub-login-fix-20260717', 'entry=hub&signin=1&v=hub-session-fix-20260717')
+          text = text.replace('entry=hub&v=hub-login-fix-20260717', 'entry=hub&v=hub-session-fix-20260717')
+          hub_app.write_text(text, encoding='utf-8')
+
+          hub_index = Path('hub/index.html')
+          text = hub_index.read_text(encoding='utf-8')
+          text = text.replace('app.js?v=hub-login-fix-20260717', 'app.js?v=hub-session-fix-20260717')
+          hub_index.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "JP Innovation Codex"
+          git config user.email "actions@github.com"
+          git add hub-portal/app.js hub-portal/index.html hub/app.js hub/index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Fix Hub dashboard session restore"
+            git push
+          fi
