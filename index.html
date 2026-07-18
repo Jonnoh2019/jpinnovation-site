@@ -1063,7 +1063,7 @@
     .trust-card-grid,
     .industry-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
     }
     .trust-card-grid article,
@@ -1661,6 +1661,7 @@
       .hub-row { padding: 11px; font-size: 12px; }
     }
   </style>
+  <link rel="stylesheet" href="/homepage-header-fix.css?v=homepage-header-fix-20260718">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -1709,7 +1710,7 @@
           </div>
         </div>
         <div class="hero-media" aria-label="Machined CAD bracket project">
-          <img src="assets/cad-machined-bracket.png" alt="Machined aluminium CAD bracket render">
+          <img src="assets/cad-machined-bracket.webp" alt="Machined aluminium CAD bracket render" fetchpriority="high" decoding="async">
           <div class="media-label">
             <b>Manufacture-ready engineering support</b>
             <span>Clean CAD, practical geometry and supplier-ready thinking.</span>
@@ -1718,7 +1719,7 @@
       </div>
     </section>
 
-    <section class="section trust-strip" aria-label="JP Innovation trust and availability">
+    <section class="section trust-strip" id="why-jp" aria-label="JP Innovation trust and availability">
       <div class="section-inner compact-trust">
         <span class="availability-badge">Available for new projects</span>
         <div class="trust-card-grid">
@@ -1781,7 +1782,7 @@
             </div>
           </article>
           <article class="project case-study">
-            <img src="assets/case-study-linkage-assembly.webp" alt="Compact mechanical linkage CAD assembly">
+            <img src="assets/case-study-linkage-assembly.webp" alt="Compact mechanical linkage CAD assembly" loading="lazy" decoding="async">
             <div class="case-body">
               <h3>Mechanical Linkage Assembly</h3>
               <div class="case-meta">
