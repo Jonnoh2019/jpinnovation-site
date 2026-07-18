@@ -2,7 +2,7 @@
 (function () {
   const JP_NOTIFICATION_VERSION = "jp-notification-polish-20260718";
   const jpIcon = "/assets/jp-innovation-logo.png?v=" + JP_NOTIFICATION_VERSION;
-  const jpBadge = "/assets/jp-notification-badge.png?v=" + JP_NOTIFICATION_VERSION;
+  const jpBadge = "/assets/jp-notification-badge.svg?v=" + JP_NOTIFICATION_VERSION;
   const swPath = "/jp-service-worker.js?v=" + JP_NOTIFICATION_VERSION;
 
   function escapeText(value) {
