@@ -39,10 +39,14 @@
         box-sizing: border-box !important;
         display: grid !important;
         place-items: center !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 100% !important;
-        min-height: 100% !important;
+        flex: 0 0 42px !important;
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
+        aspect-ratio: 1 / 1 !important;
         border-radius: 50% !important;
         clip-path: circle(50% at 50% 50%) !important;
         line-height: 1 !important;
@@ -222,7 +226,9 @@
       }
       @media (max-width: 430px) {
         #memberProfileButton.member-chip,
-        .account-control-cluster #memberProfileButton.member-chip {
+        .account-control-cluster #memberProfileButton.member-chip,
+        #memberProfileButton.member-chip #memberInitials,
+        .account-control-cluster #memberProfileButton.member-chip #memberInitials {
           flex-basis: 40px !important;
           width: 40px !important;
           height: 40px !important;
