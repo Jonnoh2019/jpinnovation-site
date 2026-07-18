@@ -145,6 +145,84 @@
     }
   }, true);
 
+  async function resetAnalyticsWithRetry(scope) {
+    if (!window.portalBackend && typeof portalBackend === "undefined") throw new Error("Secure backend is unavailable.");
+    const backend = window.portalBackend || portalBackend;
+    let { data, error } = await backend.rpc("admin_reset_site_analytics", { p_scope: scope });
+    if (/admin_reset_site_analytics|schema cache|Could not find the function|PGRST202/i.test(error?.message || "")) {
+      await new Promise((resolve) => setTimeout(resolve, 1800));
+      const retry = await backend.rpc("admin_reset_site_analytics", { p_scope: scope });
+      data = retry.data;
+      error = retry.error;
+    }
+    if (error) throw error;
+    return data;
+  }
+
+  function installAnalyticsResetHandler() {
+    if (typeof bindAnalyticsResetButtons !== "function") return;
+    bindAnalyticsResetButtons = function bindAnalyticsResetButtonsPolished() {
+      document.querySelectorAll(".analytics-reset-button").forEach((button) => {
+        if (button.dataset.notificationPolishResetBound === "1") return;
+        button.dataset.notificationPolishResetBound = "1";
+        button.dataset.safeResetBound = "1";
+        button.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          const scope = button.dataset.resetScope || "all";
+          const first = scope === "today"
+            ? "Reset today's visitor analytics? Member and Hub data will not be affected."
+            : "Permanently clear all recorded visitor analytics? This cannot be undone. Member accounts, posts, quotes and projects will remain.";
+          const confirmed = typeof openConfirmDialog === "function"
+            ? await openConfirmDialog({
+                title: scope === "today" ? "Reset today's analytics?" : "Reset all visitor analytics?",
+                message: first,
+                confirmLabel: scope === "today" ? "Reset today" : "Continue",
+                cancelLabel: "Cancel",
+                danger: true
+              })
+            : window.confirm(first);
+          if (!confirmed) return;
+          if (scope === "all") {
+            const second = typeof openConfirmDialog === "function"
+              ? await openConfirmDialog({
+                  title: "Final confirmation",
+                  message: "This only clears visitor/page-view analytics, but it cannot be undone. Continue with reset all?",
+                  confirmLabel: "Yes, reset all",
+                  cancelLabel: "Cancel",
+                  danger: true
+                })
+              : window.confirm("Final confirmation: reset all visitor analytics?");
+            if (!second) return;
+          }
+          button.disabled = true;
+          button.classList.add("is-loading");
+          try {
+            const result = await resetAnalyticsWithRetry(scope);
+            const deleted = Number(result?.deleted || 0);
+            if (typeof showSuccessToast === "function") {
+              showSuccessToast("Analytics reset.", scope === "today" ? `Today's visitor analytics were cleared (${deleted} row${deleted === 1 ? "" : "s"}).` : `Visitor analytics history was cleared (${deleted} row${deleted === 1 ? "" : "s"}).`);
+            }
+            if (typeof loadSiteAnalytics === "function") await loadSiteAnalytics();
+          } catch (error) {
+            console.error("Analytics reset failed", { scope, message: error?.message, details: error?.details, hint: error?.hint, code: error?.code, error });
+            const missing = /admin_reset_site_analytics|schema cache|Could not find the function|PGRST202/i.test(error?.message || "");
+            const toast = window.showErrorToast || window.showSuccessToast;
+            if (typeof toast === "function") {
+              toast(missing ? "Analytics reset is still syncing." : "Analytics could not be reset.", missing ? "Refresh the metrics page and try once more. The reset function has been installed in Supabase." : "Please try again.");
+            }
+          } finally {
+            button.disabled = false;
+            button.classList.remove("is-loading");
+          }
+        }, true);
+      });
+    };
+  }
+
   addNotificationPolishStyles();
+  installAnalyticsResetHandler();
   window.addEventListener("load", () => registerPolishedNotificationServiceWorker().catch(() => {}));
+  window.addEventListener("load", installAnalyticsResetHandler);
 })();
