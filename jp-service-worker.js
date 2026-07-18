@@ -7,43 +7,51 @@ self.addEventListener("activate", (event) => {
 });
 
 function notificationPayload(event) {
-  const jpIcon = "/assets/jp-app-icon-192.png?v=jp-notification-20260717";
-  const jpBadge = "/assets/jp-notification-badge.svg?v=jp-notification-20260717";
+  const jpIcon = "/assets/jp-innovation-logo.png?v=jp-notification-20260718";
+  const jpBadge = "/assets/jp-notification-badge.png?v=jp-notification-20260718";
+  const defaultUrl = "/hub-portal/index.html?entry=hub&view=notifications";
+  const buildOptions = (payload = {}) => {
+    const view = payload.view || "notifications";
+    const url = payload.url || `/hub-portal/index.html?entry=hub&view=${encodeURIComponent(view)}`;
+    const body = payload.body || payload.message || "You have a new Hub update.";
+    return {
+      body,
+      icon: payload.icon || jpIcon,
+      image: payload.image || jpIcon,
+      badge: payload.badge || jpBadge,
+      tag: payload.tag || `jp-admin-${view}-${Date.now()}`,
+      renotify: true,
+      requireInteraction: true,
+      silent: false,
+      timestamp: Date.now(),
+      vibrate: [220, 90, 220, 90, 260],
+      actions: [
+        { action: "open", title: "Open JP Hub" }
+      ],
+      data: { url },
+      priority: payload.priority || "max",
+      urgency: payload.urgency || "high",
+      importance: payload.importance || "max",
+      channelId: payload.channelId || "jp-admin-alerts",
+      visibility: "public"
+    };
+  };
   if (!event.data) {
     return {
       title: "JP Innovation",
-      options: {
-        body: "You have a new Hub update.",
-        icon: jpIcon,
-        badge: jpBadge,
-        tag: "jp-innovation-alert",
-        data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
-      }
+      options: buildOptions({ url: defaultUrl })
     };
   }
   try {
     const payload = event.data.json();
     return {
       title: payload.title || "JP Innovation",
-      options: {
-        body: payload.body || payload.message || "You have a new Hub update.",
-        icon: payload.icon || jpIcon,
-        badge: payload.badge || jpBadge,
-        tag: payload.tag || "jp-innovation-alert",
-        renotify: true,
-        data: { url: payload.url || "/hub-portal/index.html?entry=hub&view=notifications" }
-      }
+      options: buildOptions(payload)
     };
   } catch {
     return {
       title: "JP Innovation",
-      options: {
-        body: event.data.text() || "You have a new Hub update.",
-        icon: jpIcon,
-        badge: jpBadge,
-        tag: "jp-innovation-alert",
-        data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
-      }
+      options: buildOptions({ body: event.data.text(), url: defaultUrl })
     };
   }
 }
