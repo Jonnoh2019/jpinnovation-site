@@ -146,3 +146,12 @@
     });
   };
 })();
+
+/* Load production core patch after the dashboard override without changing the main app bundle. */
+(function () {
+  if (document.querySelector('script[src*="production-core-override.js"]')) return;
+  var script = document.createElement('script');
+  script.src = 'production-core-override.js?v=production-core-20260718';
+  script.defer = true;
+  document.head.appendChild(script);
+})();
