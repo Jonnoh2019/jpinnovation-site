@@ -1,4 +1,4 @@
--- JP Innovation analytics reset v2
+-- JP Innovation analytics reset v3
 -- Safe to run more than once.
 -- Resets page-view analytics only; it does not delete users, profiles, posts, replies, projects, quotes, messages or registrations.
 
@@ -9,9 +9,10 @@ security definer
 set search_path = public
 as $$
 declare
-  deleted_count integer := 0;
+  deleted_count bigint := 0;
   scope_value text := lower(coalesce(nullif(trim(p_scope), ''), 'all'));
   london_start timestamptz := timezone('Europe/London', date_trunc('day', timezone('Europe/London', now())));
+  london_end timestamptz := timezone('Europe/London', date_trunc('day', timezone('Europe/London', now())) + interval '1 day');
 begin
   if to_regclass('public.page_views') is null then
     raise exception 'Analytics table public.page_views is missing';
@@ -30,11 +31,12 @@ begin
 
   if scope_value = 'today' then
     delete from public.page_views
-    where created_at >= london_start;
+    where created_at >= london_start
+      and created_at < london_end;
     get diagnostics deleted_count = row_count;
   elsif scope_value = 'all' then
-    delete from public.page_views;
-    get diagnostics deleted_count = row_count;
+    select count(*) into deleted_count from public.page_views;
+    truncate table public.page_views;
   else
     raise exception 'Invalid analytics reset scope: %', p_scope;
   end if;
