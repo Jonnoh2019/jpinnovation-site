@@ -7,8 +7,8 @@ self.addEventListener("activate", (event) => {
 });
 
 function notificationPayload(event) {
-  const jpIcon = "/assets/jp-innovation-logo.png?v=jp-notification-20260718";
-  const jpBadge = "/assets/jp-notification-badge.svg?v=jp-notification-20260718";
+  const jpIcon = "/assets/jp-innovation-logo.png?v=jp-notification-20260718b";
+  const jpBadge = "/assets/jp-notification-badge.svg?v=jp-notification-20260718b";
   const defaultUrl = "/hub-portal/index.html?entry=hub&view=notifications";
   const buildOptions = (payload = {}) => {
     const view = payload.view || "notifications";
