@@ -1,5 +1,6 @@
--- JP Innovation analytics reset v3
+-- JP Innovation analytics reset v5
 -- Safe to run more than once.
+-- Uses profiles.account_type for admin checks and does not depend on optional audit-log columns.
 -- Resets page-view analytics only; it does not delete users, profiles, posts, replies, projects, quotes, messages or registrations.
 
 create or replace function public.admin_reset_site_analytics(p_scope text default 'all')
@@ -22,7 +23,7 @@ begin
     select 1
     from public.profiles p
     where p.user_id = auth.uid()
-      and lower(coalesce(p.account_type, p.role, '')) = 'admin'
+      and lower(coalesce(p.account_type, '')) = 'admin'
       and coalesce(p.status, 'active') not in ('removed', 'archived', 'suspended')
       and coalesce(p.membership_status, 'active') <> 'suspended'
   ) then
@@ -39,17 +40,6 @@ begin
     truncate table public.page_views;
   else
     raise exception 'Invalid analytics reset scope: %', p_scope;
-  end if;
-
-  if to_regclass('public.admin_audit_log') is not null then
-    insert into public.admin_audit_log(action, admin_id, reason, success, details)
-    values (
-      'metrics_reset',
-      auth.uid(),
-      scope_value,
-      true,
-      jsonb_build_object('scope', scope_value, 'deleted', deleted_count, 'timezone', 'Europe/London')
-    );
   end if;
 
   return jsonb_build_object(
