@@ -1,14 +1,11 @@
 (() => {
   "use strict";
 
-  const VERSION = "profile-menu-avatar-regression-fix-20260719";
+  const VERSION = "profile-menu-avatar-regression-fix-20260719b";
+  let avatarUpdateQueued = false;
 
   function safe(fn, fallback = null) {
     try { return fn(); } catch (error) { return fallback; }
-  }
-
-  function cleanEmail(value) {
-    return String(value || "").trim().toLowerCase();
   }
 
   function roleFor(user) {
@@ -29,6 +26,24 @@
     if (value.includes("admin")) return "admin";
     if (value.includes("hub") || value.includes("member") || value.includes("verified")) return "member";
     return "client";
+  }
+
+  function setOnlyRoleClass(node, role) {
+    if (!node) return;
+    const wanted = `avatar-${role}`;
+    const remove = ["avatar-admin", "avatar-member", "avatar-client", "role-admin", "role-member", "role-client", "hub", "admin", "client", "gold", "blue"];
+    let changed = false;
+    remove.forEach((className) => {
+      if (className !== wanted && node.classList.contains(className)) {
+        node.classList.remove(className);
+        changed = true;
+      }
+    });
+    if (!node.classList.contains(wanted)) {
+      node.classList.add(wanted);
+      changed = true;
+    }
+    return changed;
   }
 
   function closeProfileMenu() {
@@ -68,28 +83,34 @@
     else openProfileMenu();
   }
 
-  function applyAvatarRoles() {
+  function applyAvatarRolesNow() {
     const role = currentRole();
     const headerButton = document.getElementById("memberProfileButton");
     const headerInitials = document.getElementById("memberInitials");
     const menuAvatar = document.getElementById("profileMenuAvatar");
 
-    [headerButton, headerInitials, menuAvatar].forEach((node) => {
-      if (!node) return;
-      node.classList.remove("avatar-admin", "avatar-member", "avatar-client", "role-admin", "role-member", "role-client", "hub", "admin", "client", "gold", "blue");
-      node.classList.add(`avatar-${role}`);
-    });
-
+    [headerButton, headerInitials, menuAvatar].forEach((node) => setOnlyRoleClass(node, role));
     headerButton?.classList.add("member-chip");
-    headerButton?.querySelector("#memberAvatarRoleBadge")?.remove();
-    document.getElementById("memberAvatarRoleBadge")?.remove();
+
+    const inlineBadge = headerButton?.querySelector("#memberAvatarRoleBadge");
+    if (inlineBadge) inlineBadge.remove();
+    const globalBadge = document.getElementById("memberAvatarRoleBadge");
+    if (globalBadge) globalBadge.remove();
     document.getElementById("reputationStatusButton")?.classList.add("hidden");
     document.getElementById("memberStatusStarInline")?.classList.add("hidden");
 
     document.querySelectorAll(".profile-avatar, .feature-ui-avatar, .message-avatar, .comment-avatar, .post-avatar, .notification-avatar").forEach((avatar) => {
       const text = avatar.getAttribute("data-role") || avatar.getAttribute("aria-label") || avatar.textContent;
-      avatar.classList.remove("avatar-admin", "avatar-member", "avatar-client");
-      avatar.classList.add(`avatar-${memberRoleFromText(text)}`);
+      setOnlyRoleClass(avatar, memberRoleFromText(text));
+    });
+  }
+
+  function queueAvatarRoleUpdate() {
+    if (avatarUpdateQueued) return;
+    avatarUpdateQueued = true;
+    requestAnimationFrame(() => {
+      avatarUpdateQueued = false;
+      applyAvatarRolesNow();
     });
   }
 
@@ -125,7 +146,6 @@
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       return true;
     }
-    if (button.id === "logoutButton") return false;
     return false;
   }
 
@@ -134,7 +154,7 @@
     const style = document.createElement("style");
     style.id = "profileMenuAvatarRegressionFixStyles";
     style.textContent = `
-      :root{--jp-avatar-blue:#0877f2;--jp-avatar-gold:#d99a16;--jp-avatar-white:#ffffff;}
+      :root{--jp-avatar-blue:#0877f2;--jp-avatar-gold:#d99a16;--jp-avatar-white:#fff;}
       #memberProfileButton.member-chip{box-sizing:border-box!important;position:relative!important;display:grid!important;place-items:center!important;width:54px!important;height:54px!important;min-width:54px!important;max-width:54px!important;min-height:54px!important;max-height:54px!important;aspect-ratio:1/1!important;padding:0!important;border-radius:999px!important;overflow:visible!important;pointer-events:auto!important;touch-action:manipulation!important;z-index:260!important;cursor:pointer!important;}
       #memberProfileButton.member-chip #memberInitials,#profileMenuAvatar,.profile-avatar,.feature-ui-avatar,.message-avatar,.comment-avatar,.post-avatar,.notification-avatar{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;border-radius:999px!important;line-height:1!important;text-align:center!important;font-weight:950!important;color:#fff!important;background:var(--jp-avatar-blue)!important;box-shadow:0 10px 24px rgba(0,0,0,.26)!important;overflow:hidden!important;}
       #memberProfileButton.member-chip #memberInitials{width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;font-size:16px!important;letter-spacing:.01em!important;}
@@ -147,8 +167,7 @@
       #memberProfileMenu.open{pointer-events:auto!important;visibility:visible!important;opacity:1!important;transform:none!important;}
       #memberProfileMenu.open .profile-menu-link{pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important;position:relative!important;z-index:2!important;}
       #memberProfileMenu .profile-menu-link:disabled{opacity:.45!important;pointer-events:none!important;}
-      body.member-profile-menu-open #mobileMenuBackdrop{pointer-events:none!important;display:none!important;}
-      body.member-profile-menu-open .mobile-menu-backdrop{pointer-events:none!important;display:none!important;}
+      body.member-profile-menu-open #mobileMenuBackdrop,body.member-profile-menu-open .mobile-menu-backdrop{pointer-events:none!important;display:none!important;}
       body.jp-profile-regression-lock{overflow:hidden!important;overscroll-behavior:none!important;}
       body.jp-profile-regression-lock #memberProfileMenu{overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;}
       body.jp-profile-regression-lock .workspace,body.jp-profile-regression-lock .view-mount{touch-action:none!important;}
@@ -202,12 +221,13 @@
 
   function install() {
     addStyles();
-    applyAvatarRoles();
+    applyAvatarRolesNow();
     installInteractionFix();
-    const observer = new MutationObserver(() => applyAvatarRoles());
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "aria-hidden"] });
-    window.addEventListener("load", applyAvatarRoles);
-    window.addEventListener("focus", applyAvatarRoles);
+    const observer = new MutationObserver(queueAvatarRoleUpdate);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("load", queueAvatarRoleUpdate);
+    window.addEventListener("focus", queueAvatarRoleUpdate);
+    console.info(`[${VERSION}] installed`);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
