@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "profile-menu-avatar-regression-fix-20260719g";
+  const VERSION = "profile-menu-avatar-regression-fix-20260719h";
   let avatarUpdateQueued = false;
   let profileNavigationBusy = false;
 
@@ -206,6 +206,29 @@
     return false;
   }
 
+  function targetViewForButton(button) {
+    if (!button) return "";
+    if (button.dataset.profileView) return button.dataset.profileView;
+    if (button.dataset.profileAction === "my-posts") return "boards";
+    if (button.dataset.profileAction === "my-quotes") return "quotes";
+    if (button.id === "messageInboxButton") return "messages";
+    if (button.id === "notificationBell") return "notifications";
+    return "";
+  }
+
+  function hardNavigateToProfileTarget(button) {
+    const view = targetViewForButton(button);
+    if (!view) return false;
+    const url = new URL(window.location.href);
+    url.searchParams.set("entry", "hub");
+    url.searchParams.set("view", view);
+    url.searchParams.delete("signin");
+    url.searchParams.delete("register");
+    url.searchParams.set("v", VERSION);
+    window.location.assign(url.toString());
+    return true;
+  }
+
   function reportNavigationError(error, label) {
     console.error(`[${VERSION}] profile menu navigation failed`, { label, error });
     if (typeof showErrorToast === "function") {
@@ -220,8 +243,11 @@
     closeProfileMenu();
     window.setTimeout(() => {
       try {
-        const routed = routeProfileMenuItem(button);
-        if (!routed) reportNavigationError(new Error("No matching profile menu route"), label);
+        const navigated = hardNavigateToProfileTarget(button);
+        if (!navigated) {
+          const routed = routeProfileMenuItem(button);
+          if (!routed) reportNavigationError(new Error("No matching profile menu route"), label);
+        }
       } catch (error) {
         reportNavigationError(error, label);
       } finally {
@@ -256,12 +282,12 @@
         --jp-role-blue-gradient:linear-gradient(145deg,#0789ff 0%,var(--jp-role-blue) 45%,var(--jp-role-blue-deep) 100%);
       }
       #memberProfileButton.member-chip{box-sizing:border-box!important;position:relative!important;display:grid!important;place-items:center!important;width:54px!important;height:54px!important;min-width:54px!important;max-width:54px!important;min-height:54px!important;max-height:54px!important;aspect-ratio:1/1!important;padding:0!important;border-radius:50%!important;overflow:visible!important;pointer-events:auto!important;touch-action:manipulation!important;z-index:640!important;cursor:pointer!important;background:transparent!important;border-color:transparent!important;}
-      #memberProfileButton.member-chip #memberInitials,#profileMenuAvatar,.profile-avatar,.feature-ui-avatar,.message-avatar,.comment-avatar,.post-avatar,.notification-avatar{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;border-radius:50%!important;aspect-ratio:1/1!important;line-height:1!important;text-align:center!important;font-weight:950!important;color:#fff!important;background:var(--jp-role-blue-gradient)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.22),0 10px 24px rgba(0,0,0,.26)!important;overflow:hidden!important;}
+      #memberProfileButton.member-chip #memberInitials,#profileMenuAvatar,.profile-avatar,.feature-ui-avatar,.message-avatar,.comment-avatar,.post-avatar,.notification-avatar{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;border-radius:50%!important;aspect-ratio:1/1!important;line-height:1!important;text-align:center!important;font-weight:950!important;color:#05070a!important;-webkit-text-fill-color:#05070a!important;background:var(--jp-role-blue-gradient)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.22),0 10px 24px rgba(0,0,0,.26)!important;overflow:hidden!important;}
       #memberProfileButton.member-chip #memberInitials{width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;font-size:16px!important;letter-spacing:.01em!important;}
       #profileMenuAvatar{width:54px!important;height:54px!important;min-width:54px!important;min-height:54px!important;font-size:16px!important;}
-      #memberProfileButton.member-chip.jp-role-avatar-admin,#memberProfileButton.member-chip.jp-role-avatar-admin #memberInitials,#memberInitials.jp-role-avatar-admin,#profileMenuAvatar.jp-role-avatar-admin,.jp-profile-role-avatar.jp-role-avatar-admin,.profile-avatar.jp-role-avatar-admin,.feature-ui-avatar.jp-role-avatar-admin,.message-avatar.jp-role-avatar-admin,.comment-avatar.jp-role-avatar-admin,.post-avatar.jp-role-avatar-admin,.notification-avatar.jp-role-avatar-admin{background:var(--jp-role-gold-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-electric)!important;outline:1px solid rgba(22,139,255,.72)!important;outline-offset:1px!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.48),inset 0 -3px 5px rgba(72,42,0,.28),0 0 0 1px rgba(19,140,255,.28),0 10px 26px rgba(0,0,0,.32),0 0 18px rgba(22,139,255,.24)!important;}
-      .jp-role-avatar-hubMember,#memberProfileButton.member-chip.jp-role-avatar-hubMember #memberInitials{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-gold)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.24),0 0 0 1px rgba(255,242,168,.18),0 10px 26px rgba(0,0,0,.28)!important;}
-      .jp-role-avatar-client,#memberProfileButton.member-chip.jp-role-avatar-client #memberInitials{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid rgba(255,255,255,.92)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.18),0 0 0 1px rgba(6,119,244,.32),0 10px 26px rgba(0,0,0,.25)!important;}
+      #memberProfileButton.member-chip.jp-role-avatar-admin,#memberProfileButton.member-chip.jp-role-avatar-admin #memberInitials,#memberInitials.jp-role-avatar-admin,#profileMenuAvatar.jp-role-avatar-admin,.jp-profile-role-avatar.jp-role-avatar-admin,.profile-avatar.jp-role-avatar-admin,.feature-ui-avatar.jp-role-avatar-admin,.message-avatar.jp-role-avatar-admin,.comment-avatar.jp-role-avatar-admin,.post-avatar.jp-role-avatar-admin,.notification-avatar.jp-role-avatar-admin{background:var(--jp-role-gold-gradient)!important;color:#05070a!important;-webkit-text-fill-color:#05070a!important;border:2px solid var(--jp-role-electric)!important;outline:1px solid rgba(22,139,255,.72)!important;outline-offset:1px!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.48),inset 0 -3px 5px rgba(72,42,0,.28),0 0 0 1px rgba(19,140,255,.28),0 10px 26px rgba(0,0,0,.32),0 0 18px rgba(22,139,255,.24)!important;}
+      .jp-role-avatar-hubMember,#memberProfileButton.member-chip.jp-role-avatar-hubMember #memberInitials{background:var(--jp-role-blue-gradient)!important;color:#05070a!important;-webkit-text-fill-color:#05070a!important;border:2px solid var(--jp-role-gold)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.24),0 0 0 1px rgba(255,242,168,.18),0 10px 26px rgba(0,0,0,.28)!important;}
+      .jp-role-avatar-client,#memberProfileButton.member-chip.jp-role-avatar-client #memberInitials{background:var(--jp-role-blue-gradient)!important;color:#05070a!important;-webkit-text-fill-color:#05070a!important;border:2px solid rgba(255,255,255,.92)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.18),0 0 0 1px rgba(6,119,244,.32),0 10px 26px rgba(0,0,0,.25)!important;}
       .member-role-star,.compact-role-star,.member-status-star,.member-status-star-inline,.reputation-badge,.jp-role-star-admin,.jp-role-star-hubMember,.jp-role-star-client{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;border-radius:50%!important;aspect-ratio:1/1!important;line-height:1!important;text-align:center!important;font-weight:950!important;width:20px!important;height:20px!important;min-width:20px!important;font-size:11px!important;padding:0!important;transform:none!important;}
       .jp-role-star-admin{background:var(--jp-role-gold-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-electric)!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.48),0 0 0 1px rgba(19,140,255,.24),0 0 14px rgba(217,164,39,.28)!important;}
       .jp-role-star-hubMember{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-gold)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.25),0 0 12px rgba(217,164,39,.2)!important;}
