@@ -1,17 +1,11 @@
 (() => {
   "use strict";
 
-  const VERSION = "profile-menu-navigation-critical-fix-20260719a";
+  const VERSION = "profile-menu-navigation-critical-fix-20260719b";
   let navigationBusy = false;
-  let outsideClickInstalled = false;
 
-  function $(selector) {
-    return document.querySelector(selector);
-  }
-
-  function all(selector) {
-    return Array.from(document.querySelectorAll(selector));
-  }
+  const $ = (selector) => document.querySelector(selector);
+  const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
   function cleanBodyLocks() {
     document.body.classList.remove(
@@ -38,11 +32,12 @@
     $("#topNotificationBell")?.setAttribute("aria-expanded", "false");
   }
 
-  function setMenuOpen(open) {
+  function setProfileMenuOpen(open) {
     const menu = $("#memberProfileMenu");
     const button = $("#memberProfileButton");
     if (!menu || !button) return;
     if (open) {
+      cleanBodyLocks();
       menu.classList.add("open");
       menu.setAttribute("aria-hidden", "false");
       button.setAttribute("aria-expanded", "true");
@@ -55,14 +50,14 @@
     }
   }
 
-  function closeMenu() {
-    setMenuOpen(false);
-  }
-
-  function openMenu() {
-    if (navigationBusy) return;
-    cleanBodyLocks();
-    setMenuOpen(true);
+  function targetView(button) {
+    if (!button) return "";
+    if (button.dataset.profileView) return button.dataset.profileView;
+    if (button.dataset.profileAction === "my-posts") return "boards";
+    if (button.dataset.profileAction === "my-quotes") return "quotes";
+    if (button.id === "messageInboxButton") return "messages";
+    if (button.id === "notificationBell") return "notifications";
+    return "";
   }
 
   function currentUserIsAdmin() {
@@ -75,161 +70,123 @@
     return !$("#profileAdminLink")?.classList.contains("hidden");
   }
 
-  function targetView(button) {
-    if (!button) return "";
-    if (button.dataset.profileView) return button.dataset.profileView;
-    if (button.dataset.profileAction === "my-posts") return "boards";
-    if (button.dataset.profileAction === "my-quotes") return "quotes";
-    if (button.id === "messageInboxButton") return "messages";
-    if (button.id === "notificationBell") return "notifications";
-    return "";
-  }
-
   function renderFallback(view, error) {
-    console.error(`[${VERSION}] failed to open profile menu target`, { view, error });
-    const mount = $("#viewMount");
+    console.error(`[${VERSION}] profile menu route failed`, { view, error });
     const title = $("#viewTitle");
+    const mount = $("#viewMount");
     if (title) title.textContent = view === "admin" ? "Admin Review" : "Section unavailable";
-    if (mount) {
-      mount.dataset.view = view || "error";
-      mount.innerHTML = `
-        <section class="section-card">
-          <p class="eyebrow">Navigation issue</p>
-          <h2>${view === "admin" ? "Admin Review could not be opened." : "This section could not be opened."}</h2>
-          <p class="muted">The page recovered safely instead of locking the app. Please retry or return to the dashboard.</p>
-          <div class="button-row">
-            <button class="primary-button" id="jpRetryProfileRoute" type="button">Retry</button>
-            <button class="secondary-button" id="jpBackDashboardRoute" type="button">Back to Dashboard</button>
-          </div>
-        </section>
-      `;
-      $("#jpRetryProfileRoute")?.addEventListener("click", () => navigateToView(view || "dashboard"));
-      $("#jpBackDashboardRoute")?.addEventListener("click", () => navigateToView("dashboard"));
-    }
+    if (!mount) return;
+    mount.dataset.view = view || "error";
+    mount.innerHTML = `
+      <section class="section-card">
+        <p class="eyebrow">Navigation issue</p>
+        <h2>${view === "admin" ? "Admin Review could not be opened." : "This section could not be opened."}</h2>
+        <p class="muted">The app recovered safely instead of freezing. Try again or return to the dashboard.</p>
+        <div class="button-row">
+          <button class="primary-button" id="jpRetryProfileRoute" type="button">Retry</button>
+          <button class="secondary-button" id="jpBackDashboardRoute" type="button">Back to Dashboard</button>
+        </div>
+      </section>
+    `;
+    $("#jpRetryProfileRoute")?.addEventListener("click", () => navigateToView(view || "dashboard"));
+    $("#jpBackDashboardRoute")?.addEventListener("click", () => navigateToView("dashboard"));
   }
 
-  function setBusyState(button, busy) {
+  function setBusy(sourceButton, busy) {
     navigationBusy = busy;
-    all("#memberProfileMenu .profile-menu-link").forEach((item) => {
-      item.disabled = busy;
-      item.classList.toggle("is-loading", busy && item === button);
-      item.setAttribute("aria-busy", String(busy && item === button));
+    $$("#memberProfileMenu .profile-menu-link").forEach((button) => {
+      button.disabled = busy;
+      button.classList.toggle("is-loading", busy && button === sourceButton);
+      button.setAttribute("aria-busy", String(busy && button === sourceButton));
     });
-  }
-
-  async function performLogout(sourceButton = null) {
-    if (navigationBusy) return;
-    setBusyState(sourceButton, true);
-    closeMenu();
-    window.setTimeout(async () => {
-      try {
-        cleanBodyLocks();
-        if (typeof signOut === "function") {
-          await signOut();
-          return;
-        }
-        if (window.portalBackend?.auth?.signOut) await window.portalBackend.auth.signOut();
-        try { window.localStorage.removeItem("jpActiveHubAccess"); } catch {}
-        window.location.assign("index.html?entry=hub&signin=1");
-      } catch (error) {
-        cleanBodyLocks();
-        renderFallback("dashboard", error);
-      } finally {
-        setBusyState(sourceButton, false);
-        cleanBodyLocks();
-      }
-    }, 80);
   }
 
   function navigateToView(view, sourceButton = null) {
     if (!view || navigationBusy) return;
-    setBusyState(sourceButton, true);
-    closeMenu();
+    setBusy(sourceButton, true);
+    setProfileMenuOpen(false);
 
     window.setTimeout(() => {
       try {
         cleanBodyLocks();
-        if (view === "admin" && !currentUserIsAdmin()) {
-          throw new Error("Current user is not recognised as admin");
-        }
-        if (typeof renderView !== "function") {
-          throw new Error("renderView is not available");
-        }
+        if (view === "admin" && !currentUserIsAdmin()) throw new Error("Admin route requested by non-admin session");
+        if (typeof renderView !== "function") throw new Error("renderView is not available");
         renderView(view);
         cleanBodyLocks();
         const mount = $("#viewMount");
-        if (!mount || !mount.innerHTML.trim()) {
-          throw new Error("renderView completed with an empty page");
-        }
+        if (!mount || !mount.innerHTML.trim()) throw new Error("renderView returned an empty page");
       } catch (error) {
         cleanBodyLocks();
         renderFallback(view, error);
       } finally {
-        setBusyState(sourceButton, false);
+        setBusy(sourceButton, false);
         cleanBodyLocks();
       }
-    }, 80);
+    }, 90);
   }
 
-  function replaceNodeWithoutListeners(selector) {
-    const node = $(selector);
-    if (!node || node.dataset.jpCriticalNavCloned === VERSION) return $(selector);
-    const clone = node.cloneNode(true);
-    clone.dataset.jpCriticalNavCloned = VERSION;
-    node.replaceWith(clone);
-    return clone;
+  async function performLogout(sourceButton = null) {
+    if (navigationBusy) return;
+    setBusy(sourceButton, true);
+    setProfileMenuOpen(false);
+    window.setTimeout(async () => {
+      try {
+        cleanBodyLocks();
+        if (typeof signOut === "function") await signOut();
+        else window.location.assign("index.html?entry=hub&signin=1");
+      } catch (error) {
+        renderFallback("dashboard", error);
+      } finally {
+        setBusy(sourceButton, false);
+        cleanBodyLocks();
+      }
+    }, 90);
+  }
+
+  function intercept(event) {
+    const profileButton = event.target.closest?.("#memberProfileButton");
+    const profileMenuButton = event.target.closest?.("#memberProfileMenu .profile-menu-link");
+    const profileMenu = $("#memberProfileMenu");
+
+    if (profileButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (navigationBusy) return;
+      setProfileMenuOpen(!profileMenu?.classList.contains("open"));
+      return;
+    }
+
+    if (profileMenuButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (profileMenuButton.id === "logoutButton") {
+        performLogout(profileMenuButton);
+        return;
+      }
+      navigateToView(targetView(profileMenuButton), profileMenuButton);
+      return;
+    }
+
+    if (profileMenu?.classList.contains("open") && !event.target.closest?.("#memberProfileMenu")) {
+      setProfileMenuOpen(false);
+    }
   }
 
   function install() {
     if (document.documentElement.dataset.jpProfileCriticalNav === VERSION) return;
     document.documentElement.dataset.jpProfileCriticalNav = VERSION;
-
-    const profileButton = replaceNodeWithoutListeners("#memberProfileButton");
-    const profileMenu = replaceNodeWithoutListeners("#memberProfileMenu");
-    if (!profileButton || !profileMenu) return;
-
-    profileButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (profileMenu.classList.contains("open")) closeMenu();
-      else openMenu();
-    });
-
-    profileMenu.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const link = event.target.closest(".profile-menu-link");
-      if (!link) return;
-      event.preventDefault();
-      if (link.id === "logoutButton") {
-        performLogout(link);
-        return;
-      }
-      const view = targetView(link);
-      navigateToView(view, link);
-    });
-
-    if (!outsideClickInstalled) {
-      outsideClickInstalled = true;
-      document.addEventListener("click", (event) => {
-        const menu = $("#memberProfileMenu");
-        if (!menu?.classList.contains("open")) return;
-        if (event.target.closest("#memberProfileMenu,#memberProfileButton")) return;
-        closeMenu();
-      });
-      document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") closeMenu();
-      });
-      window.addEventListener("pageshow", cleanBodyLocks);
-      window.addEventListener("popstate", cleanBodyLocks);
-    }
-
+    document.addEventListener("click", intercept, true);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setProfileMenuOpen(false);
+    }, true);
+    window.addEventListener("pageshow", cleanBodyLocks);
+    window.addEventListener("popstate", cleanBodyLocks);
     cleanBodyLocks();
     console.info(`[${VERSION}] installed`);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", install, { once: true });
-  } else {
-    install();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
+  else install();
 })();
