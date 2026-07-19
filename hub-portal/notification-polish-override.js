@@ -1,6 +1,6 @@
 /* JP Innovation notification polish: high-visibility Android/web push presentation and clean settings status. */
 (function () {
-  const JP_NOTIFICATION_VERSION = "jp-notification-polish-20260718b";
+  const JP_NOTIFICATION_VERSION = "jp-notification-polish-20260719-cad-clean";
   const jpIcon = "/assets/jp-innovation-logo.png?v=" + JP_NOTIFICATION_VERSION;
   const jpBadge = "/assets/jp-notification-badge.svg?v=" + JP_NOTIFICATION_VERSION;
   const swPath = "/jp-service-worker.js?v=" + JP_NOTIFICATION_VERSION;
