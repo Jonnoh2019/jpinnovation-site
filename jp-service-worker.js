@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260719-cad-role-avatar-final";
+const JP_SW_VERSION = "jp-sw-20260719-profile-menu-avatar-f";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
