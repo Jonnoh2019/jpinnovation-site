@@ -63,6 +63,27 @@ body {
   border-top: 1px solid rgba(255,255,255,.08) !important;
 }
 
+.nav a,
+.section-switch-button,
+.button,
+.floating-contact {
+  transition: transform .22s ease, border-color .22s ease, background .22s ease, box-shadow .22s ease, color .22s ease;
+}
+
+.section-switch-button:hover,
+.section-switch-button:focus-visible,
+.nav a:hover,
+.nav a:focus-visible,
+.button:hover,
+.button:focus-visible,
+.floating-contact:hover,
+.floating-contact:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(47,141,255,.58) !important;
+  box-shadow: 0 16px 34px rgba(0,111,230,.18);
+  outline: none;
+}
+
 @media (min-width: 821px) {
   .header-inner {
     padding-top: 8px !important;
@@ -129,6 +150,57 @@ body {
     max-width: calc(100vw - 24px);
     justify-items: stretch;
   }
+
+  .nav.is-open {
+    display: grid !important;
+    gap: 7px !important;
+    padding: 10px !important;
+    border: 1px solid rgba(47,141,255,.28) !important;
+    border-radius: 18px !important;
+    background: rgba(5,10,16,.97) !important;
+    box-shadow: 0 24px 70px rgba(0,0,0,.42) !important;
+  }
+
+  .nav.is-open a {
+    display: grid !important;
+    grid-template-columns: 28px minmax(0,1fr) 16px !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 44px !important;
+    padding: 9px 11px !important;
+    border: 1px solid rgba(255,255,255,.08) !important;
+    border-radius: 14px !important;
+    background: rgba(255,255,255,.045) !important;
+    color: #eef5ff !important;
+    text-align: left !important;
+  }
+
+  .nav.is-open a::before {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    background: rgba(47,141,255,.12);
+    color: #58a6ff;
+    font-size: 15px;
+  }
+
+  .nav.is-open a::after {
+    content: "›";
+    color: #8ea5bf;
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .nav.is-open a[href="#services"]::before { content: "⚙"; }
+  .nav.is-open a[href="#industries"]::before { content: "⌂"; }
+  .nav.is-open a[href="#about"]::before { content: "JP"; font-size: 10px; font-weight: 950; }
+  .nav.is-open a[href="#projects"]::before { content: "▣"; }
+  .nav.is-open a[href="#pricing"]::before { content: "£"; font-weight: 950; }
+  .nav.is-open a[href="#process"]::before { content: "↗"; }
+  .nav.is-open a[href="#faq"]::before { content: "?"; font-weight: 950; }
+  .nav.is-open a[href="#contact"]::before { content: "✉"; }
 
   .hero {
     padding-top: 10px !important;
@@ -206,5 +278,15 @@ body {
     flex-basis: 14px;
     width: 14px;
     height: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header *,
+  .nav a,
+  .section-switch-button,
+  .button,
+  .floating-contact {
+    transition: none !important;
   }
 }
