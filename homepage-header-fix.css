@@ -53,6 +53,22 @@ body {
   object-position: center !important;
 }
 
+.hero-media img[src*="cad-machined-bracket"] {
+  content: url('/assets/cad-machined-bracket.png?v=cad-clean-final-20260719') !important;
+}
+
+.case-study img[src*="case-study-fixture-bracket"] {
+  content: url('/assets/case-study-fixture-bracket.png?v=case-study-fallback-20260719') !important;
+}
+
+.case-study img[src*="case-study-linkage-assembly"] {
+  content: url('/assets/case-study-linkage-assembly.png?v=case-study-fallback-20260719') !important;
+}
+
+.case-study.image-failed img {
+  opacity: 0 !important;
+}
+
 .hero-media.image-failed {
   background:
     radial-gradient(circle at 50% 42%, rgba(47,141,255,.12), transparent 42%),
