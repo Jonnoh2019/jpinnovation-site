@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "profile-menu-avatar-regression-fix-20260719f";
+  const VERSION = "profile-menu-avatar-regression-fix-20260719g";
   let avatarUpdateQueued = false;
   let profileNavigationBusy = false;
 
@@ -21,6 +21,8 @@
   function currentRole() {
     const user = typeof currentUser === "function" ? currentUser() : null;
     const userRole = roleFor(user || {});
+    const adminLink = document.getElementById("profileAdminLink");
+    if (adminLink && !adminLink.classList.contains("hidden")) return "admin";
     const visibleRole = [
       document.getElementById("memberRole")?.textContent,
       document.getElementById("memberName")?.textContent,
@@ -108,6 +110,7 @@
       menuAvatar.classList.remove("has-photo");
     }
     headerButton?.classList.add("member-chip");
+    if (headerButton && role === "admin") headerButton.style.setProperty("--jp-forced-role-ring", "var(--jp-role-electric)");
     headerButton?.querySelector("#memberAvatarRoleBadge")?.remove();
     document.querySelectorAll("#memberAvatarRoleBadge,.avatar-role-badge,#reputationStatusButton,#memberStatusStarInline").forEach((node) => {
       node.classList.add("hidden");
@@ -233,7 +236,11 @@
   }
 
   function addStyles() {
-    if (document.getElementById("profileMenuAvatarRegressionFixStyles")) return;
+    const existing = document.getElementById("profileMenuAvatarRegressionFixStyles");
+    if (existing) {
+      document.head.appendChild(existing);
+      return;
+    }
     const style = document.createElement("style");
     style.id = "profileMenuAvatarRegressionFixStyles";
     style.textContent = `
@@ -248,11 +255,11 @@
         --jp-role-gold-gradient:radial-gradient(circle at 34% 28%,#fff1a3 0 9%,var(--jp-role-gold-hi) 16%,var(--jp-role-gold) 46%,var(--jp-role-gold-mid) 72%,var(--jp-role-gold-low) 100%);
         --jp-role-blue-gradient:linear-gradient(145deg,#0789ff 0%,var(--jp-role-blue) 45%,var(--jp-role-blue-deep) 100%);
       }
-      #memberProfileButton.member-chip{box-sizing:border-box!important;position:relative!important;display:grid!important;place-items:center!important;width:54px!important;height:54px!important;min-width:54px!important;max-width:54px!important;min-height:54px!important;max-height:54px!important;aspect-ratio:1/1!important;padding:0!important;border-radius:50%!important;overflow:visible!important;pointer-events:auto!important;touch-action:manipulation!important;z-index:640!important;cursor:pointer!important;background:transparent!important;}
+      #memberProfileButton.member-chip{box-sizing:border-box!important;position:relative!important;display:grid!important;place-items:center!important;width:54px!important;height:54px!important;min-width:54px!important;max-width:54px!important;min-height:54px!important;max-height:54px!important;aspect-ratio:1/1!important;padding:0!important;border-radius:50%!important;overflow:visible!important;pointer-events:auto!important;touch-action:manipulation!important;z-index:640!important;cursor:pointer!important;background:transparent!important;border-color:transparent!important;}
       #memberProfileButton.member-chip #memberInitials,#profileMenuAvatar,.profile-avatar,.feature-ui-avatar,.message-avatar,.comment-avatar,.post-avatar,.notification-avatar{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;border-radius:50%!important;aspect-ratio:1/1!important;line-height:1!important;text-align:center!important;font-weight:950!important;color:#fff!important;background:var(--jp-role-blue-gradient)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.22),0 10px 24px rgba(0,0,0,.26)!important;overflow:hidden!important;}
       #memberProfileButton.member-chip #memberInitials{width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;font-size:16px!important;letter-spacing:.01em!important;}
       #profileMenuAvatar{width:54px!important;height:54px!important;min-width:54px!important;min-height:54px!important;font-size:16px!important;}
-      .jp-role-avatar-admin,#memberProfileButton.member-chip.jp-role-avatar-admin #memberInitials{background:var(--jp-role-gold-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-electric)!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.48),inset 0 -3px 5px rgba(72,42,0,.28),0 0 0 1px rgba(19,140,255,.28),0 10px 26px rgba(0,0,0,.32)!important;}
+      #memberProfileButton.member-chip.jp-role-avatar-admin,#memberProfileButton.member-chip.jp-role-avatar-admin #memberInitials,#memberInitials.jp-role-avatar-admin,#profileMenuAvatar.jp-role-avatar-admin,.jp-profile-role-avatar.jp-role-avatar-admin,.profile-avatar.jp-role-avatar-admin,.feature-ui-avatar.jp-role-avatar-admin,.message-avatar.jp-role-avatar-admin,.comment-avatar.jp-role-avatar-admin,.post-avatar.jp-role-avatar-admin,.notification-avatar.jp-role-avatar-admin{background:var(--jp-role-gold-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-electric)!important;outline:1px solid rgba(22,139,255,.72)!important;outline-offset:1px!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.48),inset 0 -3px 5px rgba(72,42,0,.28),0 0 0 1px rgba(19,140,255,.28),0 10px 26px rgba(0,0,0,.32),0 0 18px rgba(22,139,255,.24)!important;}
       .jp-role-avatar-hubMember,#memberProfileButton.member-chip.jp-role-avatar-hubMember #memberInitials{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-gold)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.24),0 0 0 1px rgba(255,242,168,.18),0 10px 26px rgba(0,0,0,.28)!important;}
       .jp-role-avatar-client,#memberProfileButton.member-chip.jp-role-avatar-client #memberInitials{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid rgba(255,255,255,.92)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.18),0 0 0 1px rgba(6,119,244,.32),0 10px 26px rgba(0,0,0,.25)!important;}
       .member-role-star,.compact-role-star,.member-status-star,.member-status-star-inline,.reputation-badge,.jp-role-star-admin,.jp-role-star-hubMember,.jp-role-star-client{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;border-radius:50%!important;aspect-ratio:1/1!important;line-height:1!important;text-align:center!important;font-weight:950!important;width:20px!important;height:20px!important;min-width:20px!important;font-size:11px!important;padding:0!important;transform:none!important;}
@@ -275,6 +282,7 @@
       #memberProfileMenu .profile-menu-link:disabled{opacity:.45!important;pointer-events:none!important;}
       body.member-profile-menu-open #mobileMenuBackdrop,body.member-profile-menu-open .mobile-menu-backdrop{pointer-events:none!important;display:none!important;}
       body.jp-profile-menu-open{overflow:hidden!important;overscroll-behavior:none!important;}
+      body:not(.member-profile-menu-open):not(.mobile-dashboard-menu-open){touch-action:auto!important;}
       body.jp-profile-menu-open #memberProfileMenu{overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;}
       @media(max-width:760px){#memberProfileMenu.open{position:fixed!important;left:12px!important;right:12px!important;top:calc(var(--hub-mobile-header-offset,176px) - 4px)!important;bottom:12px!important;max-height:none!important;overflow:auto!important;border-radius:22px!important;padding:10px!important;}#memberProfileButton.member-chip{width:52px!important;height:52px!important;min-width:52px!important;max-width:52px!important;min-height:52px!important;max-height:52px!important;}}
       @media(max-width:390px){#memberProfileButton.member-chip{width:48px!important;height:48px!important;min-width:48px!important;max-width:48px!important;min-height:48px!important;max-height:48px!important;}#profileMenuAvatar{width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;}.jp-profile-role-avatar{width:48px!important;height:48px!important;min-width:48px!important;}}
@@ -312,6 +320,7 @@
     }
 
     document.addEventListener("pointerup", handleProfileMenuActivation, true);
+    document.addEventListener("touchend", handleProfileMenuActivation, true);
     document.addEventListener("click", handleProfileMenuActivation, true);
 
     document.addEventListener("click", (event) => {
