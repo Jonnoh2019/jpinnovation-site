@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260719-profile-menu-critical-nav-b";
+const JP_SW_VERSION = "jp-sw-20260719-admin-route-stability-a";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
