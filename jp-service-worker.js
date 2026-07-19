@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260719-role-badge-notification";
+const JP_SW_VERSION = "jp-sw-20260719-cad-role-avatar-final";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
