@@ -1,14 +1,22 @@
+const JP_SW_VERSION = "jp-sw-20260719-cad-clean";
+
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    if (self.caches) {
+      const keys = await self.caches.keys();
+      await Promise.all(keys.map((key) => self.caches.delete(key)));
+    }
+    await self.clients.claim();
+  })());
 });
 
 function notificationPayload(event) {
-  const jpIcon = "/assets/jp-innovation-logo.png?v=jp-notification-20260718b";
-  const jpBadge = "/assets/jp-notification-badge.svg?v=jp-notification-20260718b";
+  const jpIcon = "/assets/jp-innovation-logo.png?v=" + JP_SW_VERSION;
+  const jpBadge = "/assets/jp-notification-badge.svg?v=" + JP_SW_VERSION;
   const defaultUrl = "/hub-portal/index.html?entry=hub&view=notifications";
   const buildOptions = (payload = {}) => {
     const view = payload.view || "notifications";
