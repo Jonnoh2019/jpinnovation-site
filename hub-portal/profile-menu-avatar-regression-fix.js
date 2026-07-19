@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "profile-menu-avatar-regression-fix-20260719d";
+  const VERSION = "profile-menu-avatar-regression-fix-20260719e";
   let avatarUpdateQueued = false;
 
   function safe(fn, fallback = null) {
@@ -83,6 +83,7 @@
     button?.setAttribute("aria-expanded", "true");
     document.body.classList.add("member-profile-menu-open", "jp-profile-menu-open");
     document.body.classList.remove("jp-menu-hard-lock");
+    queueAvatarRoleUpdate();
   }
 
   function toggleProfileMenu() {
