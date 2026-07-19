@@ -24,8 +24,8 @@ body {
 
 .hero-media {
   background:
-    radial-gradient(circle at 50% 42%, rgba(47,141,255,.16), transparent 42%),
-    url('/assets/cad-machined-bracket.png'),
+    radial-gradient(circle at 50% 42%, rgba(47,141,255,.12), transparent 42%),
+    url('/assets/cad-machined-bracket.png?v=cad-clean-20260719'),
     linear-gradient(145deg, #121820, #080d12) !important;
   background-size: auto, contain, auto !important;
   background-position: center, center, center !important;
@@ -33,35 +33,37 @@ body {
 }
 
 .hero-media::after {
-  content: "CAD render loading";
+  content: "" !important;
   position: absolute;
   inset: 0;
   z-index: 0;
-  display: grid;
-  place-items: center;
-  color: rgba(245,248,252,.72);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  background:
-    linear-gradient(90deg, transparent, rgba(255,255,255,.055), transparent),
-    radial-gradient(circle at 50% 45%, rgba(47,141,255,.18), transparent 40%);
+  display: block;
+  background: none !important;
   pointer-events: none;
 }
 
 .hero-media img {
   position: relative;
   z-index: 1;
-  opacity: 0 !important;
+  opacity: 1 !important;
   background:
-    url('/assets/cad-machined-bracket.png'),
+    url('/assets/cad-machined-bracket.png?v=cad-clean-20260719'),
     radial-gradient(circle at center, #f4f6f8 0%, #dfe4ea 100%) !important;
   background-size: contain, cover !important;
   background-position: center, center !important;
   background-repeat: no-repeat !important;
   object-fit: contain !important;
   object-position: center !important;
+}
+
+.hero-media img[src$='.webp'] {
+  background-image:
+    url('/assets/cad-machined-bracket.png?v=cad-clean-20260719'),
+    radial-gradient(circle at center, #f4f6f8 0%, #dfe4ea 100%) !important;
+}
+
+.hero-media.image-failed img {
+  opacity: 0 !important;
 }
 
 .hero-media .media-label {
