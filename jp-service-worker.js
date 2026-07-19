@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260719-profile-menu-avatar-g";
+const JP_SW_VERSION = "jp-sw-20260719-profile-menu-avatar-h";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
