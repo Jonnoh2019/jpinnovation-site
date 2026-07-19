@@ -45,7 +45,7 @@ body {
 .hero-media img {
   position: relative;
   z-index: 1;
-  opacity: 1 !important;
+  opacity: 0 !important;
   background:
     url('/assets/cad-machined-bracket.png?v=cad-clean-20260719'),
     radial-gradient(circle at center, #f4f6f8 0%, #dfe4ea 100%) !important;
@@ -54,16 +54,6 @@ body {
   background-repeat: no-repeat !important;
   object-fit: contain !important;
   object-position: center !important;
-}
-
-.hero-media img[src$='.webp'] {
-  background-image:
-    url('/assets/cad-machined-bracket.png?v=cad-clean-20260719'),
-    radial-gradient(circle at center, #f4f6f8 0%, #dfe4ea 100%) !important;
-}
-
-.hero-media.image-failed img {
-  opacity: 0 !important;
 }
 
 .hero-media .media-label {
