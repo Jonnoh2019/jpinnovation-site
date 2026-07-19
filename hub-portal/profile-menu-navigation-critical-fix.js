@@ -16,15 +16,7 @@
       "jp-profile-regression-lock"
     );
     document.documentElement.style.overflow = "";
-    Object.assign(document.body.style, {
-      top: "",
-      overflow: "",
-      pointerEvents: "",
-      touchAction: "",
-      position: "",
-      inset: "",
-      width: ""
-    });
+    Object.assign(document.body.style, { top: "", overflow: "", pointerEvents: "", touchAction: "", position: "", inset: "", width: "" });
     $("#appShell")?.classList.remove("mobile-menu-open");
     $("#mobileMenuBackdrop")?.classList.remove("open");
     $("#mobileMenuBackdrop")?.setAttribute("aria-hidden", "true");
@@ -64,9 +56,7 @@
     try {
       const user = typeof currentUser === "function" ? currentUser() : null;
       if (user?.role === "admin" || user?.isAdmin) return true;
-    } catch (error) {
-      console.warn(`[${VERSION}] could not read current user`, error);
-    }
+    } catch (error) { console.warn(`[${VERSION}] could not read current user`, error); }
     return !$("#profileAdminLink")?.classList.contains("hidden");
   }
 
@@ -77,17 +67,7 @@
     if (title) title.textContent = view === "admin" ? "Admin Review" : "Section unavailable";
     if (!mount) return;
     mount.dataset.view = view || "error";
-    mount.innerHTML = `
-      <section class="section-card">
-        <p class="eyebrow">Navigation issue</p>
-        <h2>${view === "admin" ? "Admin Review could not be opened." : "This section could not be opened."}</h2>
-        <p class="muted">The app recovered safely instead of freezing. Try again or return to the dashboard.</p>
-        <div class="button-row">
-          <button class="primary-button" id="jpRetryProfileRoute" type="button">Retry</button>
-          <button class="secondary-button" id="jpBackDashboardRoute" type="button">Back to Dashboard</button>
-        </div>
-      </section>
-    `;
+    mount.innerHTML = `<section class="section-card"><p class="eyebrow">Navigation issue</p><h2>${view === "admin" ? "Admin Review could not be opened." : "This section could not be opened."}</h2><p class="muted">The app recovered safely instead of freezing. Try again or return to the dashboard.</p><div class="button-row"><button class="primary-button" id="jpRetryProfileRoute" type="button">Retry</button><button class="secondary-button" id="jpBackDashboardRoute" type="button">Back to Dashboard</button></div></section>`;
     $("#jpRetryProfileRoute")?.addEventListener("click", () => navigateToView(view || "dashboard"));
     $("#jpBackDashboardRoute")?.addEventListener("click", () => navigateToView("dashboard"));
   }
@@ -105,7 +85,6 @@
     if (!view || navigationBusy) return;
     setBusy(sourceButton, true);
     setProfileMenuOpen(false);
-
     window.setTimeout(() => {
       try {
         cleanBodyLocks();
@@ -147,40 +126,35 @@
     const profileButton = event.target.closest?.("#memberProfileButton");
     const profileMenuButton = event.target.closest?.("#memberProfileMenu .profile-menu-link");
     const profileMenu = $("#memberProfileMenu");
-
     if (profileButton) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
       if (navigationBusy) return;
       setProfileMenuOpen(!profileMenu?.classList.contains("open"));
       return;
     }
-
     if (profileMenuButton) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      if (profileMenuButton.id === "logoutButton") {
-        performLogout(profileMenuButton);
-        return;
-      }
+      event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
+      if (profileMenuButton.id === "logoutButton") { performLogout(profileMenuButton); return; }
       navigateToView(targetView(profileMenuButton), profileMenuButton);
       return;
     }
+    if (profileMenu?.classList.contains("open") && !event.target.closest?.("#memberProfileMenu")) setProfileMenuOpen(false);
+  }
 
-    if (profileMenu?.classList.contains("open") && !event.target.closest?.("#memberProfileMenu")) {
-      setProfileMenuOpen(false);
-    }
+  function loadStableAdminRoute() {
+    if (document.querySelector('script[src*="admin-route-stability-fix.js"]')) return;
+    const adminScript = document.createElement("script");
+    adminScript.src = "admin-route-stability-fix.js?v=admin-route-stability-fix-20260719a";
+    adminScript.defer = true;
+    document.body.appendChild(adminScript);
   }
 
   function install() {
     if (document.documentElement.dataset.jpProfileCriticalNav === VERSION) return;
     document.documentElement.dataset.jpProfileCriticalNav = VERSION;
+    loadStableAdminRoute();
     document.addEventListener("click", intercept, true);
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") setProfileMenuOpen(false);
-    }, true);
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape") setProfileMenuOpen(false); }, true);
     window.addEventListener("pageshow", cleanBodyLocks);
     window.addEventListener("popstate", cleanBodyLocks);
     cleanBodyLocks();
