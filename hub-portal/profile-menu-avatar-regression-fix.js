@@ -1,8 +1,9 @@
 (() => {
   "use strict";
 
-  const VERSION = "profile-menu-avatar-regression-fix-20260719e";
+  const VERSION = "profile-menu-avatar-regression-fix-20260719f";
   let avatarUpdateQueued = false;
+  let profileNavigationBusy = false;
 
   function safe(fn, fallback = null) {
     try { return fn(); } catch (error) { return fallback; }
@@ -69,6 +70,7 @@
     button?.setAttribute("aria-expanded", "false");
     document.body.classList.remove("member-profile-menu-open", "mobile-dashboard-menu-open");
     document.getElementById("mobileMenuBackdrop")?.classList.remove("open");
+    document.getElementById("appShell")?.classList.remove("mobile-menu-open");
     unlockPage();
   }
 
@@ -209,16 +211,23 @@
   }
 
   function navigateFromProfileMenu(button) {
+    if (profileNavigationBusy) return;
+    profileNavigationBusy = true;
     const label = button.innerText || button.getAttribute("aria-label") || "Profile menu item";
     closeProfileMenu();
     window.setTimeout(() => {
       try {
-        routeProfileMenuItem(button);
+        const routed = routeProfileMenuItem(button);
+        if (!routed) reportNavigationError(new Error("No matching profile menu route"), label);
       } catch (error) {
         reportNavigationError(error, label);
       } finally {
         closeProfileMenu();
         queueAvatarRoleUpdate();
+        window.setTimeout(() => {
+          profileNavigationBusy = false;
+          unlockPage();
+        }, 120);
       }
     }, 0);
   }
@@ -231,7 +240,7 @@
       :root{
         --jp-role-blue:#0677f4;
         --jp-role-blue-deep:#034ba8;
-        --jp-role-electric:#168bff;
+        --jp-role-electric:#138cff;
         --jp-role-gold-hi:#f3d36a;
         --jp-role-gold:#c89b2c;
         --jp-role-gold-mid:#a77a1c;
@@ -243,14 +252,15 @@
       #memberProfileButton.member-chip #memberInitials,#profileMenuAvatar,.profile-avatar,.feature-ui-avatar,.message-avatar,.comment-avatar,.post-avatar,.notification-avatar{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;border-radius:50%!important;aspect-ratio:1/1!important;line-height:1!important;text-align:center!important;font-weight:950!important;color:#fff!important;background:var(--jp-role-blue-gradient)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.22),0 10px 24px rgba(0,0,0,.26)!important;overflow:hidden!important;}
       #memberProfileButton.member-chip #memberInitials{width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;font-size:16px!important;letter-spacing:.01em!important;}
       #profileMenuAvatar{width:54px!important;height:54px!important;min-width:54px!important;min-height:54px!important;font-size:16px!important;}
-      .jp-role-avatar-admin,#memberProfileButton.member-chip.jp-role-avatar-admin #memberInitials{background:var(--jp-role-gold-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-electric)!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.42),inset 0 -4px 7px rgba(75,47,6,.34),0 0 0 1px rgba(22,139,255,.32),0 10px 26px rgba(0,0,0,.34)!important;}
+      .jp-role-avatar-admin,#memberProfileButton.member-chip.jp-role-avatar-admin #memberInitials{background:var(--jp-role-gold-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-electric)!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.48),inset 0 -3px 5px rgba(72,42,0,.28),0 0 0 1px rgba(19,140,255,.28),0 10px 26px rgba(0,0,0,.32)!important;}
       .jp-role-avatar-hubMember,#memberProfileButton.member-chip.jp-role-avatar-hubMember #memberInitials{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-gold)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.24),0 0 0 1px rgba(255,242,168,.18),0 10px 26px rgba(0,0,0,.28)!important;}
       .jp-role-avatar-client,#memberProfileButton.member-chip.jp-role-avatar-client #memberInitials{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid rgba(255,255,255,.92)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.18),0 0 0 1px rgba(6,119,244,.32),0 10px 26px rgba(0,0,0,.25)!important;}
       .member-role-star,.compact-role-star,.member-status-star,.member-status-star-inline,.reputation-badge,.jp-role-star-admin,.jp-role-star-hubMember,.jp-role-star-client{box-sizing:border-box!important;display:inline-grid!important;place-items:center!important;border-radius:50%!important;aspect-ratio:1/1!important;line-height:1!important;text-align:center!important;font-weight:950!important;width:20px!important;height:20px!important;min-width:20px!important;font-size:11px!important;padding:0!important;transform:none!important;}
-      .jp-role-star-admin{background:var(--jp-role-gold-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-electric)!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.42),0 0 0 1px rgba(22,139,255,.24),0 0 14px rgba(200,155,44,.28)!important;}
-      .jp-role-star-hubMember{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-gold)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.25),0 0 12px rgba(200,155,44,.2)!important;}
+      .jp-role-star-admin{background:var(--jp-role-gold-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-electric)!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.48),0 0 0 1px rgba(19,140,255,.24),0 0 14px rgba(217,164,39,.28)!important;}
+      .jp-role-star-hubMember{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid var(--jp-role-gold)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.25),0 0 12px rgba(217,164,39,.2)!important;}
       .jp-role-star-client{background:var(--jp-role-blue-gradient)!important;color:#fff!important;border:2px solid rgba(255,255,255,.34)!important;box-shadow:inset 0 1px 1px rgba(255,255,255,.2),0 0 10px rgba(6,119,244,.16)!important;}
       #memberAvatarRoleBadge,.avatar-role-badge,#reputationStatusButton.member-status-star,#memberStatusStarInline.member-status-star-inline{display:none!important;pointer-events:none!important;}
+      #memberProfileButton.member-chip::before,#memberProfileButton.member-chip::after,#memberProfileButton.member-chip #memberInitials::before,#memberProfileButton.member-chip #memberInitials::after,#profileMenuAvatar::before,#profileMenuAvatar::after,.jp-profile-role-avatar::before,.jp-profile-role-avatar::after{display:none!important;content:none!important;}
       .profile-reputation-card .profile-reputation-heading .reputation-badge,.profile-reputation-card .profile-reputation-heading .premium-admin-badge,.profile-reputation-card .profile-reputation-heading svg{display:none!important;}
       .jp-profile-role-clean{display:grid!important;gap:8px!important;}
       .jp-profile-identity-row{display:flex!important;align-items:center!important;gap:12px!important;min-width:0!important;}
@@ -285,11 +295,12 @@
       toggleProfileMenu();
     }, true);
 
-    document.addEventListener("click", (event) => {
+    function handleProfileMenuActivation(event) {
       const menu = document.getElementById("memberProfileMenu");
       if (!menu?.classList.contains("open")) return;
       const link = event.target.closest?.("#memberProfileMenu .profile-menu-link");
       if (!link) return;
+      if (event.type === "pointerup" && event.pointerType === "mouse") return;
       if (link.id === "logoutButton") {
         closeProfileMenu();
         return;
@@ -298,7 +309,10 @@
       event.stopPropagation();
       event.stopImmediatePropagation();
       navigateFromProfileMenu(link);
-    }, true);
+    }
+
+    document.addEventListener("pointerup", handleProfileMenuActivation, true);
+    document.addEventListener("click", handleProfileMenuActivation, true);
 
     document.addEventListener("click", (event) => {
       const menu = document.getElementById("memberProfileMenu");
@@ -342,6 +356,7 @@
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("load", queueAvatarRoleUpdate);
     window.addEventListener("focus", queueAvatarRoleUpdate);
+    window.setInterval(queueAvatarRoleUpdate, 900);
     console.info(`[${VERSION}] installed`);
   }
 
