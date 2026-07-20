@@ -2,7 +2,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "profile-menu-final-fix-20260720b";
+  const VERSION = "profile-menu-final-fix-20260720c";
   const MENU_SELECTOR = "#memberProfileMenu";
   const PROFILE_BUTTON_SELECTOR = "#memberProfileButton";
   const PROFILE_LINK_SELECTOR = "#memberProfileMenu .profile-menu-link";
@@ -131,7 +131,7 @@
     const mobile = window.matchMedia("(max-width: 760px)").matches;
     const viewport = visibleViewport();
     const top = computeMenuTop();
-    const bottomGap = 12;
+    const bottomGap = 18;
     const available = Math.max(260, viewport.height + viewport.offsetTop - top - bottomGap);
     Object.assign(menu.style, {
       position: mobile ? "fixed" : "",
@@ -314,10 +314,23 @@
     }
   }
 
+  function orderProfileMenu() {
+    const menu = $(MENU_SELECTOR);
+    const header = menu?.querySelector(".profile-menu-header");
+    const admin = $("#profileAdminLink");
+    const metrics = $("#profileMetricsLink");
+    if (!menu || !header || header.dataset.jpFinalMenuOrdered === VERSION) return;
+    [metrics, admin].reverse().forEach((node) => {
+      if (node) header.insertAdjacentElement("afterend", node);
+    });
+    header.dataset.jpFinalMenuOrdered = VERSION;
+  }
+
   function applyRoleSystem() {
     const user = currentUserSafe() || {};
     const role = currentRole();
     const initials = initialsFor(user);
+    orderProfileMenu();
     const headerButton = $(PROFILE_BUTTON_SELECTOR);
     const headerInitials = $("#memberInitials");
     const menuAvatar = $("#profileMenuAvatar");
@@ -423,7 +436,9 @@
       @media(max-width:760px){
         #memberProfileMenu.open{left:12px!important;right:12px!important;border-radius:22px!important;padding:10px!important;background:linear-gradient(180deg,rgba(8,15,24,.99),rgba(5,10,16,.99))!important;}
         #memberProfileButton.jp-profile-control-final{width:52px!important;height:52px!important;min-width:52px!important;max-width:52px!important;min-height:52px!important;max-height:52px!important}
-        #memberProfileMenu .profile-menu-link{min-height:45px!important;padding-top:6px!important;padding-bottom:6px!important;border-radius:14px!important}
+        #memberProfileMenu .profile-menu-header{min-height:58px!important;padding:7px!important;margin-bottom:6px!important}
+        #memberProfileMenu .profile-menu-link{min-height:40px!important;padding:5px 8px!important;border-radius:13px!important}
+        #memberProfileMenu .profile-menu-icon{width:30px!important;height:30px!important;min-width:30px!important}
         #memberProfileMenu .profile-menu-link small{display:none!important}
       }
       @media(max-width:390px){
