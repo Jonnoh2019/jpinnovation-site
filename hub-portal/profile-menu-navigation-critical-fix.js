@@ -1,7 +1,8 @@
 /* Legacy entrypoint kept for cache compatibility. The final menu/navigation fix is loaded once here. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-critical-fix-20260720-safe1";
+  const VERSION = "profile-menu-navigation-critical-fix-20260720-safe2";
+  const AVATAR_SRC = "profile-menu-avatar-regression-fix.js?v=profile-menu-avatar-regression-fix-20260720k";
   const FINAL_SRC = "profile-menu-final-fix.js?v=profile-menu-final-fix-20260720-safe1";
 
   function forceScript(id, src) {
@@ -22,6 +23,7 @@
 
   function install() {
     document.documentElement.dataset.jpProfileCriticalNav = VERSION;
+    forceScript("jpProfileAvatarSafeScript", AVATAR_SRC);
     forceScript("jpAdminRouteStabilityFixScript", "admin-route-stability-fix.js?v=admin-route-stability-fix-20260719a");
     forceScript("jpProfileMenuFinalFixScript", FINAL_SRC);
     console.info(`[${VERSION}] safe compatibility loader installed`);
