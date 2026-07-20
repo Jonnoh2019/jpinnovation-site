@@ -425,12 +425,29 @@ async function restoreHubSession() {
   return true;
 }
 
-async function bootHubLanding() {
-  registerInterestHandler();
-  trackPageView();
-  if (await restoreHubSession()) return;
+function revealHubLanding() {
   document.documentElement.classList.remove("restoring-hub-session");
+}
+
+function withTimeout(promise, ms = 3200) {
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = window.setTimeout(() => resolve(false), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+}
+
+async function bootHubLanding() {
+  try {
+    registerInterestHandler();
+    trackPageView();
+    if (await withTimeout(restoreHubSession())) return;
+  } catch (error) {
+    console.warn("Hub session restore failed; showing public Hub landing page.", error);
+  }
+  revealHubLanding();
   hubAuthHandler();
 }
 
+window.setTimeout(revealHubLanding, 3500);
 bootHubLanding();
