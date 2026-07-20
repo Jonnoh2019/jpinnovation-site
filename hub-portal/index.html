@@ -9,11 +9,16 @@
   <meta name="apple-mobile-web-app-title" content="Client Portal">
   <script>
     try {
-      if (["hub", "client"].includes(new URLSearchParams(location.search).get("entry"))) {
-        document.documentElement.classList.add("restoring-portal-session");
-      }
-      if (localStorage.getItem("jpActiveHubAccess") === "1") {
-        document.documentElement.classList.add("hub-member-session");
+      const entryParams = new URLSearchParams(location.search);
+      if (entryParams.get("entry") === "hub" && !entryParams.has("view") && !entryParams.has("signin")) {
+        location.replace("../hub/index.html?signin=1&v=hub-entry-guard-20260720");
+      } else {
+        if (["hub", "client"].includes(entryParams.get("entry"))) {
+          document.documentElement.classList.add("restoring-portal-session");
+        }
+        if (localStorage.getItem("jpActiveHubAccess") === "1") {
+          document.documentElement.classList.add("hub-member-session");
+        }
       }
     } catch (error) {}
   </script>
@@ -256,7 +261,7 @@
   <script src="final-role-menu-polish.js?v=final-role-menu-polish-20260719"></script>
   <script src="admin-member-management-final.js?v=admin-member-management-final-20260719"></script>
   <script src="profile-menu-avatar-regression-fix.js?v=profile-menu-avatar-regression-fix-20260720k"></script>
-  <script src="profile-menu-navigation-critical-fix.js?v=profile-menu-navigation-critical-fix-20260720-safe2"></script>
+  <script src="profile-menu-navigation-critical-fix.js?v=profile-menu-navigation-critical-fix-20260720-safe4"></script>
   <script src="profile-menu-final-fix.js?v=profile-menu-final-fix-20260720-safe1"></script>
   <script src="profile-menu-compact-override.js?v=profile-menu-compact-override-20260720d"></script>
 </body>
