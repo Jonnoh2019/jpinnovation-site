@@ -2,7 +2,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "profile-menu-final-fix-20260720c";
+  const VERSION = "profile-menu-final-fix-20260720d";
   const MENU_SELECTOR = "#memberProfileMenu";
   const PROFILE_BUTTON_SELECTOR = "#memberProfileButton";
   const PROFILE_LINK_SELECTOR = "#memberProfileMenu .profile-menu-link";
@@ -128,20 +128,19 @@
   function resetMenuLayout() {
     const menu = $(MENU_SELECTOR);
     if (!menu) return;
-    const mobile = window.matchMedia("(max-width: 760px)").matches;
     const viewport = visibleViewport();
     const top = computeMenuTop();
     const bottomGap = 18;
     const available = Math.max(260, viewport.height + viewport.offsetTop - top - bottomGap);
     Object.assign(menu.style, {
-      position: mobile ? "fixed" : "",
-      top: mobile ? `${top}px` : "",
-      left: mobile ? "12px" : "",
-      right: mobile ? "12px" : "",
-      bottom: mobile ? `${bottomGap}px` : "",
-      width: mobile ? "auto" : "",
+      position: window.matchMedia("(max-width: 760px)").matches ? "fixed" : "",
+      top: window.matchMedia("(max-width: 760px)").matches ? `${top}px` : "",
+      left: window.matchMedia("(max-width: 760px)").matches ? "12px" : "",
+      right: window.matchMedia("(max-width: 760px)").matches ? "12px" : "",
+      bottom: window.matchMedia("(max-width: 760px)").matches ? `${bottomGap}px` : "",
+      width: window.matchMedia("(max-width: 760px)").matches ? "auto" : "",
       height: "auto",
-      maxHeight: mobile ? `${available}px` : "",
+      maxHeight: window.matchMedia("(max-width: 760px)").matches ? `${available}px` : "",
       transform: "",
       translate: "",
       overflowY: "auto",
@@ -434,12 +433,13 @@
       .profile-reputation-card .profile-reputation-heading{display:block!important}
       .profile-reputation-card .profile-reputation-heading .reputation-badge,.profile-reputation-card .profile-reputation-heading svg{display:none!important}
       @media(max-width:760px){
-        #memberProfileMenu.open{left:12px!important;right:12px!important;border-radius:22px!important;padding:10px!important;background:linear-gradient(180deg,rgba(8,15,24,.99),rgba(5,10,16,.99))!important;}
+        #memberProfileMenu.open{left:12px!important;right:12px!important;border-radius:22px!important;padding:8px!important;gap:4px!important;background:linear-gradient(180deg,rgba(8,15,24,.99),rgba(5,10,16,.99))!important;}
         #memberProfileButton.jp-profile-control-final{width:52px!important;height:52px!important;min-width:52px!important;max-width:52px!important;min-height:52px!important;max-height:52px!important}
-        #memberProfileMenu .profile-menu-header{min-height:58px!important;padding:7px!important;margin-bottom:6px!important}
-        #memberProfileMenu .profile-menu-link{min-height:40px!important;padding:5px 8px!important;border-radius:13px!important}
-        #memberProfileMenu .profile-menu-icon{width:30px!important;height:30px!important;min-width:30px!important}
+        #memberProfileMenu .profile-menu-header{min-height:50px!important;padding:6px!important;margin-bottom:4px!important}
+        #memberProfileMenu .profile-menu-link{height:38px!important;min-height:38px!important;max-height:38px!important;padding:4px 8px!important;border-radius:12px!important;margin:0!important}
+        #memberProfileMenu .profile-menu-icon{width:26px!important;height:26px!important;min-width:26px!important}
         #memberProfileMenu .profile-menu-link small{display:none!important}
+        #memberProfileMenu .profile-chat-notifications{display:none!important}
       }
       @media(max-width:390px){
         #memberProfileButton.jp-profile-control-final{width:48px!important;height:48px!important;min-width:48px!important;max-width:48px!important;min-height:48px!important;max-height:48px!important}
