@@ -1,5 +1,6 @@
 /* JP Innovation mobile UI regression fix: compact directory cards, safe avatar badge and tidy actions. */
 (function () {
+  const VERSION = "mobile-ui-regression-fix-20260720b";
   function addStyles() {
     if (document.getElementById("jpMobileUiRegressionFixStyles")) return;
     const style = document.createElement("style");
@@ -55,16 +56,10 @@
     if (!button || !initials) return;
     const user = typeof currentUser === "function" ? currentUser() : null;
     const role = getRole(user);
-    let badge = button.querySelector("#memberAvatarRoleBadge");
-    if (!badge) {
-      badge = document.createElement("span");
-      badge.id = "memberAvatarRoleBadge";
-      button.appendChild(badge);
-    }
-    badge.className = `avatar-role-badge ${role}`;
-    badge.textContent = "\u2605";
-    badge.setAttribute("aria-hidden", "true");
     button.classList.add("member-chip");
+    button.classList.remove("admin", "hub", "client");
+    button.classList.add(`jp-role-avatar-${role}`);
+    button.querySelectorAll("#memberAvatarRoleBadge,.avatar-role-badge").forEach((badge) => badge.remove());
     const oldTopStar = document.querySelector("#reputationStatusButton");
     if (oldTopStar) oldTopStar.classList.add("hidden");
   }
@@ -78,14 +73,21 @@
     });
   }
 
+  let runQueued = false;
   function run() {
+    runQueued = false;
     addStyles();
     updateAvatarBadge();
     tidyDirectoryButtons();
   }
+  function queueRun() {
+    if (runQueued) return;
+    runQueued = true;
+    requestAnimationFrame(run);
+  }
 
   run();
-  window.addEventListener("load", run);
-  window.addEventListener("jp:view-rendered", () => setTimeout(run, 0));
-  setInterval(run, 1200);
+  window.addEventListener("load", queueRun, { once: true });
+  window.addEventListener("jp:view-rendered", queueRun);
+  window.addEventListener("resize", queueRun, { passive: true });
 })();
