@@ -1,13 +1,26 @@
 /* Legacy entrypoint kept for cache compatibility. The final menu/navigation fix is loaded once here. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-critical-fix-20260720-safe3";
+  const VERSION = "profile-menu-navigation-critical-fix-20260720-safe4";
   const AVATAR_SRC = "profile-menu-avatar-regression-fix.js?v=profile-menu-avatar-regression-fix-20260720k";
   const FINAL_SRC = "profile-menu-final-fix.js?v=profile-menu-final-fix-20260720-safe1";
 
   function revealPortal() {
     document.documentElement.classList.remove("restoring-portal-session");
     document.body && document.body.style.removeProperty("pointer-events");
+  }
+
+  function redirectDirectHubEntry() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const directHubEntry = params.get("entry") === "hub" && !params.has("view") && !params.has("signin");
+      if (!directHubEntry) return false;
+      window.location.replace("../hub/index.html?signin=1&v=hub-entry-recovery-20260720");
+      return true;
+    } catch (error) {
+      console.warn("Hub direct-entry recovery failed.", error);
+      return false;
+    }
   }
 
   function forceScript(id, src) {
@@ -29,6 +42,7 @@
   function install() {
     document.documentElement.dataset.jpProfileCriticalNav = VERSION;
     revealPortal();
+    if (redirectDirectHubEntry()) return;
     window.setTimeout(revealPortal, 1200);
     window.setTimeout(revealPortal, 3500);
     window.addEventListener("error", revealPortal, { passive: true });
