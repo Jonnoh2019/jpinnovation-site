@@ -1,19 +1,16 @@
 /* Legacy entrypoint kept for cache compatibility. The final menu/navigation fix is loaded once here. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-critical-fix-20260720e";
+  const VERSION = "profile-menu-navigation-critical-fix-20260720-safe1";
+  const FINAL_SRC = "profile-menu-final-fix.js?v=profile-menu-final-fix-20260720-safe1";
 
-  function loadScript(id, src) {
+  function forceScript(id, src) {
     const base = src.split("?")[0];
     const expectedKey = src.split("?")[1] || "";
-    const existing = document.getElementById(id);
+    const existing = document.getElementById(id) || document.querySelector(`script[src*="${base}"]`);
     if (existing) {
       if (expectedKey && !existing.src.includes(expectedKey)) existing.src = src;
-      return;
-    }
-    const already = document.querySelector(`script[src*="${base}"]`);
-    if (already) {
-      if (expectedKey && !already.src.includes(expectedKey)) already.src = src;
+      existing.id = id;
       return;
     }
     const script = document.createElement("script");
@@ -25,9 +22,9 @@
 
   function install() {
     document.documentElement.dataset.jpProfileCriticalNav = VERSION;
-    loadScript("jpAdminRouteStabilityFixScript", "admin-route-stability-fix.js?v=admin-route-stability-fix-20260719a");
-    loadScript("jpProfileMenuFinalFixScript", "profile-menu-final-fix.js?v=profile-menu-final-fix-20260720e");
-    console.info(`[${VERSION}] compatibility loader installed`);
+    forceScript("jpAdminRouteStabilityFixScript", "admin-route-stability-fix.js?v=admin-route-stability-fix-20260719a");
+    forceScript("jpProfileMenuFinalFixScript", FINAL_SRC);
+    console.info(`[${VERSION}] safe compatibility loader installed`);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
