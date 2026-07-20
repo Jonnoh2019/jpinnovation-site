@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260720-profile-menu-final-a";
+const JP_SW_VERSION = "jp-sw-20260720-profile-menu-final-b";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
