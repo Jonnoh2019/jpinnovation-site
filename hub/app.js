@@ -92,7 +92,15 @@ const hubBackend = window.supabase?.createClient(supabaseUrl, supabasePublishabl
 });
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=hub&signin=1&reset=1`;
-const landingAuthDelayMs = 2000;
+const landingAuthDelayMs = 250;
+let hubAuthIsReady = false;
+
+function requestedHubAuthMode() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("register") === "1") return "register";
+  if (params.get("signin") === "1") return "signin";
+  return "";
+}
 
 function profileHasHubAccess(profile) {
   const accountType = profile?.account_type || "client";
@@ -154,8 +162,10 @@ function setHubAuthTab(mode = "signin") {
 function openHubAuth(mode = "signin") {
   const dialog = $("#hubAuthDialog");
   if (!dialog) return;
+  revealHubLanding();
   dialog.classList.add("open");
   dialog.setAttribute("aria-hidden", "false");
+  dialog.style.display = "flex";
   setHubAuthTab(mode);
 }
 
@@ -164,6 +174,7 @@ function closeHubAuth() {
   if (!dialog) return;
   dialog.classList.remove("open");
   dialog.setAttribute("aria-hidden", "true");
+  dialog.style.removeProperty("display");
   if ($("#hubAuthStatus")) $("#hubAuthStatus").textContent = "";
 }
 
@@ -285,7 +296,7 @@ async function signInToHub(data) {
     throw new Error("Your Innovation Hub access request has been sent to JP Innovation. Your free Client Portal remains available while approval is pending.");
   }
   syncHubLandingNav(profile);
-  window.location.replace("../hub-portal/index.html?entry=hub&v=hub-dashboard-stable-20260717");
+  window.location.replace("../hub-portal/index.html?entry=hub&view=dashboard&v=hub-dashboard-stable-20260721");
 }
 
 async function registerHubAccount(data) {
@@ -350,10 +361,11 @@ function registerInterestHandler() {
 }
 
 function hubAuthHandler() {
+  if (hubAuthIsReady) return;
+  hubAuthIsReady = true;
   const signinForm = $("#hubSigninForm");
   const registerForm = $("#hubRegisterForm");
   const status = $("#hubAuthStatus");
-  const params = new URLSearchParams(window.location.search);
   setupEmailFieldCleaning();
 
   $all("[data-open-hub-auth]").forEach((button) => {
@@ -410,8 +422,11 @@ function hubAuthHandler() {
     }
   });
   setHubAuthTab("signin");
-  if (params.get("register") === "1") window.setTimeout(() => openHubAuth("register"), landingAuthDelayMs);
-  else if (params.get("signin") === "1") window.setTimeout(() => openHubAuth("signin"), landingAuthDelayMs);
+  const authMode = requestedHubAuthMode();
+  if (authMode) {
+    window.setTimeout(() => openHubAuth(authMode), landingAuthDelayMs);
+    window.setTimeout(() => openHubAuth(authMode), 1400);
+  }
 }
 
 async function restoreHubSession() {
@@ -421,7 +436,7 @@ async function restoreHubSession() {
   const profile = await loadHubProfile(data.session.user.id);
   syncHubLandingNav(profile);
   if (!profileHasHubAccess(profile)) return false;
-  window.location.replace("../hub-portal/index.html?entry=hub&v=hub-dashboard-stable-20260717");
+  window.location.replace("../hub-portal/index.html?entry=hub&view=dashboard&v=hub-dashboard-stable-20260721");
   return true;
 }
 
@@ -438,15 +453,20 @@ function withTimeout(promise, ms = 3200) {
 }
 
 async function bootHubLanding() {
+  const authMode = requestedHubAuthMode();
   try {
     registerInterestHandler();
     trackPageView();
+    hubAuthHandler();
+    if (authMode) {
+      revealHubLanding();
+      return;
+    }
     if (await withTimeout(restoreHubSession())) return;
   } catch (error) {
     console.warn("Hub session restore failed; showing public Hub landing page.", error);
   }
   revealHubLanding();
-  hubAuthHandler();
 }
 
 window.setTimeout(revealHubLanding, 3500);
