@@ -2,7 +2,7 @@
    Keeps the profile menu inside the visible screen on desktop, mobile and PWA. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-compact-override-20260721-stable9-hidden-flag";
+  const VERSION = "profile-menu-compact-override-20260721-stable10-no-stale-clicks";
   document.documentElement.dataset.jpProfileMenuCompactOverride = VERSION;
 
   const TOP_DESKTOP = "clamp(82px, 14dvh, 112px)";
@@ -21,6 +21,22 @@
     style.textContent = `
       #memberProfileMenu.member-profile-menu,
       #profileMenu.profile-menu { box-sizing: border-box !important; }
+      #memberProfileMenu.member-profile-menu:not(.open),
+      #profileMenu.profile-menu:not(.open),
+      #memberProfileMenu.member-profile-menu[aria-hidden="true"],
+      #profileMenu.profile-menu[aria-hidden="true"],
+      body:not(.member-profile-menu-open) #memberProfileMenu.member-profile-menu:not(.open),
+      body:not(.profile-menu-open) #profileMenu.profile-menu:not(.open) {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        transform: none !important;
+      }
       #memberProfileMenu.member-profile-menu.open,
       #profileMenu.profile-menu.open,
       body.member-profile-menu-open #memberProfileMenu.member-profile-menu,
@@ -100,9 +116,34 @@
       trigger?.getAttribute("aria-expanded") === "true";
   }
 
+  function blurMenuFocus() {
+    const active = document.activeElement;
+    if (active?.closest?.("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu")) {
+      try { active.blur(); } catch (_) {}
+    }
+  }
+
+  function forceClosed(menu) {
+    if (!menu) return;
+    menu.classList.remove("open", "active", "is-open", "show", "visible");
+    menu.setAttribute("aria-hidden", "true");
+    menu.hidden = true;
+    menu.style.display = "none";
+    menu.style.visibility = "hidden";
+    menu.style.opacity = "0";
+    menu.style.pointerEvents = "none";
+    menu.style.height = "0";
+    menu.style.maxHeight = "0";
+    menu.style.overflow = "hidden";
+    blurMenuFocus();
+  }
+
   function forceVisibleIfOpen() {
     const menu = document.querySelector("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu");
-    if (!shouldBeOpen(menu)) return;
+    if (!shouldBeOpen(menu)) {
+      forceClosed(menu);
+      return;
+    }
     const mobile = innerWidth <= 760;
     menu.hidden = false;
     menu.removeAttribute("hidden");
@@ -143,6 +184,7 @@
       forceVisibleIfOpen();
       return;
     }
+    forceClosed(menu);
     document.body.classList.remove("jp-menu-hard-lock", "member-profile-menu-open", "profile-menu-open", "menu-scroll-locked");
     document.documentElement.classList.remove("jp-menu-hard-lock", "member-profile-menu-open", "profile-menu-open", "menu-scroll-locked");
     document.body.style.removeProperty("overflow");
@@ -150,7 +192,17 @@
   }
 
   installStyles();
-  document.addEventListener("click", () => setTimeout(clearStaleHardLock, 50), true);
+  document.addEventListener("click", (event) => {
+    const staleMenuHit = event.target?.closest?.("#memberProfileMenu[aria-hidden='true'],#profileMenu[aria-hidden='true'],.member-profile-menu:not(.open),.profile-menu:not(.open)");
+    if (staleMenuHit) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      clearStaleHardLock();
+      return;
+    }
+    setTimeout(clearStaleHardLock, 50);
+  }, true);
   window.addEventListener("pageshow", clearStaleHardLock);
   window.addEventListener("resize", forceVisibleIfOpen);
   setInterval(forceVisibleIfOpen, 120);
