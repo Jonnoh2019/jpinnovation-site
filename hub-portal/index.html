@@ -11,7 +11,7 @@
     try {
       const entryParams = new URLSearchParams(location.search);
       if (entryParams.get("entry") === "hub" && !entryParams.has("view") && !entryParams.has("signin")) {
-        location.replace("../hub/index.html?signin=1&v=hub-entry-guard-20260720");
+        location.replace("../hub/signin.html?signin=1&v=hub-entry-guard-20260721");
       } else {
         if (["hub", "client"].includes(entryParams.get("entry"))) {
           document.documentElement.classList.add("restoring-portal-session");
