@@ -1,10 +1,40 @@
 /* JP Innovation Hub profile/menu navigation stability guard. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-critical-fix-20260721-stable5-lock-sync";
+  const VERSION = "profile-menu-navigation-critical-fix-20260721-stable6-viewport";
   const VALID = new Set(["dashboard","admin","metrics","profile","clientwork","client-work","boards","projects","quotes","directory","resources","events","messages","notifications","settings","rewards","my-posts","my-quotes"]);
   let busy = false;
   const $ = (s, r = document) => r.querySelector(s);
+
+  function installViewportCss() {
+    if (document.getElementById("jpProfileMenuCriticalViewportCss")) return;
+    const style = document.createElement("style");
+    style.id = "jpProfileMenuCriticalViewportCss";
+    style.textContent = `
+      @media (max-width: 760px) {
+        #memberProfileMenu.member-profile-menu,
+        #profileMenu.profile-menu,
+        .member-profile-menu.open,
+        .profile-menu.open {
+          position: fixed !important;
+          top: clamp(82px, 14dvh, 108px) !important;
+          left: max(14px, env(safe-area-inset-left)) !important;
+          right: max(14px, env(safe-area-inset-right)) !important;
+          bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+          width: auto !important;
+          max-width: none !important;
+          height: auto !important;
+          max-height: none !important;
+          overflow-y: auto !important;
+          overscroll-behavior: contain !important;
+          -webkit-overflow-scrolling: touch !important;
+          transform: none !important;
+          z-index: 9999 !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
   function cleanClasses() {
     const classes = ["profile-menu-open","member-profile-menu-open","jp-profile-menu-open","hub-menu-open","menu-open","menu-scroll-locked","modal-open","is-menu-open","jp-menu-hard-lock"];
@@ -20,7 +50,7 @@
       menu.classList.remove("open","active","is-open","show","visible","is-opening","is-closing","stuck","cut-off");
       menu.setAttribute("aria-hidden", "true");
       menu.hidden = true;
-      ["display","transform","translate","pointer-events","height","max-height"].forEach((prop) => menu.style.removeProperty(prop));
+      ["display","transform","translate","pointer-events","height","max-height","top","left","right","bottom","width","max-width"].forEach((prop) => menu.style.removeProperty(prop));
       try { menu.scrollTop = 0; } catch (_) {}
     });
     const trigger = $("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]");
@@ -28,6 +58,7 @@
   }
 
   function fixOpenMenuState() {
+    installViewportCss();
     const menu = $("#memberProfileMenu,#profileMenu,.profile-menu,.member-profile-menu");
     const trigger = $("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]");
     const shouldBeOpen = document.body.classList.contains("member-profile-menu-open") || document.body.classList.contains("profile-menu-open") || trigger?.getAttribute("aria-expanded") === "true";
@@ -38,30 +69,33 @@
       menu.classList.add("open");
       document.body.classList.remove("jp-menu-hard-lock");
       document.documentElement.classList.remove("jp-menu-hard-lock");
-      const top = Math.max(8, Math.round((document.querySelector(".workspace-header,.portal-header,.hub-topbar")?.getBoundingClientRect().bottom || 0) + 8));
-      const max = Math.max(260, Math.round((window.visualViewport?.height || window.innerHeight || 720) - top - 14));
-      menu.style.maxHeight = `${max}px`;
-      menu.style.overflowY = "auto";
+      if (innerWidth <= 760) {
+        menu.style.position = "fixed";
+        menu.style.top = "clamp(82px, 14dvh, 108px)";
+        menu.style.left = "max(14px, env(safe-area-inset-left))";
+        menu.style.right = "max(14px, env(safe-area-inset-right))";
+        menu.style.bottom = "calc(14px + env(safe-area-inset-bottom))";
+        menu.style.width = "auto";
+        menu.style.maxWidth = "none";
+        menu.style.height = "auto";
+        menu.style.maxHeight = "none";
+        menu.style.overflowY = "auto";
+        menu.style.transform = "none";
+      }
       try { menu.scrollTop = 0; } catch (_) {}
-    } else if (menu.hidden) {
-      cleanClasses();
-    }
+    } else if (menu.hidden) cleanClasses();
   }
 
   function setUrl(view) {
     const p = new URLSearchParams(location.search || "");
-    p.set("entry", "hub");
-    p.set("view", view);
-    p.delete("signin");
-    p.delete("register");
+    p.set("entry", "hub"); p.set("view", view); p.delete("signin"); p.delete("register");
     const next = `${location.pathname}?${p.toString()}`;
     if (`${location.pathname}${location.search}` !== next) history.pushState({ entry: "hub", view }, "", next);
   }
 
   function setTitle(view) {
     const title = ({admin:"Admin Review",metrics:"Website Metrics",profile:"My Profile",messages:"Messages",notifications:"Notifications",settings:"Settings",boards:"Engineering Discussions",projects:"Projects",quotes:"Quote Requests",directory:"Member Directory",resources:"Resources & Tools",events:"Events",rewards:"Rewards",clientwork:"My Client Work","client-work":"My Client Work",dashboard:"Dashboard"})[view] || "Dashboard";
-    const h = $("#viewTitle");
-    if (h) h.textContent = title;
+    const h = $("#viewTitle"); if (h) h.textContent = title;
   }
 
   function adminHtml() {
@@ -70,14 +104,9 @@
 
   function render(view, opts = {}) {
     const dest = VALID.has(view) ? (view === "client-work" ? "clientwork" : view) : "dashboard";
-    closeMenus();
-    if (!opts.pop) setUrl(dest);
-    setTitle(dest);
+    closeMenus(); if (!opts.pop) setUrl(dest); setTitle(dest);
     const mount = $("#viewMount") || $("[data-view-mount]");
-    if (dest === "admin") {
-      if (mount) { mount.dataset.view = "admin"; mount.innerHTML = adminHtml(); bindRoutes(); }
-      return;
-    }
+    if (dest === "admin") { if (mount) { mount.dataset.view = "admin"; mount.innerHTML = adminHtml(); bindRoutes(); } return; }
     try {
       if (typeof window.__jpOriginalRenderView === "function") window.__jpOriginalRenderView(dest);
       else if (typeof window.renderView === "function" && window.renderView !== render) window.renderView(dest);
@@ -89,37 +118,25 @@
   }
 
   function targetFrom(node) {
-    const row = node?.closest?.("[data-profile-view],[data-profile-action],[data-view],[data-route-view],[href]");
-    if (!row) return "";
+    const row = node?.closest?.("[data-profile-view],[data-profile-action],[data-view],[data-route-view],[href]"); if (!row) return "";
     let v = row.dataset.profileView || row.dataset.view || row.dataset.routeView || "";
-    const action = row.dataset.profileAction || "";
-    if (action === "my-posts") v = "boards";
-    if (action === "my-quotes") v = "quotes";
-    if (!v) {
-      const text = (row.textContent || "").toLowerCase();
-      if (text.includes("admin")) v = "admin"; else if (text.includes("metric")) v = "metrics"; else if (text.includes("profile")) v = "profile"; else if (text.includes("client")) v = "clientwork"; else if (text.includes("post")) v = "boards"; else if (text.includes("quote")) v = "quotes"; else if (text.includes("notification")) v = "notifications"; else if (text.includes("message")) v = "messages"; else if (text.includes("setting")) v = "settings";
-    }
+    const action = row.dataset.profileAction || ""; if (action === "my-posts") v = "boards"; if (action === "my-quotes") v = "quotes";
+    if (!v) { const text = (row.textContent || "").toLowerCase(); if (text.includes("admin")) v = "admin"; else if (text.includes("metric")) v = "metrics"; else if (text.includes("profile")) v = "profile"; else if (text.includes("client")) v = "clientwork"; else if (text.includes("post")) v = "boards"; else if (text.includes("quote")) v = "quotes"; else if (text.includes("notification")) v = "notifications"; else if (text.includes("message")) v = "messages"; else if (text.includes("setting")) v = "settings"; }
     return VALID.has(v) ? v : "";
   }
 
   function onMenuClick(event) {
-    const menu = event.target.closest("#memberProfileMenu,#profileMenu,.profile-menu,.member-profile-menu");
-    if (!menu) return;
+    const menu = event.target.closest("#memberProfileMenu,#profileMenu,.profile-menu,.member-profile-menu"); if (!menu) return;
     if (event.target.closest("#profileSignOut,#logoutButton,[data-profile-action='signout'],[data-action='signout']")) { closeMenus(); return; }
-    const dest = targetFrom(event.target);
-    if (!dest) return;
-    event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
-    if (busy) return;
-    busy = true;
-    const row = event.target.closest("button,a,[role='button']");
-    if (row) row.setAttribute("aria-busy", "true");
+    const dest = targetFrom(event.target); if (!dest) return;
+    event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); if (busy) return; busy = true;
+    const row = event.target.closest("button,a,[role='button']"); if (row) row.setAttribute("aria-busy", "true");
     requestAnimationFrame(() => { try { render(dest); } finally { if (row) row.removeAttribute("aria-busy"); setTimeout(() => { busy = false; }, 180); } });
   }
 
   function bindRoutes() {
     document.querySelectorAll(".jp-route,[data-view-link]").forEach((button) => {
-      if (button.dataset.jpSafeBound) return;
-      button.dataset.jpSafeBound = VERSION;
+      if (button.dataset.jpSafeBound) return; button.dataset.jpSafeBound = VERSION;
       button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); render(button.dataset.viewLink || "dashboard"); }, true);
     });
   }
@@ -128,8 +145,7 @@
     if (typeof window.renderView !== "function" || window.renderView.__jpStableWrapped) return;
     window.__jpOriginalRenderView = window.renderView;
     window.renderView = function jpStableRenderView(view, ...args) {
-      const dest = VALID.has(view) ? view : "dashboard";
-      if (dest === "admin") return render("admin");
+      const dest = VALID.has(view) ? view : "dashboard"; if (dest === "admin") return render("admin");
       try { closeMenus(); return window.__jpOriginalRenderView.call(this, dest, ...args); }
       catch (error) { console.error(`[${VERSION}] renderView failed`, error); }
       finally { cleanClasses(); bindRoutes(); }
@@ -138,13 +154,13 @@
   }
 
   function install() {
-    document.documentElement.dataset.jpProfileCriticalNav = VERSION;
+    document.documentElement.dataset.jpProfileCriticalNav = VERSION; installViewportCss();
     document.addEventListener("click", onMenuClick, true);
     document.addEventListener("click", (event) => { if (event.target.closest("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]")) setTimeout(fixOpenMenuState, 0); }, true);
     document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMenus(); });
     window.addEventListener("beforeunload", (event) => { closeMenus(); event.stopImmediatePropagation(); }, true);
     window.addEventListener("popstate", () => { cleanClasses(); const v = new URLSearchParams(location.search).get("view") || "dashboard"; setTimeout(() => render(v, { pop: true }), 0); });
-    window.addEventListener("pageshow", () => { patchRender(); cleanClasses(); bindRoutes(); });
+    window.addEventListener("pageshow", () => { patchRender(); cleanClasses(); bindRoutes(); installViewportCss(); });
     patchRender(); cleanClasses(); bindRoutes();
     setInterval(() => { if ((document.body.className || "").includes("jp-menu-hard-lock")) fixOpenMenuState(); }, 700);
     console.info(`[${VERSION}] installed`);
