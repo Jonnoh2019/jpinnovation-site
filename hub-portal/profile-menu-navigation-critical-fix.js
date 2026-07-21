@@ -1,7 +1,7 @@
 /* Legacy entrypoint kept for cache compatibility. Also protects Hub login/session recovery. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-critical-fix-20260721-login-recovery1";
+  const VERSION = "profile-menu-navigation-critical-fix-20260721-login-recovery2";
   const AVATAR_SRC = "profile-menu-avatar-regression-fix.js?v=profile-menu-avatar-regression-fix-20260720k";
   const FINAL_SRC = "profile-menu-final-fix.js?v=profile-menu-final-fix-20260720-safe1";
   const VALID_VIEWS = new Set([
@@ -62,6 +62,30 @@
         dialog.setAttribute("aria-hidden", "true");
       }
     });
+  }
+
+  function rewriteHubLandingUrl(url) {
+    const value = String(url || "");
+    if (!value.includes("../hub/index.html") && !value.includes("/hub/index.html")) return url;
+    if (!value.includes("signin=1") && !value.endsWith("hub/index.html")) return url;
+    return "../hub/signin.html?signin=1&v=stale-hub-redirect-rewrite-20260721";
+  }
+
+  function installNavigationRewrite() {
+    if (window.__jpHubNavigationRewriteInstalled) return;
+    window.__jpHubNavigationRewriteInstalled = VERSION;
+    try {
+      const nativeAssign = Location.prototype.assign;
+      const nativeReplace = Location.prototype.replace;
+      Location.prototype.assign = function patchedAssign(url) {
+        return nativeAssign.call(this, rewriteHubLandingUrl(url));
+      };
+      Location.prototype.replace = function patchedReplace(url) {
+        return nativeReplace.call(this, rewriteHubLandingUrl(url));
+      };
+    } catch (error) {
+      console.warn(`[${VERSION}] navigation rewrite could not be installed`, error);
+    }
   }
 
   function renderRequestedView() {
@@ -140,6 +164,7 @@
 
   function install() {
     document.documentElement.dataset.jpProfileCriticalNav = VERSION;
+    installNavigationRewrite();
     revealPortal();
     cleanupStaleLayers();
     if (redirectDirectHubEntry()) return;
