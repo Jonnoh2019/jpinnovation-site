@@ -2,7 +2,7 @@
    Keeps the profile menu inside the visible screen on desktop, mobile and PWA. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-compact-override-20260721-stable8-real-height";
+  const VERSION = "profile-menu-compact-override-20260721-stable9-hidden-flag";
   document.documentElement.dataset.jpProfileMenuCompactOverride = VERSION;
 
   const TOP_DESKTOP = "clamp(82px, 14dvh, 112px)";
@@ -20,9 +20,7 @@
     }
     style.textContent = `
       #memberProfileMenu.member-profile-menu,
-      #profileMenu.profile-menu {
-        box-sizing: border-box !important;
-      }
+      #profileMenu.profile-menu { box-sizing: border-box !important; }
       #memberProfileMenu.member-profile-menu.open,
       #profileMenu.profile-menu.open,
       body.member-profile-menu-open #memberProfileMenu.member-profile-menu,
@@ -92,35 +90,36 @@
     `;
   }
 
-  function isOpen(menu) {
+  function shouldBeOpen(menu) {
     if (!menu) return false;
     const trigger = document.querySelector("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]");
-    return !menu.hidden && (
-      menu.classList.contains("open") ||
+    return menu.classList.contains("open") ||
       menu.getAttribute("aria-hidden") === "false" ||
       document.body.classList.contains("member-profile-menu-open") ||
       document.body.classList.contains("profile-menu-open") ||
-      trigger?.getAttribute("aria-expanded") === "true"
-    );
+      trigger?.getAttribute("aria-expanded") === "true";
   }
 
   function forceVisibleIfOpen() {
     const menu = document.querySelector("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu");
-    if (!isOpen(menu)) return;
+    if (!shouldBeOpen(menu)) return;
     const mobile = innerWidth <= 760;
     menu.hidden = false;
+    menu.removeAttribute("hidden");
     menu.classList.add("open");
     menu.setAttribute("aria-hidden", "false");
     menu.style.position = "fixed";
-    menu.style.top = mobile ? "96px" : "clamp(82px, 14dvh, 112px)";
+    menu.style.top = mobile ? "96px" : TOP_DESKTOP;
     menu.style.right = "max(14px, env(safe-area-inset-right))";
-    menu.style.bottom = "calc(14px + env(safe-area-inset-bottom))";
+    menu.style.bottom = BOTTOM;
     menu.style.left = mobile ? "max(14px, env(safe-area-inset-left))" : "auto";
     menu.style.width = mobile ? "auto" : "min(420px, calc(100vw - 28px))";
     menu.style.maxWidth = "calc(100vw - 28px)";
-    menu.style.height = mobile ? "calc(100dvh - 110px - env(safe-area-inset-bottom))" : "calc(100dvh - clamp(82px, 14dvh, 112px) - 14px - env(safe-area-inset-bottom))";
+    menu.style.height = mobile ? HEIGHT_MOBILE : HEIGHT_DESKTOP;
     menu.style.minHeight = mobile ? "0" : "360px";
     menu.style.maxHeight = menu.style.height;
+    menu.style.display = "flex";
+    menu.style.flexDirection = "column";
     menu.style.overflowY = "auto";
     menu.style.overflowX = "hidden";
     menu.style.transform = "none";
@@ -134,14 +133,14 @@
       row.style.pointerEvents = "auto";
       row.style.minHeight = "50px";
     });
+    document.body.classList.remove("jp-menu-hard-lock");
+    document.documentElement.classList.remove("jp-menu-hard-lock");
   }
 
   function clearStaleHardLock() {
     const menu = document.querySelector("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu");
-    if (isOpen(menu)) {
+    if (shouldBeOpen(menu)) {
       forceVisibleIfOpen();
-      document.body.classList.remove("jp-menu-hard-lock");
-      document.documentElement.classList.remove("jp-menu-hard-lock");
       return;
     }
     document.body.classList.remove("jp-menu-hard-lock", "member-profile-menu-open", "profile-menu-open", "menu-scroll-locked");
@@ -154,6 +153,6 @@
   document.addEventListener("click", () => setTimeout(clearStaleHardLock, 50), true);
   window.addEventListener("pageshow", clearStaleHardLock);
   window.addEventListener("resize", forceVisibleIfOpen);
-  setInterval(forceVisibleIfOpen, 250);
+  setInterval(forceVisibleIfOpen, 120);
   console.info(`[${VERSION}] installed`);
 })();
