@@ -1,9 +1,10 @@
 /* Legacy entrypoint kept for cache compatibility. Also protects Hub login/session recovery. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-critical-fix-20260721-login-recovery2";
+  const VERSION = "profile-menu-navigation-critical-fix-20260721-login-recovery3";
   const AVATAR_SRC = "profile-menu-avatar-regression-fix.js?v=profile-menu-avatar-regression-fix-20260720k";
   const FINAL_SRC = "profile-menu-final-fix.js?v=profile-menu-final-fix-20260720-safe1";
+  const PORTAL_STATE_KEY = "jpHubPortal.v1";
   const VALID_VIEWS = new Set([
     "dashboard",
     "clientwork",
@@ -26,6 +27,22 @@
 
   function currentParams() {
     return new URLSearchParams(window.location.search);
+  }
+
+  function guardLocalPortalState() {
+    try {
+      const saved = window.localStorage?.getItem(PORTAL_STATE_KEY);
+      if (!saved) return;
+      if (saved.length > 1500000) {
+        window.localStorage.removeItem(PORTAL_STATE_KEY);
+        console.warn(`[${VERSION}] oversized portal local state reset before app boot`);
+        return;
+      }
+      JSON.parse(saved);
+    } catch (error) {
+      try { window.localStorage.removeItem(PORTAL_STATE_KEY); } catch {}
+      console.warn(`[${VERSION}] corrupt portal local state reset before app boot`, error);
+    }
   }
 
   function requestedView() {
@@ -164,6 +181,7 @@
 
   function install() {
     document.documentElement.dataset.jpProfileCriticalNav = VERSION;
+    guardLocalPortalState();
     installNavigationRewrite();
     revealPortal();
     cleanupStaleLayers();
