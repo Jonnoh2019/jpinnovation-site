@@ -6,9 +6,10 @@ const portalBackend = window.supabase?.createClient(supabaseUrl, supabasePublish
 });
 const publicSiteOrigin = "https://www.jpinnovation.co.uk";
 const passwordResetRedirectUrl = `${publicSiteOrigin}/hub-portal/index.html?entry=client&signin=1&reset=1`;
-const serviceWorkerPath = "/jp-service-worker.js?v=jp-notification-20260717";
-const notificationIconPath = "/assets/jp-app-icon-192.png?v=jp-notification-20260717";
-const notificationBadgePath = "/assets/jp-notification-badge.svg?v=jp-notification-20260717";
+const serviceWorkerPath = "/jp-service-worker.js?v=jp-notification-20260718";
+const notificationIconPath = "/assets/jp-innovation-logo.png?v=jp-notification-20260718";
+const notificationBadgePath = "/assets/jp-notification-badge.png?v=jp-notification-20260718";
+const notificationImagePath = "/assets/jp-innovation-logo.png?v=jp-notification-20260718";
 const pushPublicKey = window.JP_INNOVATION_PUSH_PUBLIC_KEY || "";
 
 const boardCategories = [
@@ -189,6 +190,22 @@ function showSuccessToast(title, detail = "") {
   showSuccessToast.timer = window.setTimeout(() => toast.classList.remove("show"), 4200);
 }
 
+function showErrorToast(title, detail = "") {
+  let toast = $("#appErrorToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "appErrorToast";
+    toast.className = "app-toast error";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<span aria-hidden="true">!</span><div><strong>${escapeHtml(title)}</strong>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</div>`;
+  toast.classList.add("show");
+  window.clearTimeout(showErrorToast.timer);
+  showErrorToast.timer = window.setTimeout(() => toast.classList.remove("show"), 5200);
+}
+
 function openConfirmDialog({ title = "Are you sure?", message = "", confirmLabel = "OK", cancelLabel = "Cancel", danger = false } = {}) {
   let dialog = $("#confirmDialog");
   if (!dialog) {
@@ -345,7 +362,7 @@ function isAppleMobileDevice() {
 
 function pushPermissionLabel() {
   if (!pushSupported()) return "Not supported on this browser";
-  if (Notification.permission === "granted") return "Enabled on this device";
+  if (Notification.permission === "granted") return "Enabled";
   if (Notification.permission === "denied") return "Blocked in browser settings";
   return "Not enabled yet";
 }
@@ -394,8 +411,19 @@ async function enablePhoneNotifications() {
   await registration.showNotification("JP Innovation alerts enabled", {
     body: "You will be able to receive admin tasks, messages and Hub updates here.",
     icon: notificationIconPath,
+    image: notificationImagePath,
     badge: notificationBadgePath,
     tag: "jp-alerts-enabled",
+    renotify: true,
+    requireInteraction: true,
+    silent: false,
+    vibrate: [220, 90, 220, 90, 260],
+    actions: [{ action: "open", title: "Open JP Hub" }],
+    priority: "max",
+    urgency: "high",
+    importance: "max",
+    channelId: "jp-admin-alerts",
+    visibility: "public",
     data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
   });
   if (!pushPublicKey) {
@@ -423,8 +451,19 @@ async function maybeShowLocalPhoneNotification(items = []) {
     await registration.showNotification(`JP Innovation: ${item.title}`, {
       body: item.detail || "Open JP Innovation to view the update.",
       icon: notificationIconPath,
+      image: notificationImagePath,
       badge: notificationBadgePath,
-      tag: `jp-${String(item.view || "notification")}`,
+      tag: `jp-${String(item.view || "notification")}-${Date.now()}`,
+      renotify: true,
+      requireInteraction: true,
+      silent: false,
+      vibrate: [220, 90, 220, 90, 260],
+      actions: [{ action: "open", title: "Open JP Hub" }],
+      priority: "max",
+      urgency: "high",
+      importance: "max",
+      channelId: "jp-admin-alerts",
+      visibility: "public",
       data: { url: `/hub-portal/index.html?entry=${isClientPortalContext(user) ? "client" : "hub"}&view=${encodeURIComponent(item.view || "notifications")}` }
     });
   } catch {}
@@ -2828,8 +2867,143 @@ function renderClientWork(user) {
     </section>`;
 }
 
+function renderAdminDashboard(user) {
+  const unread = unreadMessageCount(user);
+  const notificationCount = notificationItems(user).filter((item) => item.isNew).length;
+  const pendingModeration = adminModerationQueue.filter((item) => item.status === "Pending Review").length;
+  const applications = adminProfilesStatus === "ready"
+    ? secureAdminProfiles.filter((profile) => profile.membership_status === "pending").map(secureProfileApplication)
+    : (state.applications || []).filter((application) => !application.example && application.created !== "Example");
+  const pendingApplications = applications.filter((application) => application.status === "pending").length;
+  const pendingPosts = (state.posts || []).filter((post) => post.status === "pending" || post.moderationStatus === "pending").length;
+  const pendingReplies = (state.posts || []).flatMap((post) => post.responses || []).filter((reply) => reply.moderationStatus === "pending").length;
+  const pendingProjects = (state.projects || []).filter((project) => project.moderationStatus === "pending").length;
+  const pendingReviews = (state.memberReviews || []).filter((review) => review.moderationStatus === "pending").length;
+  const pendingPhotos = pendingProfilePhotos().length;
+  const activeProjects = (state.projects || []).filter((project) => !["complete", "completed", "closed"].includes(String(project.status || "").toLowerCase())).length;
+  const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
+  const upcomingEvents = upcomingDashboardEvents().length;
+  const totalMembers = (adminProfilesStatus === "ready" ? secureAdminProfiles.map(secureProfileUser) : state.users).filter((item) => ["member", "admin"].includes(item.role)).length;
+  const onlineMembers = dashboardOnlineMembers(user).length;
+  const recentActivity = dashboardActivityFeed(user).slice(0, 4);
+  const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const icon = {
+    bell: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`,
+    mail: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>`,
+    check: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>`,
+    users: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c.6-4 2.7-6 6-6s5.4 2 6 6M15 15c2.8.2 4.6 1.8 5 5"/></svg>`,
+    project: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V6h6l2 2h8v11z"/><path d="M8 13h8"/></svg>`,
+    quote: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>`,
+    event: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v15H5z"/><path d="M8 3v4M16 3v4M5 10h14"/></svg>`,
+    chart: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/></svg>`,
+    pulse: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2-6 4 10 2-4h4"/></svg>`,
+    plus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`
+  };
+  const overview = [
+    { icon: icon.bell, label: "Notifications", value: notificationCount, view: "notifications" },
+    { icon: icon.mail, label: "Messages", value: unread, view: "messages" },
+    { icon: icon.check, label: "Pending approvals", value: pendingModeration + pendingApplications + pendingPosts + pendingReplies + pendingProjects + pendingReviews + pendingPhotos, view: "admin" },
+    { icon: `<span class="online-dot"></span>`, label: "Members online", value: onlineMembers, view: "directory" }
+  ];
+  const pendingTasks = [
+    { title: "Access requests", value: pendingApplications, detail: "New Hub applications", view: "admin" },
+    { title: "Moderation queue", value: pendingModeration + pendingPosts + pendingReplies, detail: "Posts and replies awaiting review", view: "admin" },
+    { title: "Project reviews", value: pendingProjects, detail: "Project submissions awaiting approval", view: "admin" },
+    { title: "Member reviews", value: pendingReviews + pendingPhotos, detail: "Reviews and profile photos", view: "admin" },
+    { title: "Unread messages", value: unread, detail: "Inbox items needing response", view: "messages" }
+  ];
+  const metrics = [
+    { icon: icon.users, label: "Total members", value: totalMembers, detail: "approved Hub/admin accounts", view: "directory" },
+    { icon: icon.check, label: "New registrations", value: pendingApplications, detail: "awaiting access decision", view: "admin" },
+    { icon: icon.chart, label: "Website visits", value: "Live", detail: "open website metrics", view: "metrics" },
+    { icon: icon.users, label: "Unique visitors", value: "Live", detail: "open website metrics", view: "metrics" },
+    { icon: icon.project, label: "Active projects", value: activeProjects, detail: "open project workspaces", view: "projects" },
+    { icon: icon.quote, label: "Open quotes", value: openQuotes, detail: "quote requests not closed", view: "quotes" },
+    { icon: icon.check, label: "Pending approvals", value: pendingModeration + pendingApplications, detail: "admin action required", view: "admin" },
+    { icon: icon.event, label: "Upcoming events", value: upcomingEvents, detail: "scheduled Hub items", view: "events" }
+  ];
+  const compactRow = (item, tone = "") => `
+    <button class="admin-task-row dashboard-link" data-view-link="${escapeHtml(item.view || "admin")}" type="button">
+      <span class="admin-task-value ${escapeHtml(tone)}">${escapeHtml(item.value)}</span>
+      <span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span>
+      <b aria-hidden="true">›</b>
+    </button>
+  `;
+  const metricCard = (item) => `
+    <button class="admin-metric-card dashboard-link" data-view-link="${escapeHtml(item.view)}" type="button">
+      <span class="admin-metric-icon" aria-hidden="true">${item.icon}</span>
+      <span><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.detail)}</small></span>
+      <b>${escapeHtml(item.value)}</b>
+    </button>
+  `;
+  return `
+    <div class="admin-dashboard-shell">
+      <section class="admin-overview-card">
+        <div class="admin-overview-head">
+          <div>
+            <p class="dashboard-date">${escapeHtml(today)}</p>
+            <h2>Admin overview</h2>
+          </div>
+          <button class="secondary-button dashboard-link" data-view-link="admin" type="button">Admin review</button>
+        </div>
+        <div class="admin-overview-grid">
+          ${overview.map((item) => `
+            <button class="admin-overview-stat dashboard-link" data-view-link="${escapeHtml(item.view)}" type="button">
+              <span aria-hidden="true">${item.icon}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+              <small>${escapeHtml(item.label)}</small>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+      <section class="admin-panel-card">
+        <div class="admin-section-head"><h2>Pending actions</h2><p>Items needing a decision first.</p></div>
+        <div class="admin-task-list">
+          ${pendingTasks.some((item) => Number(item.value) > 0)
+            ? pendingTasks.filter((item) => Number(item.value) > 0).map((item) => compactRow(item, "warn")).join("")
+            : `<div class="admin-empty-state"><strong>No urgent admin tasks</strong><small>Approvals, moderation and unread messages are clear.</small></div>`}
+        </div>
+      </section>
+      <section class="admin-panel-card">
+        <div class="admin-section-head"><h2>Quick actions</h2><p>Common admin shortcuts.</p></div>
+        <div class="admin-quick-actions">
+          <button class="dashboard-link" data-view-link="boards" type="button"><span>${icon.plus}</span>New Discussion</button>
+          <button class="dashboard-link" data-view-link="projects" type="button"><span>${icon.plus}</span>New Project</button>
+          <button class="dashboard-link" data-view-link="quotes" type="button"><span>${icon.plus}</span>Request Quote</button>
+          <button class="dashboard-link" data-view-link="events" type="button"><span>${icon.plus}</span>Create Event</button>
+          <button class="dashboard-link" data-view-link="admin" type="button"><span>${icon.users}</span>Manage Members</button>
+        </div>
+      </section>
+      <section class="admin-panel-card">
+        <div class="admin-section-head"><h2>Website metrics</h2><p>Compact management view.</p></div>
+        <div class="admin-metrics-grid">${metrics.map(metricCard).join("")}</div>
+      </section>
+      <section class="admin-panel-card">
+        <div class="admin-section-head"><h2>Hub activity</h2><p>Current operating status.</p></div>
+        <div class="admin-task-list">
+          ${compactRow({ title: "Open quotes", value: openQuotes, detail: "quote requests not yet closed", view: "quotes" })}
+          ${compactRow({ title: "Active projects", value: activeProjects, detail: "project workspaces in progress", view: "projects" })}
+          ${compactRow({ title: "Upcoming events", value: upcomingEvents, detail: "events and sessions scheduled", view: "events" })}
+        </div>
+      </section>
+      <section class="admin-panel-card">
+        <div class="admin-section-head"><h2>Recent activity</h2><p>Latest Hub updates.</p></div>
+        <div class="admin-task-list">
+          ${recentActivity.length ? recentActivity.map((item) => compactRow({
+            title: item.title,
+            value: item.type || "Hub",
+            detail: `${item.detail} · ${relativeDateLabel(item.when)}`,
+            view: item.view || "notifications"
+          })).join("") : `<div class="admin-empty-state"><strong>No recent activity</strong><small>Hub activity will appear here when members start using it.</small></div>`}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 function renderDashboard(user) {
   if (isClientPortalContext(user)) return renderClientDashboard(user);
+  if (user.role === "admin") return renderAdminDashboard(user);
   const unread = unreadMessageCount(user);
   const completion = profileCompletion(user);
   const openQuotes = (state.quotes || []).filter((quote) => quote.status !== "closed").length;
@@ -3304,7 +3478,8 @@ function bindAnalyticsResetButtons() {
         showSuccessToast("Metrics reset.", scope === "today" ? "Today's visitor analytics were cleared." : "Visitor analytics history was cleared.");
         await loadSiteAnalytics();
       } catch (error) {
-        window.alert(error.message || "Metrics could not be reset.");
+        console.error("Analytics reset failed", error);
+        showErrorToast("Analytics could not be reset.", "Please try again.");
       }
     });
   });
@@ -5217,8 +5392,19 @@ function bindPhoneAlertControls() {
       await registration.showNotification("JP Innovation test alert", {
         body: "This is how admin tasks, messages and Hub updates will appear.",
         icon: notificationIconPath,
+        image: notificationImagePath,
         badge: notificationBadgePath,
         tag: `jp-test-${Date.now()}`,
+        renotify: true,
+        requireInteraction: true,
+        silent: false,
+        vibrate: [220, 90, 220, 90, 260],
+        actions: [{ action: "open", title: "Open JP Hub" }],
+        priority: "max",
+        urgency: "high",
+        importance: "max",
+        channelId: "jp-admin-alerts",
+        visibility: "public",
         data: { url: "/hub-portal/index.html?entry=hub&view=notifications" }
       });
       status.textContent = "Test alert sent to this device.";
@@ -6219,6 +6405,12 @@ function syncMember(user) {
 }
 
 async function boot() {
+  const revealPortal = () => document.documentElement.classList.remove("restoring-portal-session");
+  const restoreFallbackTimer = window.setTimeout(revealPortal, 3500);
+  const withBootTimeout = (promise, label, timeoutMs = 8000) => Promise.race([
+    promise,
+    new Promise((_, reject) => window.setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs))
+  ]);
   trackPageView();
   if (portalBackend) {
     window.addEventListener("focus", () => touchHubPresence(currentView));
@@ -6233,7 +6425,7 @@ async function boot() {
     });
   }
   try {
-    await syncSecureSession();
+    await withBootTimeout(syncSecureSession(), "Secure session restore");
   } catch (error) {
     state.sessionEmail = "";
     saveState();
@@ -6241,7 +6433,7 @@ async function boot() {
   }
   if (currentUser()) {
     try {
-      await loadSecureUserData();
+      await withBootTimeout(loadSecureUserData(), "Hub data restore", 10000);
     } catch (error) {
       console.warn("Hub data could not be fully loaded. Keeping the signed-in session active.", error);
     }
@@ -6252,10 +6444,11 @@ async function boot() {
     return;
   }
   if (entryMode === "hub" && !currentUser()) {
-    window.location.replace(`../hub/index.html${signInRequested ? "?signin=1" : ""}`);
+    window.location.replace(`../hub/signin.html${signInRequested ? "?signin=1" : "?signin=1"}&v=portal-auth-recovery-20260721`);
     return;
   }
-  document.documentElement.classList.remove("restoring-portal-session");
+  window.clearTimeout(restoreFallbackTimer);
+  revealPortal();
   configureEntryPage();
   setupEmailFieldCleaning();
   registerNotificationServiceWorker().catch(() => {});
