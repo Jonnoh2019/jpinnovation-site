@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JP Innovation Hub Sign In</title>
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#050709">
+  <link rel="icon" href="../assets/jp-app-icon.svg?v=jp-logo-20260711" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/jp-app-icon-180.png?v=iphone-jp-logo-20260713">
+  <link rel="manifest" href="../site.webmanifest?v=iphone-jp-logo-20260713">
+  <link rel="stylesheet" href="styles.css?v=hub-signin-recovery-20260721">
+  <style>
+    html, body { min-height: 100%; }
+    body { opacity: 1 !important; pointer-events: auto !important; }
+    .signin-recovery-main {
+      min-height: calc(100vh - 132px);
+      display: grid;
+      place-items: center;
+      padding: clamp(22px, 5vw, 54px);
+    }
+    .signin-recovery-card {
+      width: min(760px, 100%);
+      border: 1px solid rgba(47,141,255,.3);
+      border-radius: 24px;
+      background: radial-gradient(circle at 18% 0%, rgba(0,111,230,.26), transparent 38%), rgba(8,13,20,.9);
+      box-shadow: 0 28px 80px rgba(0,0,0,.44);
+      padding: clamp(24px, 5vw, 44px);
+    }
+    .signin-recovery-card h1 { margin: 8px 0 12px; font-size: clamp(34px, 7vw, 58px); line-height: .96; }
+    .signin-recovery-card p { max-width: 58ch; color: #b8c5d7; font-size: 17px; }
+    .signin-recovery-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .signin-recovery-actions .primary-button,
+    .signin-recovery-actions .secondary-button { min-width: 180px; }
+    @media (max-width: 620px) {
+      .hub-header { padding-bottom: 10px; }
+      .signin-recovery-main { min-height: calc(100vh - 118px); padding: 16px; }
+      .signin-recovery-card { border-radius: 18px; padding: 22px; }
+      .signin-recovery-actions { display: grid; }
+      .signin-recovery-actions .primary-button,
+      .signin-recovery-actions .secondary-button { width: 100%; min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hub-header">
+    <a class="brand" href="../index.html" aria-label="JP Innovation home">
+      <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation Ltd">
+    </a>
+    <nav class="public-nav" aria-label="Hub navigation">
+      <a class="home-icon-button" href="../index.html" aria-label="Homepage">&#8962;</a>
+      <a id="clientPortalHeaderButton" class="section-switch-button" data-client-portal-link href="../hub-portal/index.html?entry=client&amp;signin=1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20v-2.2c0-3 2.7-5.3 6.5-5.3s6.5 2.3 6.5 5.3V20"/></svg><span>Client Portal</span></a>
+      <a id="innovationHubHeaderButton" class="section-switch-button active" href="signin.html?signin=1" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><circle cx="5.5" cy="10" r="2.3"/><circle cx="18.5" cy="10" r="2.3"/><path d="M7 20v-2c0-3 2-5 5-5s5 2 5 5v2M2 19v-1.2c0-2.2 1.4-3.8 3.5-3.8M22 19v-1.2c0-2.2-1.4-3.8-3.5-3.8"/></svg><span>Innovation Hub</span></a>
+    </nav>
+  </header>
+
+  <main class="signin-recovery-main">
+    <section class="signin-recovery-card">
+      <p class="landing-title">Innovation Hub</p>
+      <h1>Sign in to the Hub.</h1>
+      <p>Access the paid JP Innovation Hub member area. If you do not yet have approved Hub access, register and JP Innovation will review your request.</p>
+      <div class="signin-recovery-actions">
+        <button class="primary-button" data-open-hub-auth="signin" type="button">Sign in</button>
+        <button class="secondary-button" data-open-hub-auth="register" type="button">Register for access</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="featurePreviewDialog" class="auth-dialog feature-preview-dialog" aria-hidden="true">
+    <div class="auth-card feature-preview-card" role="dialog" aria-modal="true" aria-labelledby="featurePreviewTitle">
+      <button class="close-button" id="closeFeaturePreview" aria-label="Close feature preview">x</button>
+      <p class="eyebrow" id="featurePreviewLabel">Member feature</p>
+      <h2 id="featurePreviewTitle">Innovation Hub feature</h2>
+      <div id="featurePreviewBody"></div>
+      <button class="primary-button" data-open-hub-auth="register" type="button">Register for access</button>
+    </div>
+  </div>
+
+  <div id="hubAuthDialog" class="auth-dialog" aria-hidden="true">
+    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="hubAuthTitle">
+      <button class="close-button" id="closeHubAuth" aria-label="Close sign in">x</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-hub-auth-tab="signin">Sign in</button>
+        <button class="auth-tab" data-hub-auth-tab="register">Register</button>
+      </div>
+      <h2 id="hubAuthTitle">Innovation Hub login</h2>
+      <form id="hubSigninForm" class="auth-form" autocomplete="on">
+        <label for="hubSigninEmail">Email <input id="hubSigninEmail" name="email" type="text" inputmode="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label for="hubSigninPassword">Password <input id="hubSigninPassword" name="password" type="password" required autocomplete="current-password"></label>
+        <button class="primary-button" type="submit">Sign in</button>
+        <button id="hubForgotPasswordButton" class="secondary-button" type="button">Forgot password? Reset it</button>
+      </form>
+      <form id="hubRegisterForm" class="auth-form hidden">
+        <label>Full name <input name="fullName" required autocomplete="name"></label>
+        <label>Email <input name="email" type="text" inputmode="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
+        <label>Password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <button class="primary-button" type="submit">Create account</button>
+      </form>
+      <p id="hubAuthStatus" class="form-status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="app.js?v=hub-auth-immediate-20260721"></script>
+</body>
+</html>
