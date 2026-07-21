@@ -10,8 +10,13 @@
   <script>
     try {
       const entryParams = new URLSearchParams(location.search);
-      if (entryParams.get("entry") === "hub" && !entryParams.has("view") && !entryParams.has("signin")) {
-        location.replace("../hub/signin.html?signin=1&v=hub-entry-guard-20260721");
+      const isHubEntry = entryParams.get("entry") === "hub";
+      const hasPortalView = entryParams.has("view");
+      const signInRequested = entryParams.has("signin");
+      const supabaseTokenKey = "sb-ueqdkiwouxhhdhdmjlsl-auth-token";
+      const hasSupabaseSession = Boolean(localStorage.getItem(supabaseTokenKey));
+      if (isHubEntry && !signInRequested && (!hasPortalView || !hasSupabaseSession)) {
+        location.replace("../hub/signin.html?signin=1&v=hub-entry-guard-20260721b");
       } else {
         if (["hub", "client"].includes(entryParams.get("entry"))) {
           document.documentElement.classList.add("restoring-portal-session");
