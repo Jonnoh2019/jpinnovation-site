@@ -2,7 +2,7 @@
    This keeps the profile menu out of clipped/transformed header containers. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-compact-override-20260722-body-root";
+  const VERSION = "profile-menu-compact-override-20260722-ring-clean-fullscreen-menu";
   document.documentElement.dataset.jpProfileMenuCompactOverride = VERSION;
 
   function installStyles() {
@@ -14,6 +14,36 @@
     }
     style.textContent = `
       #memberProfileButton,#memberProfileButton *{pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important}
+      #memberProfileButton.member-chip {
+        border: 1px solid rgba(22,139,255,.46) !important;
+        outline: none !important;
+        box-shadow: 0 0 0 1px rgba(22,139,255,.14), 0 10px 26px rgba(0,0,0,.34) !important;
+      }
+      #memberProfileButton.member-chip::before,
+      #memberProfileButton.member-chip::after,
+      #memberInitials::before,
+      #memberInitials::after {
+        content: none !important;
+        display: none !important;
+      }
+      #memberProfileButton.member-chip #memberInitials,
+      #memberInitials.jp-role-avatar,
+      #memberInitials.jp-role-avatar-admin {
+        box-sizing: border-box !important;
+        aspect-ratio: 1 / 1 !important;
+        border-radius: 999px !important;
+        border: 3px solid #168bff !important;
+        outline: none !important;
+        color: #ffffff !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+        box-shadow:
+          inset 0 1px 3px rgba(255,255,255,.30),
+          inset 0 -4px 9px rgba(50,31,2,.42),
+          0 6px 16px rgba(0,0,0,.35) !important;
+      }
       #memberProfileMenu.member-profile-menu:not(.open),
       #memberProfileMenu.member-profile-menu[aria-hidden="true"] {
         display: none !important;
