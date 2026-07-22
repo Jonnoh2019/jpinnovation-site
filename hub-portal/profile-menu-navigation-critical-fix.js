@@ -2,7 +2,7 @@
    Passive guard plus viewport-root repair for the profile pop-out. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-critical-fix-20260722-body-root";
+  const VERSION = "profile-menu-navigation-critical-fix-20260722-body-root-admin-stable";
   document.documentElement.dataset.jpProfileCriticalNav = VERSION;
 
   function ensureMenuAtBodyRoot() {
@@ -56,6 +56,16 @@
     `;
   }
 
+  function loadStableAdminRenderer() {
+    if (document.documentElement.dataset.jpAdminRouteStabilityFix || document.getElementById("jpAdminRouteStabilityFixLoader")) return;
+    const script = document.createElement("script");
+    script.id = "jpAdminRouteStabilityFixLoader";
+    script.src = "admin-route-stability-fix.js?v=admin-route-stability-fix-20260722-loaded";
+    script.defer = false;
+    script.onerror = () => console.error(`[${VERSION}] failed to load stable Admin Review renderer`);
+    document.body.appendChild(script);
+  }
+
   function closeOnlyIfClearlyStale() {
     const menu = ensureMenuAtBodyRoot();
     const trigger = document.querySelector("#memberProfileButton");
@@ -90,9 +100,10 @@
   function install() {
     installStyles();
     ensureMenuAtBodyRoot();
+    loadStableAdminRenderer();
     closeOnlyIfClearlyStale();
     removeRecoveredAdminCard();
-    window.addEventListener("pageshow", () => { ensureMenuAtBodyRoot(); closeOnlyIfClearlyStale(); removeRecoveredAdminCard(); }, true);
+    window.addEventListener("pageshow", () => { ensureMenuAtBodyRoot(); loadStableAdminRenderer(); closeOnlyIfClearlyStale(); removeRecoveredAdminCard(); }, true);
     window.addEventListener("popstate", () => { closeOnlyIfClearlyStale(); removeRecoveredAdminCard(); }, true);
     window.addEventListener("resize", setMenuVars, true);
     window.visualViewport?.addEventListener("resize", setMenuVars);
