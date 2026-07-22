@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260722-accounts-profile-mobile-redesign-1";
+const JP_SW_VERSION = "jp-sw-20260722-contained-menu-avatar-ring-1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
