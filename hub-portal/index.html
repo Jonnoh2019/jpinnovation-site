@@ -41,209 +41,18 @@
     </header>
 
     <main>
-      <section class="portal-hero">
-        <div class="hero-copy">
-          <p class="landing-title" id="entryIdentityBadge">Client Portal</p>
-          <p class="eyebrow" id="entryEyebrow" hidden>Client Portal access</p>
-          <h1 id="entryTitle">Quotes. Updates. Messages.</h1>
-          <p class="lead" id="entryLead">Your free, private workspace for working with JP Innovation.</p>
-          <ul class="hero-tick-list" aria-label="Client Portal overview">
-            <li>Request and review quotes</li>
-            <li>Follow project progress</li>
-            <li>Keep messages in one place</li>
-          </ul>
-        </div>
-        <aside class="hero-panel" aria-label="Membership summary">
-          <span id="entryPanelLabel">Free client access</span>
-          <strong id="entryPanelTitle">One secure account</strong>
-          <p id="entryPanelCopy">Use the same login if JP Innovation later upgrades you to paid Hub membership.</p>
-          <ul>
-            <li id="entryPanelPointOne">Private customer workspace</li>
-            <li id="entryPanelPointTwo">Innovation Hub access stays separate until approved</li>
-          </ul>
-        </aside>
-      </section>
-
-      <section class="section" id="client-features">
-        <div class="section-heading">
-          <p class="eyebrow">Everything together</p>
-          <h2>Simple tools for your project.</h2>
-        </div>
-        <div class="landing-points" aria-label="Client Portal feature list">
-          <button class="landing-feature-button" data-client-feature="quotes" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 9h8M8 13h8M8 17h5"/></svg></span><span><strong>Quotes</strong><small>Request, review and respond.</small></span><b aria-hidden="true">+</b></button>
-          <button class="landing-feature-button" data-client-feature="projects" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V6h6l2 2h8v11zM8 13h8M8 16h5"/></svg></span><span><strong>Projects</strong><small>See progress and next steps.</small></span><b aria-hidden="true">+</b></button>
-          <button class="landing-feature-button" data-client-feature="messages" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4zM8 9h8M8 12h5"/></svg></span><span><strong>Messages</strong><small>Keep decisions easy to find.</small></span><b aria-hidden="true">+</b></button>
-          <button class="landing-feature-button" data-client-feature="repeat" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 1 1-6.2 3.8M4 3v5h5"/></svg></span><span><strong>Repeat work</strong><small>Send revisions and new requests faster.</small></span><b aria-hidden="true">+</b></button>
-        </div>
-      </section>
+      <section class="portal-hero"><div class="hero-copy"><p class="landing-title" id="entryIdentityBadge">Client Portal</p><p class="eyebrow" id="entryEyebrow" hidden>Client Portal access</p><h1 id="entryTitle">Quotes. Updates. Messages.</h1><p class="lead" id="entryLead">Your free, private workspace for working with JP Innovation.</p><ul class="hero-tick-list" aria-label="Client Portal overview"><li>Request and review quotes</li><li>Follow project progress</li><li>Keep messages in one place</li></ul></div><aside class="hero-panel" aria-label="Membership summary"><span id="entryPanelLabel">Free client access</span><strong id="entryPanelTitle">One secure account</strong><p id="entryPanelCopy">Use the same login if JP Innovation later upgrades you to paid Hub membership.</p><ul><li id="entryPanelPointOne">Private customer workspace</li><li id="entryPanelPointTwo">Innovation Hub access stays separate until approved</li></ul></aside></section>
+      <section class="section" id="client-features"><div class="section-heading"><p class="eyebrow">Everything together</p><h2>Simple tools for your project.</h2></div><div class="landing-points" aria-label="Client Portal feature list"><button class="landing-feature-button" data-client-feature="quotes" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5zM8 9h8M8 13h8M8 17h5"/></svg></span><span><strong>Quotes</strong><small>Request, review and respond.</small></span><b aria-hidden="true">+</b></button><button class="landing-feature-button" data-client-feature="projects" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V6h6l2 2h8v11zM8 13h8M8 16h5"/></svg></span><span><strong>Projects</strong><small>See progress and next steps.</small></span><b aria-hidden="true">+</b></button><button class="landing-feature-button" data-client-feature="messages" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4zM8 9h8M8 12h5"/></svg></span><span><strong>Messages</strong><small>Keep decisions easy to find.</small></span><b aria-hidden="true">+</b></button><button class="landing-feature-button" data-client-feature="repeat" type="button"><span class="landing-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 1 1-6.2 3.8M4 3v5h5"/></svg></span><span><strong>Repeat work</strong><small>Send revisions and new requests faster.</small></span><b aria-hidden="true">+</b></button></div></section>
     </main>
   </div>
 
-  <div id="clientFeatureDialog" class="auth-dialog feature-preview-dialog" aria-hidden="true">
-    <div class="auth-card feature-preview-card" role="dialog" aria-modal="true" aria-labelledby="clientFeatureTitle">
-      <button class="close-button" id="closeClientFeature" aria-label="Close feature preview">x</button>
-      <p class="eyebrow" id="clientFeatureLabel">Client Portal feature</p>
-      <h2 id="clientFeatureTitle">Client Portal feature</h2>
-      <div id="clientFeatureBody"></div>
-      <button id="clientFeatureSignIn" class="primary-button" type="button">Open Client Portal</button>
-    </div>
-  </div>
+  <div id="clientFeatureDialog" class="auth-dialog feature-preview-dialog" aria-hidden="true"><div class="auth-card feature-preview-card" role="dialog" aria-modal="true" aria-labelledby="clientFeatureTitle"><button class="close-button" id="closeClientFeature" aria-label="Close feature preview">x</button><p class="eyebrow" id="clientFeatureLabel">Client Portal feature</p><h2 id="clientFeatureTitle">Client Portal feature</h2><div id="clientFeatureBody"></div><button id="clientFeatureSignIn" class="primary-button" type="button">Open Client Portal</button></div></div>
+  <div id="authDialog" class="auth-dialog" aria-hidden="true"><div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle"><button class="close-button" id="closeAuth" aria-label="Close sign in">x</button><div class="auth-tabs"><button class="auth-tab active" data-auth-tab="signin">Sign in</button><button class="auth-tab" data-auth-tab="register">Register</button></div><h2 id="authTitle">Client Portal login</h2><form id="signinForm" class="auth-form" autocomplete="on"><label for="signinEmail">Email <input id="signinEmail" name="email" type="text" inputmode="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label><label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label><button class="primary-button" type="submit">Sign in</button><button id="forgotPasswordButton" class="secondary-button" type="button">Forgot password? Reset it</button></form><form id="registerForm" class="auth-form hidden"><label>Full name <input name="fullName" required autocomplete="name"></label><label>Email <input name="email" type="text" inputmode="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label><label>Password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label><button class="primary-button" type="submit">Create account</button></form><form id="resetPasswordForm" class="auth-form hidden"><p class="muted">Enter a new password for your JP Innovation account.</p><label>New password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label><label>Confirm new password <input name="confirmPassword" type="password" minlength="8" required autocomplete="new-password"></label><button class="primary-button" type="submit">Save new password</button></form><p id="authStatus" class="form-status" aria-live="polite"></p></div></div>
+  <div id="upgradeDialog" class="auth-dialog" aria-hidden="true"><div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle"><button class="close-button" id="closeUpgrade" aria-label="Close upgrade message">x</button><p class="eyebrow">Innovation Hub upgrade</p><h2 id="upgradeTitle">Upgrade needed for paid Hub features</h2><p class="muted">This login is for the free Client Portal. The Innovation Hub is the paid member area, so Hub tools stay locked until JP Innovation upgrades the account.</p><a class="primary-button" href="../hub/index.html#apply">View paid membership</a><a class="secondary-button" href="index.html?entry=client&signin=1">Open Client Portal</a></div></div>
 
-  <div id="authDialog" class="auth-dialog" aria-hidden="true">
-    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-      <button class="close-button" id="closeAuth" aria-label="Close sign in">x</button>
-      <div class="auth-tabs">
-        <button class="auth-tab active" data-auth-tab="signin">Sign in</button>
-        <button class="auth-tab" data-auth-tab="register">Register</button>
-      </div>
-      <h2 id="authTitle">Client Portal login</h2>
-      <form id="signinForm" class="auth-form" autocomplete="on">
-        <label for="signinEmail">Email <input id="signinEmail" name="email" type="text" inputmode="email" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
-        <label for="signinPassword">Password <input id="signinPassword" name="password" type="password" required autocomplete="current-password"></label>
-        <button class="primary-button" type="submit">Sign in</button>
-        <button id="forgotPasswordButton" class="secondary-button" type="button">Forgot password? Reset it</button>
-      </form>
-      <form id="registerForm" class="auth-form hidden">
-        <label>Full name <input name="fullName" required autocomplete="name"></label>
-        <label>Email <input name="email" type="text" inputmode="email" required autocomplete="email" autocapitalize="none" spellcheck="false"></label>
-        <label>Password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
-        <button class="primary-button" type="submit">Create account</button>
-      </form>
-      <form id="resetPasswordForm" class="auth-form hidden">
-        <p class="muted">Enter a new password for your JP Innovation account.</p>
-        <label>New password <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
-        <label>Confirm new password <input name="confirmPassword" type="password" minlength="8" required autocomplete="new-password"></label>
-        <button class="primary-button" type="submit">Save new password</button>
-      </form>
-      <p id="authStatus" class="form-status" aria-live="polite"></p>
-    </div>
-  </div>
-
-  <div id="upgradeDialog" class="auth-dialog" aria-hidden="true">
-    <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle">
-      <button class="close-button" id="closeUpgrade" aria-label="Close upgrade message">x</button>
-      <p class="eyebrow">Innovation Hub upgrade</p>
-      <h2 id="upgradeTitle">Upgrade needed for paid Hub features</h2>
-      <p class="muted">This login is for the free Client Portal. The Innovation Hub is the paid member area, so Hub tools stay locked until JP Innovation upgrades the account.</p>
-      <a class="primary-button" href="../hub/index.html#apply">View paid membership</a>
-      <a class="secondary-button" href="index.html?entry=client&signin=1">Open Client Portal</a>
-    </div>
-  </div>
-
-  <div id="appShell" class="app-shell hidden">
-    <aside id="dashboardSidebar" class="sidebar">
-      <a class="app-brand" href="../index.html" aria-label="Return to JP Innovation Site">
-        <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation">
-      </a>
-      <nav class="app-nav" aria-label="Portal navigation">
-        <button class="nav-link active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">&#8962;</span><span>Dashboard</span></button>
-        <button class="nav-link" data-view="clientwork"><span class="nav-icon" aria-hidden="true">&#128188;</span><span>My Client Work</span></button>
-        <button class="nav-link" data-view="onboarding"><span class="nav-icon" aria-hidden="true">&#10003;</span><span>Profile Setup</span></button>
-        <button class="nav-link" data-view="boards"><span class="nav-icon" aria-hidden="true">&#128172;</span><span>Engineering Discussions</span></button>
-        <button class="nav-link" data-view="projects"><span class="nav-icon" aria-hidden="true">&#9638;</span><span>Projects</span></button>
-        <button class="nav-link" data-view="directory"><span class="nav-icon" aria-hidden="true">&#9678;</span><span>Member Directory</span></button>
-        <button class="nav-link" data-view="resources"><span class="nav-icon" aria-hidden="true">&#9881;</span><span>Resources &amp; Tools</span></button>
-        <button class="nav-link" data-view="events"><span class="nav-icon" aria-hidden="true">&#9636;</span><span>Events</span></button>
-        <button class="nav-link" data-view="rewards"><span class="nav-icon" aria-hidden="true">&#9733;</span><span>Rewards</span></button>
-      </nav>
-      <a class="secondary-button site-return-button" href="../index.html">Back to JP Innovation Site</a>
-    </aside>
-    <button id="mobileMenuBackdrop" class="mobile-menu-backdrop" type="button" aria-label="Close dashboard menu"></button>
-
-    <main class="workspace">
-      <header class="workspace-header">
-        <a class="workspace-mobile-logo" href="../index.html" aria-label="Return to JP Innovation homepage">
-          <img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation Ltd">
-        </a>
-        <div class="workspace-heading">
-          <div>
-            <p class="eyebrow">Innovation Hub</p>
-            <h1 id="viewTitle">Dashboard</h1>
-          </div>
-        </div>
-        <div class="workspace-header-actions">
-          <button id="mobileMenuButton" class="mobile-dashboard-menu" type="button" aria-label="Open dashboard menu" aria-controls="dashboardSidebar" aria-expanded="false">
-            <span class="menu-bars"></span>
-            <strong class="menu-label">Menu</strong>
-          </button>
-          <button id="dashboardHomeButton" class="header-icon-button" type="button" aria-label="Return to Hub dashboard" title="Dashboard">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 11.5 12 4l9 7.5"/>
-              <path d="M5.5 10v10h13V10"/>
-              <path d="M9.5 20v-6h5v6"/>
-            </svg>
-          </button>
-          <div class="account-control-cluster">
-            <div class="notification-centre">
-              <button id="topNotificationBell" class="notification-bell" type="button" aria-label="Open notifications" aria-controls="notificationPopover" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
-                  <path d="M10 20a2 2 0 0 0 4 0"/>
-                </svg>
-                <span id="notificationCountTop" class="notification-count hidden">0</span>
-              </button>
-              <div id="notificationPopover" class="notification-popover" aria-hidden="true">
-                <div class="notification-heading">
-                  <div><span class="eyebrow">Alerts</span><h3>Notifications</h3></div>
-                  <button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">&times;</button>
-                </div>
-                <div id="notificationList" class="notification-list"></div>
-              </div>
-            </div>
-            <div class="member-profile-control">
-              <button id="memberProfileButton" class="member-chip" type="button" aria-label="Open account menu" aria-controls="memberProfileMenu" aria-expanded="false">
-                <span id="memberInitials">JP</span>
-              </button>
-              <button id="reputationStatusButton" class="member-status-star hidden" type="button" aria-label="Open member verification status" aria-controls="reputationStatusDialog" title="Member verification status">&#9733;</button>
-              <div id="memberProfileMenu" class="member-profile-menu" aria-hidden="true">
-                <div class="profile-menu-header">
-                  <span id="profileMenuAvatar" class="profile-menu-avatar" aria-hidden="true">JP</span>
-                  <span class="profile-menu-identity">
-                    <span class="member-name-line"><strong id="memberName">Member</strong><span id="memberStatusStarInline" class="member-status-star-inline hidden" aria-hidden="true">&#9733;</span></span>
-                    <small id="memberRole">Member</small>
-                  </span>
-                  <b id="profileAlertCount" class="member-chip-count hidden">0</b>
-                </div>
-                <button id="profileAdminLink" class="profile-menu-link hidden" data-profile-view="admin" type="button"><span class="profile-menu-icon icon-admin" aria-hidden="true">&#10003;</span><span><strong>Admin review</strong><small>Approvals, moderation and account access</small></span></button>
-                <button id="profileMetricsLink" class="profile-menu-link hidden" data-profile-view="metrics" type="button"><span class="profile-menu-icon icon-metrics" aria-hidden="true">&#128200;</span><span><strong>Website metrics</strong><small>Visits, registrations and activity</small></span></button>
-                <button class="profile-menu-link" data-profile-view="profile" type="button"><span class="profile-menu-icon icon-profile" aria-hidden="true">&#9675;</span><span><strong>My profile</strong><small>View and edit your details</small></span></button>
-                <button id="profileClientWork" class="profile-menu-link" data-profile-view="clientwork" type="button"><span class="profile-menu-icon icon-work" aria-hidden="true">&#128188;</span><span><strong>My client work</strong><small>Quotes, projects and JP messages</small></span></button>
-                <button id="profileMyPosts" class="profile-menu-link" data-profile-action="my-posts" type="button"><span class="profile-menu-icon icon-posts" aria-hidden="true">&#128172;</span><span><strong>My posts</strong><small>Your board threads and replies</small></span></button>
-                <button class="profile-menu-link" data-profile-action="my-quotes" type="button"><span class="profile-menu-icon icon-quotes" aria-hidden="true">&#163;</span><span><strong>My quotes</strong><small>Your requests and responses</small></span></button>
-                <button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications"><span class="profile-menu-icon icon-alerts" aria-hidden="true">&#9679;</span><span><strong>Notifications</strong><small>Approvals and account updates</small></span><span id="notificationCount" class="menu-count hidden">0</span></button>
-                <div id="profileChatNotifications" class="profile-chat-notifications" aria-live="polite"></div>
-                <button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><span class="profile-menu-icon icon-messages" aria-hidden="true">&#9993;</span><span><strong>My messages</strong><small>Open your private inbox</small></span><span id="messageCount" class="menu-count hidden">0</span></button>
-                <button class="profile-menu-link" data-profile-view="settings" type="button"><span class="profile-menu-icon icon-settings" aria-hidden="true">&#9881;</span><span><strong>Account settings</strong><small>Preferences and security</small></span></button>
-                <button id="logoutButton" class="profile-menu-link profile-menu-signout" type="button"><span class="profile-menu-icon icon-signout" aria-hidden="true">&#8594;</span><span><strong>Sign out</strong><small>Sign out on this device</small></span></button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <section id="viewMount" class="view-mount"></section>
-    </main>
-  </div>
-
-  <div id="reputationStatusDialog" class="auth-dialog reputation-status-dialog" aria-hidden="true">
-    <section class="auth-card reputation-status-card" role="dialog" aria-modal="true" aria-labelledby="reputationStatusTitle">
-      <button id="closeReputationStatus" class="auth-close" type="button" aria-label="Close member status">&times;</button>
-      <div id="reputationStatusBody"></div>
-    </section>
-  </div>
-
-  <div id="confirmDialog" class="auth-dialog confirm-dialog" aria-hidden="true">
-    <section class="auth-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle">
-      <button id="closeConfirmDialog" class="auth-close" type="button" aria-label="Cancel">&times;</button>
-      <p class="eyebrow">Please confirm</p>
-      <h2 id="confirmDialogTitle">Are you sure?</h2>
-      <p id="confirmDialogMessage" class="muted">This action needs confirmation.</p>
-      <div class="confirm-actions">
-        <button id="confirmDialogCancel" class="secondary-button" type="button">Cancel</button>
-        <button id="confirmDialogConfirm" class="primary-button" type="button">OK</button>
-      </div>
-    </section>
-  </div>
+  <div id="appShell" class="app-shell hidden"><aside id="dashboardSidebar" class="sidebar"><a class="app-brand" href="../index.html" aria-label="Return to JP Innovation Site"><img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation"></a><nav class="app-nav" aria-label="Portal navigation"><button class="nav-link active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">&#8962;</span><span>Dashboard</span></button><button class="nav-link" data-view="clientwork"><span class="nav-icon" aria-hidden="true">&#128188;</span><span>My Client Work</span></button><button class="nav-link" data-view="onboarding"><span class="nav-icon" aria-hidden="true">&#10003;</span><span>Profile Setup</span></button><button class="nav-link" data-view="boards"><span class="nav-icon" aria-hidden="true">&#128172;</span><span>Engineering Discussions</span></button><button class="nav-link" data-view="projects"><span class="nav-icon" aria-hidden="true">&#9638;</span><span>Projects</span></button><button class="nav-link" data-view="directory"><span class="nav-icon" aria-hidden="true">&#9678;</span><span>Member Directory</span></button><button class="nav-link" data-view="resources"><span class="nav-icon" aria-hidden="true">&#9881;</span><span>Resources &amp; Tools</span></button><button class="nav-link" data-view="events"><span class="nav-icon" aria-hidden="true">&#9636;</span><span>Events</span></button><button class="nav-link" data-view="rewards"><span class="nav-icon" aria-hidden="true">&#9733;</span><span>Rewards</span></button></nav><a class="secondary-button site-return-button" href="../index.html">Back to JP Innovation Site</a></aside><button id="mobileMenuBackdrop" class="mobile-menu-backdrop" type="button" aria-label="Close dashboard menu"></button><main class="workspace"><header class="workspace-header"><a class="workspace-mobile-logo" href="../index.html" aria-label="Return to JP Innovation homepage"><img src="../assets/jp-innovation-logo-clear.svg" alt="JP Innovation Ltd"></a><div class="workspace-heading"><div><p class="eyebrow">Innovation Hub</p><h1 id="viewTitle">Dashboard</h1></div></div><div class="workspace-header-actions"><button id="mobileMenuButton" class="mobile-dashboard-menu" type="button" aria-label="Open dashboard menu" aria-controls="dashboardSidebar" aria-expanded="false"><span class="menu-bars"></span><strong class="menu-label">Menu</strong></button><button id="dashboardHomeButton" class="header-icon-button" type="button" aria-label="Return to Hub dashboard" title="Dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M9.5 20v-6h5v6"/></svg></button><div class="account-control-cluster"><div class="notification-centre"><button id="topNotificationBell" class="notification-bell" type="button" aria-label="Open notifications" aria-controls="notificationPopover" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span id="notificationCountTop" class="notification-count hidden">0</span></button><div id="notificationPopover" class="notification-popover" aria-hidden="true"><div class="notification-heading"><div><span class="eyebrow">Alerts</span><h3>Notifications</h3></div><button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">&times;</button></div><div id="notificationList" class="notification-list"></div></div></div><div class="member-profile-control"><button id="memberProfileButton" class="member-chip" type="button" aria-label="Open account menu" aria-controls="memberProfileMenu" aria-expanded="false"><span id="memberInitials">JP</span></button><button id="reputationStatusButton" class="member-status-star hidden" type="button" aria-label="Open member verification status" aria-controls="reputationStatusDialog" title="Member verification status">&#9733;</button><div id="memberProfileMenu" class="member-profile-menu" aria-hidden="true"><div class="profile-menu-header"><span id="profileMenuAvatar" class="profile-menu-avatar" aria-hidden="true">JP</span><span class="profile-menu-identity"><span class="member-name-line"><strong id="memberName">Member</strong><span id="memberStatusStarInline" class="member-status-star-inline hidden" aria-hidden="true">&#9733;</span></span><small id="memberRole">Member</small></span><b id="profileAlertCount" class="member-chip-count hidden">0</b></div><button id="profileAdminLink" class="profile-menu-link hidden" data-profile-view="admin" type="button"><span class="profile-menu-icon icon-admin" aria-hidden="true">&#10003;</span><span><strong>Admin review</strong><small>Approvals, moderation and account access</small></span></button><button id="profileMetricsLink" class="profile-menu-link hidden" data-profile-view="metrics" type="button"><span class="profile-menu-icon icon-metrics" aria-hidden="true">&#128200;</span><span><strong>Website metrics</strong><small>Visits, registrations and activity</small></span></button><button class="profile-menu-link" data-profile-view="profile" type="button"><span class="profile-menu-icon icon-profile" aria-hidden="true">&#9675;</span><span><strong>My profile</strong><small>View and edit your details</small></span></button><button id="profileClientWork" class="profile-menu-link" data-profile-view="clientwork" type="button"><span class="profile-menu-icon icon-work" aria-hidden="true">&#128188;</span><span><strong>My client work</strong><small>Quotes, projects and JP messages</small></span></button><button id="profileMyPosts" class="profile-menu-link" data-profile-action="my-posts" type="button"><span class="profile-menu-icon icon-posts" aria-hidden="true">&#128172;</span><span><strong>My posts</strong><small>Your board threads and replies</small></span></button><button class="profile-menu-link" data-profile-action="my-quotes" type="button"><span class="profile-menu-icon icon-quotes" aria-hidden="true">&#163;</span><span><strong>My quotes</strong><small>Your requests and responses</small></span></button><button id="notificationBell" class="profile-menu-link profile-menu-count-link" type="button" aria-label="Open notifications"><span class="profile-menu-icon icon-alerts" aria-hidden="true">&#9679;</span><span><strong>Notifications</strong><small>Approvals and account updates</small></span><span id="notificationCount" class="menu-count hidden">0</span></button><div id="profileChatNotifications" class="profile-chat-notifications" aria-live="polite"></div><button id="messageInboxButton" class="profile-menu-link profile-menu-count-link" type="button"><span class="profile-menu-icon icon-messages" aria-hidden="true">&#9993;</span><span><strong>My messages</strong><small>Open your private inbox</small></span><span id="messageCount" class="menu-count hidden">0</span></button><button class="profile-menu-link" data-profile-view="settings" type="button"><span class="profile-menu-icon icon-settings" aria-hidden="true">&#9881;</span><span><strong>Account settings</strong><small>Preferences and security</small></span></button><button id="logoutButton" class="profile-menu-link profile-menu-signout" type="button"><span class="profile-menu-icon icon-signout" aria-hidden="true">&#8594;</span><span><strong>Sign out</strong><small>Sign out on this device</small></span></button></div></div></div></div></header><section id="viewMount" class="view-mount"></section></main></div>
+  <div id="reputationStatusDialog" class="auth-dialog reputation-status-dialog" aria-hidden="true"><section class="auth-card reputation-status-card" role="dialog" aria-modal="true" aria-labelledby="reputationStatusTitle"><button id="closeReputationStatus" class="auth-close" type="button" aria-label="Close member status">&times;</button><div id="reputationStatusBody"></div></section></div>
+  <div id="confirmDialog" class="auth-dialog confirm-dialog" aria-hidden="true"><section class="auth-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle"><button id="closeConfirmDialog" class="auth-close" type="button" aria-label="Cancel">&times;</button><p class="eyebrow">Please confirm</p><h2 id="confirmDialogTitle">Are you sure?</h2><p id="confirmDialogMessage" class="muted">This action needs confirmation.</p><div class="confirm-actions"><button id="confirmDialogCancel" class="secondary-button" type="button">Cancel</button><button id="confirmDialogConfirm" class="primary-button" type="button">OK</button></div></section></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="beforeunload-safety.js?v=beforeunload-safety-20260721"></script>
@@ -261,6 +70,6 @@
   <script src="profile-menu-final-fix.js?v=profile-menu-final-fix-20260721-disabled"></script>
   <script src="profile-menu-compact-override.js?v=profile-menu-compact-override-20260722-ring-clean-inline"></script>
   <script src="profile-menu-navigation-polish.js?v=profile-menu-navigation-polish-20260722-stable-final3"></script>
-  <script src="access-tier-fix.js?v=access-tier-fix-20260722e"></script>
+  <script src="access-tier-fix.js?v=access-tier-fix-20260722f"></script>
 </body>
 </html>
