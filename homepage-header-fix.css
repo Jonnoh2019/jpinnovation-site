@@ -1,5 +1,5 @@
-/* JP Innovation homepage stability override - 20260722 full-screen mobile menu
-   Purpose: no horizontal bleed, clean image fallbacks, consistent compact header, opaque mobile menu. */
+/* JP Innovation homepage stability override - 20260722 contained mobile menu
+   Purpose: no horizontal bleed, clean image fallbacks, consistent compact header, opaque contained mobile menu. */
 
 html,
 body {
@@ -200,31 +200,37 @@ section,
   html:has(.site-header .nav.is-open) {
     overflow: hidden !important;
     overscroll-behavior: none !important;
-    touch-action: none !important;
   }
 
   .site-header:has(.nav.is-open) { z-index: 2147482600 !important; }
 
   .site-header .nav.is-open {
-    position: fixed !important;
-    inset: 0 !important;
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: auto !important;
+    inset-block-start: calc(100% + 8px) !important;
+    inset-block-end: auto !important;
+    inset-inline-start: 12px !important;
+    inset-inline-end: 12px !important;
     z-index: 2147482500 !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    min-height: 100dvh !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    height: auto !important;
+    max-height: calc(100dvh - 152px - env(safe-area-inset-bottom)) !important;
+    min-height: 0 !important;
     margin: 0 !important;
-    padding: calc(88px + env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom)) !important;
+    padding: 10px !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 10px !important;
-    border: 0 !important;
-    border-radius: 0 !important;
+    border: 1px solid rgba(255,255,255,.13) !important;
+    border-radius: 22px !important;
     background:
-      radial-gradient(circle at 50% 0%, rgba(18, 82, 151, .22), transparent 36%),
-      linear-gradient(180deg, #05090d 0%, #071019 48%, #030609 100%) !important;
-    box-shadow: none !important;
+      radial-gradient(circle at 50% 0%, rgba(18,82,151,.20), transparent 36%),
+      linear-gradient(180deg, rgba(5,9,13,.98) 0%, rgba(7,16,25,.98) 48%, rgba(3,6,9,.98) 100%) !important;
+    box-shadow: 0 22px 60px rgba(0,0,0,.48) !important;
     backdrop-filter: none !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
@@ -233,13 +239,8 @@ section,
   }
 
   .site-header .nav.is-open::before {
-    content: "" !important;
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: -1 !important;
-    background: #05090d !important;
-    opacity: 1 !important;
-    pointer-events: none !important;
+    content: none !important;
+    display: none !important;
   }
 
   .site-header .nav.is-open a,
@@ -311,7 +312,11 @@ section,
   body:has(.site-header .nav.is-open) .hero-media,
   body:has(.site-header .nav.is-open) .floating-contact,
   body:has(.site-header .nav.is-open) .install-app-panel {
-    visibility: hidden !important;
+    visibility: visible !important;
+  }
+
+  body:has(.site-header .nav.is-open) .floating-contact,
+  body:has(.site-header .nav.is-open) .install-app-panel {
     pointer-events: none !important;
   }
 
