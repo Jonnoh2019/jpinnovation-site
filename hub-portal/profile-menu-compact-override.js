@@ -1,8 +1,8 @@
 /* JP Innovation profile-menu viewport safety.
-   Stable shim: final navigation ownership lives in profile-menu-navigation-polish.js. */
+   This keeps the profile menu out of clipped/transformed header containers. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-compact-override-20260722-passive";
+  const VERSION = "profile-menu-compact-override-20260722-body-root";
   document.documentElement.dataset.jpProfileMenuCompactOverride = VERSION;
 
   function installStyles() {
@@ -13,6 +13,7 @@
       document.head.appendChild(style);
     }
     style.textContent = `
+      #memberProfileButton,#memberProfileButton *{pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important}
       #memberProfileMenu.member-profile-menu:not(.open),
       #memberProfileMenu.member-profile-menu[aria-hidden="true"] {
         display: none !important;
@@ -35,8 +36,8 @@
         bottom: calc(14px + env(safe-area-inset-bottom)) !important;
         width: auto !important;
         max-width: calc(100vw - 28px) !important;
-        height: auto !important;
-        min-height: 0 !important;
+        height: calc(var(--jp-visible-vh, 100dvh) - var(--jp-profile-menu-top, 96px) - 14px - env(safe-area-inset-bottom)) !important;
+        min-height: 260px !important;
         max-height: calc(var(--jp-visible-vh, 100dvh) - var(--jp-profile-menu-top, 96px) - 14px - env(safe-area-inset-bottom)) !important;
         display: flex !important;
         flex-direction: column !important;
@@ -50,7 +51,7 @@
         visibility: visible !important;
         opacity: 1 !important;
         pointer-events: auto !important;
-        z-index: 99999 !important;
+        z-index: 2147483000 !important;
         clip-path: none !important;
         contain: none !important;
       }
@@ -61,11 +62,20 @@
         opacity: 1 !important;
         pointer-events: auto !important;
         transform: none !important;
+        translate: none !important;
       }
       #memberProfileMenu.member-profile-menu.open .profile-menu-link {
         display: grid !important;
         min-height: 44px !important;
         max-height: none !important;
+      }
+      @media (min-width: 761px) {
+        #memberProfileMenu.member-profile-menu.open {
+          left: auto !important;
+          right: 18px !important;
+          width: min(390px, calc(100vw - 36px)) !important;
+          max-width: calc(100vw - 36px) !important;
+        }
       }
       @media (max-width: 430px) {
         #memberProfileMenu.member-profile-menu.open .profile-menu-link { min-height: 42px !important; }
@@ -74,10 +84,33 @@
     `;
   }
 
-  function cleanClosedState() {
+  function ensureBodyRoot() {
     const menu = document.querySelector("#memberProfileMenu.member-profile-menu");
+    if (menu && menu.parentElement !== document.body) {
+      document.body.appendChild(menu);
+      menu.dataset.jpBodyRoot = VERSION;
+    }
+    return menu;
+  }
+
+  function visibleVh() {
+    return Math.max(420, Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 720));
+  }
+
+  function setMenuVars() {
+    const header = document.querySelector(".workspace-header") || document.querySelector("header");
+    const rect = header?.getBoundingClientRect?.();
+    const top = rect ? Math.round(rect.bottom + 8) : 96;
+    const safeTop = Math.max(84, Math.min(top, visibleVh() - 280));
+    document.documentElement.style.setProperty("--jp-visible-vh", `${visibleVh()}px`);
+    document.documentElement.style.setProperty("--jp-profile-menu-top", `${safeTop}px`);
+  }
+
+  function cleanClosedState() {
+    const menu = ensureBodyRoot();
     const trigger = document.querySelector("#memberProfileButton");
     const open = !!menu && menu.classList.contains("open") && menu.getAttribute("aria-hidden") === "false";
+    setMenuVars();
     if (open) return;
     document.body.classList.remove("member-profile-menu-open", "profile-menu-open", "jp-profile-menu-open", "jp-menu-hard-lock", "menu-scroll-locked");
     document.documentElement.classList.remove("member-profile-menu-open", "profile-menu-open", "jp-profile-menu-open", "jp-menu-hard-lock", "menu-scroll-locked");
@@ -97,8 +130,15 @@
   }
 
   installStyles();
+  ensureBodyRoot();
+  setMenuVars();
   window.addEventListener("pageshow", cleanClosedState, true);
   window.addEventListener("popstate", cleanClosedState, true);
+  window.addEventListener("resize", setMenuVars, true);
+  window.visualViewport?.addEventListener("resize", setMenuVars);
+  window.visualViewport?.addEventListener("scroll", setMenuVars);
   document.addEventListener("visibilitychange", cleanClosedState, true);
+  document.addEventListener("pointerup", () => { ensureBodyRoot(); setMenuVars(); }, true);
+  new MutationObserver(() => { ensureBodyRoot(); }).observe(document.body, { childList: true, subtree: true });
   console.info(`[${VERSION}] installed`);
 })();
