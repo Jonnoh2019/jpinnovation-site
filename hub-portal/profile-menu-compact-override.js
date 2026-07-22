@@ -1,15 +1,9 @@
 /* JP Innovation profile-menu viewport safety.
-   Keeps the profile menu inside the visible screen on desktop, mobile and PWA. */
+   Stable shim: final navigation ownership lives in profile-menu-navigation-polish.js. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-compact-override-20260721-stable10-no-stale-clicks";
+  const VERSION = "profile-menu-compact-override-20260722-passive";
   document.documentElement.dataset.jpProfileMenuCompactOverride = VERSION;
-
-  const TOP_DESKTOP = "clamp(82px, 14dvh, 112px)";
-  const TOP_MOBILE = "96px";
-  const BOTTOM = "calc(14px + env(safe-area-inset-bottom))";
-  const HEIGHT_DESKTOP = "calc(100dvh - clamp(82px, 14dvh, 112px) - 14px - env(safe-area-inset-bottom))";
-  const HEIGHT_MOBILE = "calc(100dvh - 110px - env(safe-area-inset-bottom))";
 
   function installStyles() {
     let style = document.getElementById("jpProfileMenuViewportSafeStyles");
@@ -19,41 +13,33 @@
       document.head.appendChild(style);
     }
     style.textContent = `
-      #memberProfileMenu.member-profile-menu,
-      #profileMenu.profile-menu { box-sizing: border-box !important; }
       #memberProfileMenu.member-profile-menu:not(.open),
-      #profileMenu.profile-menu:not(.open),
-      #memberProfileMenu.member-profile-menu[aria-hidden="true"],
-      #profileMenu.profile-menu[aria-hidden="true"],
-      body:not(.member-profile-menu-open) #memberProfileMenu.member-profile-menu:not(.open),
-      body:not(.profile-menu-open) #profileMenu.profile-menu:not(.open) {
+      #memberProfileMenu.member-profile-menu[aria-hidden="true"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         pointer-events: none !important;
         height: 0 !important;
-        min-height: 0 !important;
         max-height: 0 !important;
         overflow: hidden !important;
         transform: none !important;
+        translate: none !important;
+        clip-path: none !important;
       }
-      #memberProfileMenu.member-profile-menu.open,
-      #profileMenu.profile-menu.open,
-      body.member-profile-menu-open #memberProfileMenu.member-profile-menu,
-      body.profile-menu-open #profileMenu.profile-menu {
+      #memberProfileMenu.member-profile-menu.open {
+        box-sizing: border-box !important;
         position: fixed !important;
-        top: ${TOP_DESKTOP} !important;
+        left: max(14px, env(safe-area-inset-left)) !important;
         right: max(14px, env(safe-area-inset-right)) !important;
-        left: auto !important;
-        bottom: ${BOTTOM} !important;
-        width: min(420px, calc(100vw - 28px)) !important;
+        top: var(--jp-profile-menu-top, 96px) !important;
+        bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+        width: auto !important;
         max-width: calc(100vw - 28px) !important;
-        height: ${HEIGHT_DESKTOP} !important;
-        min-height: 360px !important;
-        max-height: ${HEIGHT_DESKTOP} !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: calc(var(--jp-visible-vh, 100dvh) - var(--jp-profile-menu-top, 96px) - 14px - env(safe-area-inset-bottom)) !important;
         display: flex !important;
         flex-direction: column !important;
-        align-items: stretch !important;
         gap: 6px !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
@@ -65,146 +51,54 @@
         opacity: 1 !important;
         pointer-events: auto !important;
         z-index: 99999 !important;
-        clip: auto !important;
         clip-path: none !important;
         contain: none !important;
       }
-      #memberProfileMenu.member-profile-menu.open .profile-menu-link,
-      #profileMenu.profile-menu.open .profile-menu-link,
-      body.member-profile-menu-open #memberProfileMenu.member-profile-menu .profile-menu-link,
-      body.profile-menu-open #profileMenu.profile-menu .profile-menu-link {
-        display: grid !important;
+      #memberProfileMenu.member-profile-menu.open .profile-menu-header,
+      #memberProfileMenu.member-profile-menu.open .profile-menu-link {
+        flex: 0 0 auto !important;
         visibility: visible !important;
         opacity: 1 !important;
         pointer-events: auto !important;
-        flex: 0 0 auto !important;
-        min-height: 50px !important;
-        max-height: none !important;
         transform: none !important;
       }
-      #memberProfileMenu.member-profile-menu.open .profile-menu-header,
-      #profileMenu.profile-menu.open .profile-menu-header,
-      body.member-profile-menu-open #memberProfileMenu.member-profile-menu .profile-menu-header,
-      body.profile-menu-open #profileMenu.profile-menu .profile-menu-header {
-        flex: 0 0 auto !important;
-        min-height: 66px !important;
+      #memberProfileMenu.member-profile-menu.open .profile-menu-link {
+        display: grid !important;
+        min-height: 44px !important;
+        max-height: none !important;
       }
-      @media (max-width: 760px) {
-        #memberProfileMenu.member-profile-menu.open,
-        #profileMenu.profile-menu.open,
-        body.member-profile-menu-open #memberProfileMenu.member-profile-menu,
-        body.profile-menu-open #profileMenu.profile-menu {
-          top: ${TOP_MOBILE} !important;
-          left: max(14px, env(safe-area-inset-left)) !important;
-          right: max(14px, env(safe-area-inset-right)) !important;
-          width: auto !important;
-          height: ${HEIGHT_MOBILE} !important;
-          min-height: 0 !important;
-          max-height: ${HEIGHT_MOBILE} !important;
-        }
+      @media (max-width: 430px) {
+        #memberProfileMenu.member-profile-menu.open .profile-menu-link { min-height: 42px !important; }
+        #memberProfileMenu.member-profile-menu.open .profile-menu-link small { display: none !important; }
       }
     `;
   }
 
-  function shouldBeOpen(menu) {
-    if (!menu) return false;
-    const trigger = document.querySelector("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]");
-    return menu.classList.contains("open") ||
-      menu.getAttribute("aria-hidden") === "false" ||
-      document.body.classList.contains("member-profile-menu-open") ||
-      document.body.classList.contains("profile-menu-open") ||
-      trigger?.getAttribute("aria-expanded") === "true";
-  }
-
-  function blurMenuFocus() {
-    const active = document.activeElement;
-    if (active?.closest?.("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu")) {
-      try { active.blur(); } catch (_) {}
-    }
-  }
-
-  function forceClosed(menu) {
-    if (!menu) return;
-    menu.classList.remove("open", "active", "is-open", "show", "visible");
-    menu.setAttribute("aria-hidden", "true");
-    menu.hidden = true;
-    menu.style.display = "none";
-    menu.style.visibility = "hidden";
-    menu.style.opacity = "0";
-    menu.style.pointerEvents = "none";
-    menu.style.height = "0";
-    menu.style.maxHeight = "0";
-    menu.style.overflow = "hidden";
-    blurMenuFocus();
-  }
-
-  function forceVisibleIfOpen() {
-    const menu = document.querySelector("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu");
-    if (!shouldBeOpen(menu)) {
-      forceClosed(menu);
-      return;
-    }
-    const mobile = innerWidth <= 760;
-    menu.hidden = false;
-    menu.removeAttribute("hidden");
-    menu.classList.add("open");
-    menu.setAttribute("aria-hidden", "false");
-    menu.style.position = "fixed";
-    menu.style.top = mobile ? "96px" : TOP_DESKTOP;
-    menu.style.right = "max(14px, env(safe-area-inset-right))";
-    menu.style.bottom = BOTTOM;
-    menu.style.left = mobile ? "max(14px, env(safe-area-inset-left))" : "auto";
-    menu.style.width = mobile ? "auto" : "min(420px, calc(100vw - 28px))";
-    menu.style.maxWidth = "calc(100vw - 28px)";
-    menu.style.height = mobile ? HEIGHT_MOBILE : HEIGHT_DESKTOP;
-    menu.style.minHeight = mobile ? "0" : "360px";
-    menu.style.maxHeight = menu.style.height;
-    menu.style.display = "flex";
-    menu.style.flexDirection = "column";
-    menu.style.overflowY = "auto";
-    menu.style.overflowX = "hidden";
-    menu.style.transform = "none";
-    menu.style.visibility = "visible";
-    menu.style.opacity = "1";
-    menu.style.pointerEvents = "auto";
-    menu.querySelectorAll(".profile-menu-link").forEach((row) => {
-      row.style.display = "grid";
-      row.style.visibility = "visible";
-      row.style.opacity = "1";
-      row.style.pointerEvents = "auto";
-      row.style.minHeight = "50px";
+  function cleanClosedState() {
+    const menu = document.querySelector("#memberProfileMenu.member-profile-menu");
+    const trigger = document.querySelector("#memberProfileButton");
+    const open = !!menu && menu.classList.contains("open") && menu.getAttribute("aria-hidden") === "false";
+    if (open) return;
+    document.body.classList.remove("member-profile-menu-open", "profile-menu-open", "jp-profile-menu-open", "jp-menu-hard-lock", "menu-scroll-locked");
+    document.documentElement.classList.remove("member-profile-menu-open", "profile-menu-open", "jp-profile-menu-open", "jp-menu-hard-lock", "menu-scroll-locked");
+    [document.body, document.documentElement].forEach((node) => {
+      node.style.removeProperty("overflow");
+      node.style.removeProperty("pointer-events");
+      node.style.removeProperty("touch-action");
     });
-    document.body.classList.remove("jp-menu-hard-lock");
-    document.documentElement.classList.remove("jp-menu-hard-lock");
-  }
-
-  function clearStaleHardLock() {
-    const menu = document.querySelector("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu");
-    if (shouldBeOpen(menu)) {
-      forceVisibleIfOpen();
-      return;
+    if (menu) {
+      menu.classList.remove("open", "active", "is-open", "show", "visible", "is-opening", "is-closing");
+      menu.setAttribute("aria-hidden", "true");
+      menu.hidden = true;
+      ["display", "visibility", "opacity", "pointer-events", "height", "max-height", "overflow", "transform", "translate", "top", "left", "right", "bottom", "width", "position"].forEach((prop) => menu.style.removeProperty(prop));
+      try { menu.scrollTop = 0; } catch (_) {}
     }
-    forceClosed(menu);
-    document.body.classList.remove("jp-menu-hard-lock", "member-profile-menu-open", "profile-menu-open", "menu-scroll-locked");
-    document.documentElement.classList.remove("jp-menu-hard-lock", "member-profile-menu-open", "profile-menu-open", "menu-scroll-locked");
-    document.body.style.removeProperty("overflow");
-    document.documentElement.style.removeProperty("overflow");
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
   }
 
   installStyles();
-  document.addEventListener("click", (event) => {
-    const staleMenuHit = event.target?.closest?.("#memberProfileMenu[aria-hidden='true'],#profileMenu[aria-hidden='true'],.member-profile-menu:not(.open),.profile-menu:not(.open)");
-    if (staleMenuHit) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      clearStaleHardLock();
-      return;
-    }
-    setTimeout(clearStaleHardLock, 50);
-  }, true);
-  window.addEventListener("pageshow", clearStaleHardLock);
-  window.addEventListener("resize", forceVisibleIfOpen);
-  setInterval(forceVisibleIfOpen, 120);
+  window.addEventListener("pageshow", cleanClosedState, true);
+  window.addEventListener("popstate", cleanClosedState, true);
+  document.addEventListener("visibilitychange", cleanClosedState, true);
   console.info(`[${VERSION}] installed`);
 })();
