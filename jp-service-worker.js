@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260720-black-screen-rollback-1";
+const JP_SW_VERSION = "jp-sw-20260722-profile-menu-stability-1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
