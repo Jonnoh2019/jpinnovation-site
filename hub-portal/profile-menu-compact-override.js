@@ -2,7 +2,7 @@
    This keeps the profile menu out of clipped/transformed header containers. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-compact-override-20260722-ring-clean-inline";
+  const VERSION = "profile-menu-compact-override-20260722-ring-blue-only";
   document.documentElement.dataset.jpProfileMenuCompactOverride = VERSION;
 
   function installStyles() {
@@ -22,13 +22,16 @@
       #memberProfileButton.member-chip::before,
       #memberProfileButton.member-chip::after,
       #memberInitials::before,
-      #memberInitials::after {
+      #memberInitials::after,
+      #memberProfileButton .jp-tier-avatar.admin::before,
+      #memberProfileButton .jp-tier-avatar.admin::after {
         content: none !important;
         display: none !important;
       }
       #memberProfileButton.member-chip #memberInitials,
       #memberInitials.jp-role-avatar,
-      #memberInitials.jp-role-avatar-admin {
+      #memberInitials.jp-role-avatar-admin,
+      #memberProfileButton .jp-tier-avatar.admin {
         box-sizing: border-box !important;
         aspect-ratio: 1 / 1 !important;
         border-radius: 999px !important;
@@ -116,19 +119,19 @@
 
   function applyAvatarRingClean() {
     const trigger = document.querySelector("#memberProfileButton.member-chip");
-    const avatar = document.querySelector("#memberInitials");
+    const avatars = Array.from(document.querySelectorAll("#memberInitials, #memberProfileButton .jp-tier-avatar.admin"));
     if (trigger) {
       trigger.style.setProperty("border", "1px solid rgba(22,139,255,.46)", "important");
       trigger.style.setProperty("outline", "none", "important");
       trigger.style.setProperty("box-shadow", "0 0 0 1px rgba(22,139,255,.14), 0 10px 26px rgba(0,0,0,.34)", "important");
     }
-    if (avatar) {
+    avatars.forEach((avatar) => {
       avatar.style.setProperty("border", "3px solid #168bff", "important");
       avatar.style.setProperty("outline", "none", "important");
       avatar.style.setProperty("border-radius", "999px", "important");
       avatar.style.setProperty("aspect-ratio", "1 / 1", "important");
       avatar.style.setProperty("box-shadow", "inset 0 1px 3px rgba(255,255,255,.30), inset 0 -4px 9px rgba(50,31,2,.42), 0 6px 16px rgba(0,0,0,.35)", "important");
-    }
+    });
   }
 
   function ensureBodyRoot() {
