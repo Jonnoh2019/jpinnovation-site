@@ -1,4 +1,4 @@
-/* JP Innovation homepage stability override - 20260722 contained mobile menu
+/* JP Innovation homepage stability override - 20260722 compact contained mobile menu
    Purpose: no horizontal bleed, clean image fallbacks, consistent compact header, opaque contained mobile menu. */
 
 html,
@@ -41,7 +41,6 @@ section,
   align-items: center !important;
 }
 
-/* Clean CAD/image fallbacks. These paths are known-good PNG assets. */
 .hero-media {
   overflow: hidden !important;
   background:
@@ -218,15 +217,15 @@ section,
     width: auto !important;
     max-width: calc(100vw - 24px) !important;
     height: auto !important;
-    max-height: calc(100dvh - 152px - env(safe-area-inset-bottom)) !important;
+    max-height: calc(100dvh - 142px - env(safe-area-inset-bottom)) !important;
     min-height: 0 !important;
     margin: 0 !important;
-    padding: 10px !important;
+    padding: 8px !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 10px !important;
+    gap: 6px !important;
     border: 1px solid rgba(255,255,255,.13) !important;
-    border-radius: 22px !important;
+    border-radius: 18px !important;
     background:
       radial-gradient(circle at 50% 0%, rgba(18,82,151,.20), transparent 36%),
       linear-gradient(180deg, rgba(5,9,13,.98) 0%, rgba(7,16,25,.98) 48%, rgba(3,6,9,.98) 100%) !important;
@@ -247,22 +246,22 @@ section,
   .site-header .nav.is-open a[href="#innovation-hub-preview"] {
     position: relative !important;
     display: grid !important;
-    grid-template-columns: 40px minmax(0, 1fr) 18px !important;
+    grid-template-columns: 30px minmax(0, 1fr) 14px !important;
     align-items: center !important;
-    gap: 12px !important;
+    gap: 9px !important;
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    min-height: 56px !important;
-    height: 56px !important;
-    padding: 0 14px !important;
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 0 10px !important;
     border: 1px solid rgba(255,255,255,.10) !important;
-    border-radius: 18px !important;
+    border-radius: 14px !important;
     background: linear-gradient(180deg, rgba(255,255,255,.070), rgba(255,255,255,.035)) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 10px 24px rgba(0,0,0,.22) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 8px 18px rgba(0,0,0,.20) !important;
     color: #f4f8ff !important;
     text-align: left !important;
-    font-size: 15px !important;
+    font-size: 14px !important;
     font-weight: 900 !important;
     line-height: 1 !important;
     text-decoration: none !important;
@@ -274,12 +273,12 @@ section,
     grid-column: 1 !important;
     display: grid !important;
     place-items: center !important;
-    width: 40px !important;
-    height: 40px !important;
-    border-radius: 14px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 10px !important;
     background: rgba(47,141,255,.14) !important;
     color: #58a6ff !important;
-    font-size: 16px !important;
+    font-size: 13px !important;
     font-weight: 950 !important;
     line-height: 1 !important;
   }
@@ -290,7 +289,7 @@ section,
     grid-column: 3 !important;
     justify-self: end !important;
     color: #b9c9dc !important;
-    font-size: 26px !important;
+    font-size: 20px !important;
     font-weight: 800 !important;
     line-height: 1 !important;
   }
@@ -302,7 +301,7 @@ section,
   .site-header .nav.is-open a[href="#why-jp"]::before { content: "\2713" !important; }
   .site-header .nav.is-open a[href="#industries"]::before { content: "\2302" !important; }
   .site-header .nav.is-open a[href="#testimonials"]::before { content: "\2605" !important; }
-  .site-header .nav.is-open a[href="#about"]::before { content: "JP" !important; font-size: 10px !important; }
+  .site-header .nav.is-open a[href="#about"]::before { content: "JP" !important; font-size: 9px !important; }
   .site-header .nav.is-open a[href="#innovation-hub-preview"]::before { content: "\25CE" !important; }
   .site-header .nav.is-open a[href="#faq"]::before { content: "?" !important; }
   .site-header .nav.is-open a[href="#contact"]::before { content: "\2709" !important; }
@@ -359,6 +358,28 @@ section,
   .section-switch-button {
     font-size: 11px !important;
     padding-inline: 6px !important;
+  }
+
+  .site-header .nav.is-open {
+    gap: 5px !important;
+    padding: 7px !important;
+  }
+
+  .site-header .nav.is-open a,
+  .site-header .nav.is-open a[href="#innovation-hub-preview"] {
+    min-height: 39px !important;
+    height: 39px !important;
+    grid-template-columns: 28px minmax(0, 1fr) 12px !important;
+    gap: 8px !important;
+    padding: 0 9px !important;
+    font-size: 13px !important;
+  }
+
+  .site-header .nav.is-open a::before {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 9px !important;
+    font-size: 12px !important;
   }
 }
 
