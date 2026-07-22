@@ -1,13 +1,14 @@
-/* JP Innovation Hub profile menu polish: removes temporary admin notice, repairs menu reopening, supports back navigation. */
+/* JP Innovation Hub profile menu polish: removes temporary admin notice, repairs menu reopening, supports native back cleanup. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-polish-20260722-a";
+  const VERSION = "profile-menu-navigation-polish-20260722-b";
   if (window.__jpProfileMenuNavigationPolish === VERSION) return;
   window.__jpProfileMenuNavigationPolish = VERSION;
   document.documentElement.dataset.jpProfileMenuNavigationPolish = VERSION;
 
-  const VALID = new Set(["dashboard", "admin", "metrics", "profile", "clientwork", "boards", "projects", "quotes", "directory", "resources", "events", "messages", "notifications", "settings", "rewards"]);
   let wasOpen = false;
+  let closingHard = false;
+  let lastRepair = 0;
 
   const q = (selector, root = document) => root.querySelector(selector);
   const qa = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -20,9 +21,17 @@
     return Math.max(0, Math.floor(window.visualViewport?.offsetTop || 0));
   }
 
+  function profileMenu() {
+    return q("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu");
+  }
+
+  function profileTrigger() {
+    return q("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]");
+  }
+
   function isOpen(menu) {
     if (!menu) return false;
-    const trigger = q("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]");
+    const trigger = profileTrigger();
     return menu.classList.contains("open") ||
       menu.getAttribute("aria-hidden") === "false" ||
       document.body.classList.contains("member-profile-menu-open") ||
@@ -30,22 +39,7 @@
       trigger?.getAttribute("aria-expanded") === "true";
   }
 
-  function closeMenuHard() {
-    const menu = q("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu");
-    if (!menu) return;
-    menu.classList.remove("open", "active", "show", "visible", "is-open", "is-opening", "is-closing");
-    menu.setAttribute("aria-hidden", "true");
-    menu.hidden = true;
-    Object.assign(menu.style, {
-      display: "none",
-      visibility: "hidden",
-      opacity: "0",
-      pointerEvents: "none",
-      height: "0px",
-      maxHeight: "0px",
-      overflow: "hidden"
-    });
-    qa(".profile-menu-backdrop,.member-profile-backdrop,.jp-profile-menu-backdrop,.profile-backdrop,[data-profile-backdrop]").forEach((node) => node.remove());
+  function restorePageInteraction() {
     document.body.classList.remove("member-profile-menu-open", "profile-menu-open", "jp-menu-hard-lock", "menu-scroll-locked");
     document.documentElement.classList.remove("member-profile-menu-open", "profile-menu-open", "jp-menu-hard-lock", "menu-scroll-locked");
     [document.body, document.documentElement].forEach((node) => {
@@ -53,27 +47,57 @@
       node.style.removeProperty("pointer-events");
       node.style.removeProperty("touch-action");
     });
-    const trigger = q("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]");
-    trigger?.setAttribute("aria-expanded", "false");
-    if (document.activeElement?.closest?.("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu")) {
-      try { document.activeElement.blur(); } catch (_) {}
-    }
-    wasOpen = false;
   }
 
-  function repairOpenMenu() {
-    const menu = q("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu");
-    if (!menu) return;
+  function closeMenuHard() {
+    const menu = profileMenu();
+    closingHard = true;
+    try {
+      if (menu) {
+        menu.classList.remove("open", "active", "show", "visible", "is-open", "is-opening", "is-closing");
+        menu.setAttribute("aria-hidden", "true");
+        menu.hidden = true;
+        Object.assign(menu.style, {
+          display: "none",
+          visibility: "hidden",
+          opacity: "0",
+          pointerEvents: "none",
+          height: "0px",
+          maxHeight: "0px",
+          overflow: "hidden",
+          transform: "none",
+          translate: "none",
+          clipPath: "none"
+        });
+        try { menu.scrollTop = 0; } catch (_) {}
+      }
+      qa(".profile-menu-backdrop,.member-profile-backdrop,.jp-profile-menu-backdrop,.profile-backdrop,[data-profile-backdrop]").forEach((node) => node.remove());
+      restorePageInteraction();
+      profileTrigger()?.setAttribute("aria-expanded", "false");
+      if (document.activeElement?.closest?.("#memberProfileMenu,#profileMenu,.member-profile-menu,.profile-menu")) {
+        try { document.activeElement.blur(); } catch (_) {}
+      }
+      wasOpen = false;
+    } finally {
+      setTimeout(() => { closingHard = false; }, 40);
+    }
+  }
+
+  function repairOpenMenu(force = false) {
+    const now = Date.now();
+    if (!force && now - lastRepair < 80) return;
+    lastRepair = now;
+    const menu = profileMenu();
+    if (!menu || closingHard) return;
     const open = isOpen(menu);
     if (!open) {
-      if (!menu.hidden || menu.getAttribute("aria-hidden") === "false") closeMenuHard();
       wasOpen = false;
       return;
     }
 
     const mobile = window.innerWidth <= 760;
-    const top = mobile ? Math.max(88, visibleViewportOffsetTop() + 92) : Math.max(82, Math.min(112, Math.round(window.innerHeight * 0.14)));
-    const bottomGap = 14;
+    const top = mobile ? Math.max(82, visibleViewportOffsetTop() + 82) : Math.max(82, Math.min(112, Math.round(window.innerHeight * 0.14)));
+    const bottomGap = Math.max(12, parseInt(getComputedStyle(document.documentElement).getPropertyValue("--safe-area-bottom") || "0", 10) + 12 || 12);
     const height = Math.max(300, visibleViewportHeight() - top - bottomGap);
 
     menu.hidden = false;
@@ -112,7 +136,7 @@
     qa(".profile-menu-header,.profile-menu-link,#profileChatNotifications", menu).forEach((row) => {
       row.hidden = false;
       row.removeAttribute("hidden");
-      row.style.display = row.classList.contains("profile-menu-link") ? "grid" : "";
+      if (row.classList.contains("profile-menu-link")) row.style.display = "grid";
       row.style.visibility = "visible";
       row.style.opacity = "1";
       row.style.pointerEvents = "auto";
@@ -121,10 +145,9 @@
       if (row.classList.contains("profile-menu-link")) row.style.minHeight = "50px";
     });
 
-    document.body.classList.remove("jp-menu-hard-lock");
-    document.documentElement.classList.remove("jp-menu-hard-lock");
+    restorePageInteraction();
 
-    if (!wasOpen) {
+    if (!wasOpen || force) {
       try { menu.scrollTop = 0; } catch (_) {}
       wasOpen = true;
     }
@@ -137,59 +160,44 @@
     });
   }
 
-  function getViewFromUrl() {
-    const params = new URLSearchParams(location.search || "");
-    const view = params.get("view") || "dashboard";
-    return VALID.has(view) ? view : "dashboard";
-  }
-
-  function renderUrlView() {
-    const view = getViewFromUrl();
-    closeMenuHard();
-    if (typeof window.renderView === "function") {
-      try { window.renderView(view); } catch (error) { console.error(`[${VERSION}] back navigation render failed`, error); }
-    }
-    removeRecoveredAdminCard();
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }
-
   function install() {
-    history.scrollRestoration = "manual";
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
     removeRecoveredAdminCard();
-    repairOpenMenu();
+    repairOpenMenu(true);
 
     document.addEventListener("click", (event) => {
       if (event.target?.closest?.("#memberProfileButton,#profileMenuButton,[data-profile-menu-toggle]")) {
-        setTimeout(repairOpenMenu, 0);
-        setTimeout(repairOpenMenu, 80);
-        setTimeout(repairOpenMenu, 220);
+        setTimeout(() => repairOpenMenu(true), 0);
+        setTimeout(() => repairOpenMenu(true), 120);
         return;
       }
-      if (event.target?.closest?.("#memberProfileMenu [data-profile-view],#memberProfileMenu [data-profile-action],#profileMenu [data-profile-view],#profileMenu [data-profile-action]")) {
+      if (event.target?.closest?.("#memberProfileMenu [data-profile-view],#memberProfileMenu [data-profile-action],#memberProfileMenu .profile-menu-link,#profileMenu [data-profile-view],#profileMenu [data-profile-action],#profileMenu .profile-menu-link")) {
         setTimeout(() => {
           closeMenuHard();
           removeRecoveredAdminCard();
-        }, 80);
-        setTimeout(removeRecoveredAdminCard, 350);
-        return;
+        }, 40);
+        setTimeout(removeRecoveredAdminCard, 250);
       }
-      setTimeout(repairOpenMenu, 80);
     }, true);
 
-    window.addEventListener("popstate", () => setTimeout(renderUrlView, 0), true);
-    window.visualViewport?.addEventListener("resize", repairOpenMenu);
-    window.visualViewport?.addEventListener("scroll", repairOpenMenu);
-    window.addEventListener("resize", repairOpenMenu);
+    window.addEventListener("popstate", () => {
+      closeMenuHard();
+      setTimeout(removeRecoveredAdminCard, 0);
+      setTimeout(removeRecoveredAdminCard, 250);
+    }, true);
+    window.visualViewport?.addEventListener("resize", () => repairOpenMenu(true));
+    window.visualViewport?.addEventListener("scroll", () => repairOpenMenu(true));
+    window.addEventListener("resize", () => repairOpenMenu(true));
 
     new MutationObserver(() => {
       removeRecoveredAdminCard();
-      repairOpenMenu();
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "aria-hidden", "hidden", "style"] });
+      repairOpenMenu(false);
+    }).observe(document.body, { childList: true, subtree: true });
 
     setInterval(() => {
       removeRecoveredAdminCard();
-      repairOpenMenu();
-    }, 300);
+      repairOpenMenu(false);
+    }, 1000);
 
     console.info(`[${VERSION}] installed`);
   }
