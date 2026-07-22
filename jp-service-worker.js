@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260722-menu-fullscreen-avatar-ring-1";
+const JP_SW_VERSION = "jp-sw-20260722-menu-fullscreen-avatar-ring-2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
