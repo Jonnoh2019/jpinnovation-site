@@ -187,3 +187,151 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once:true });
   else install();
 })();
+
+/* JP Innovation mobile-first Accounts + Member Profile redesign. */
+(() => {
+  "use strict";
+  const VERSION = "accounts-profile-mobile-redesign-20260722-live1";
+  if (window.__jpAccountsProfileMobileRedesign === VERSION) return;
+  window.__jpAccountsProfileMobileRedesign = VERSION;
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const esc = (v = "") => String(v ?? "").replace(/[&<>'"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[c]));
+
+  function addStyles() {
+    let s = $("#jpAccountsProfileMobileRedesignCss");
+    if (!s) { s = document.createElement("style"); s.id = "jpAccountsProfileMobileRedesignCss"; document.head.appendChild(s); }
+    s.textContent = `
+      :root{--jp-gold:#c89b2c;--jp-gold-dark:#8b6514;--jp-gold-hi:#f3d36a;--jp-blue:#076ad8;--jp-blue-dark:#062a67;--jp-ring-blue:#168bff;--jp-card:rgba(18,24,31,.86);--jp-card2:rgba(10,20,31,.92);--jp-border:rgba(255,255,255,.12)}
+      .jp-tier-avatar{--sz:42px;width:var(--sz)!important;height:var(--sz)!important;min-width:var(--sz)!important;aspect-ratio:1/1!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;font-weight:950!important;letter-spacing:.01em!important;line-height:1!important;color:#fff!important;text-shadow:0 1px 3px rgba(0,0,0,.45)!important;overflow:hidden!important;flex:0 0 var(--sz)!important}
+      .jp-tier-avatar.admin{background:radial-gradient(circle at 35% 28%,var(--jp-gold-hi) 0%,var(--jp-gold) 42%,var(--jp-gold-dark) 100%)!important;border:3px solid var(--jp-ring-blue)!important;box-shadow:inset 0 1px 4px rgba(255,255,255,.5),inset 0 -5px 9px rgba(65,43,5,.42),0 0 0 1px rgba(255,255,255,.78),0 6px 15px rgba(22,139,255,.22)!important}
+      .jp-tier-avatar.hub{background:radial-gradient(circle at 36% 25%,#168bff 0%,#0756bd 48%,#05285f 100%)!important;border:3px solid var(--jp-gold)!important;box-shadow:inset 0 1px 4px rgba(255,255,255,.28),0 0 0 1px rgba(255,255,255,.35),0 5px 12px rgba(0,0,0,.28)!important}
+      .jp-tier-avatar.client{background:radial-gradient(circle at 36% 25%,#168bff 0%,#0756bd 48%,#05285f 100%)!important;border:3px solid rgba(255,255,255,.9)!important;box-shadow:inset 0 1px 4px rgba(255,255,255,.22),0 5px 12px rgba(0,0,0,.24)!important}
+      .jp-role-pill{display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:100%;min-height:24px;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:950;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;line-height:1}
+      .jp-role-pill.admin{color:#fff;background:linear-gradient(135deg,var(--jp-gold-dark),var(--jp-gold),var(--jp-gold-hi));border:1px solid var(--jp-ring-blue);box-shadow:0 0 0 1px rgba(22,139,255,.24)}
+      .jp-role-pill.hub{color:#fff;background:linear-gradient(135deg,#08285a,#0a63d7);border:1px solid var(--jp-gold)}
+      .jp-role-pill.client{color:#fff;background:linear-gradient(135deg,#092a60,#0a64d9);border:1px solid rgba(255,255,255,.75)}
+      .jp-role-star{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;line-height:1;flex:0 0 24px}.jp-role-star.admin{background:radial-gradient(circle at 35% 28%,var(--jp-gold-hi),var(--jp-gold) 45%,var(--jp-gold-dark));color:#fff;border:2px solid var(--jp-ring-blue)}.jp-role-star.hub{background:linear-gradient(145deg,#0a63d7,#05285f);color:#fff;border:2px solid var(--jp-gold)}.jp-role-star.client{background:linear-gradient(145deg,#168bff,#0756bd);color:#fff;border:1px solid rgba(255,255,255,.8)}
+      #memberProfileButton .avatar,#memberProfileButton .profile-initials,#memberProfileButton .member-avatar,#memberProfileButton .jp-tier-avatar{--sz:44px!important}.profile-menu-header .avatar,.profile-menu-header .profile-initials,.profile-menu-header .jp-tier-avatar{--sz:48px!important}
+      #adminAccountManagement{overflow:visible!important}.admin-account-tools{display:grid;gap:10px;margin:12px 0}.admin-account-search{width:100%;min-height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.045);color:#fff;padding:0 14px;font-weight:750;box-sizing:border-box}.admin-account-filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}.admin-account-filter{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);color:#d8e6f6;border-radius:999px;min-height:34px;padding:0 12px;font-weight:900;white-space:nowrap}.admin-account-filter.active{background:linear-gradient(135deg,#075bd4,#0a84ff);color:white;border-color:#168bff}
+      #adminAccountManagement details{border-radius:18px!important}#adminAccountManagement summary{min-height:54px!important}.admin-account-compact-row{position:relative;display:grid!important;grid-template-columns:46px minmax(0,1fr) auto auto!important;align-items:center!important;gap:10px!important;min-height:76px!important;padding:12px!important;border-radius:18px!important;border:1px solid rgba(255,255,255,.11)!important;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(4,8,13,.68))!important;margin:10px 0!important;box-sizing:border-box!important;overflow:visible!important}.admin-account-compact-row .jp-tier-avatar{--sz:42px!important}.admin-account-main{min-width:0!important;display:grid;gap:3px}.admin-account-name{font-size:1rem!important;font-weight:950!important;color:#fff!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.12!important;margin:0!important}.admin-account-company,.admin-account-email{display:block;color:#aeb9c8!important;font-size:.82rem!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.15!important}.admin-account-email{font-size:.78rem!important;color:#8fa0b5!important}.admin-account-state{display:inline-flex;align-items:center;gap:5px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#78f0ad;font-size:.66rem;font-weight:950;text-transform:uppercase;padding:5px 8px;white-space:nowrap}.admin-account-state.off{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#aeb9c8}.admin-account-more{width:38px;height:38px;border-radius:13px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.055);color:#fff;font-size:22px;font-weight:950;display:inline-flex;align-items:center;justify-content:center}.admin-account-menu{display:none;position:absolute;right:10px;top:58px;z-index:30;width:min(250px,calc(100vw - 58px));padding:8px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(7,12,18,.98);box-shadow:0 18px 42px rgba(0,0,0,.42);grid-template-columns:1fr;gap:7px}.admin-account-compact-row.menu-open .admin-account-menu{display:grid!important}.admin-account-menu .admin-action{width:100%!important;min-height:40px!important;margin:0!important;border-radius:12px!important;font-size:.86rem!important}.admin-account-menu .admin-action.primary,.admin-account-menu .admin-action[data-action="upgrade"]{background:linear-gradient(135deg,#076bdc,#0a84ff)!important;color:#fff!important}.admin-account-compact-row[data-hidden="true"]{display:none!important}
+      .premium-profile-card{padding:14px!important;border-radius:20px!important;background:linear-gradient(145deg,rgba(15,25,35,.96),rgba(5,9,14,.94))!important;border:1px solid rgba(255,255,255,.12)!important;box-shadow:0 18px 44px rgba(0,0,0,.28)!important}.premium-profile-card.admin{border-left:3px solid var(--jp-gold)!important}.premium-profile-card.hub{border-left:3px solid var(--jp-gold)!important}.premium-profile-card.client{border-left:3px solid var(--jp-ring-blue)!important}.premium-profile-back{display:inline-flex!important;align-items:center!important;gap:6px!important;width:auto!important;min-height:34px!important;padding:0 11px!important;border-radius:12px!important;margin:0 0 10px!important;font-size:.82rem!important}.premium-profile-hero{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center;padding:13px;border-radius:18px;background:radial-gradient(circle at 15% 5%,rgba(22,139,255,.16),rgba(255,255,255,.035) 44%,rgba(0,0,0,.06));border:1px solid rgba(255,255,255,.11);margin-bottom:12px}.premium-profile-hero .jp-tier-avatar{--sz:58px!important;font-size:1.18rem!important}.premium-profile-avatar-wrap{position:relative;width:64px;height:64px;display:grid;place-items:center}.premium-online-dot{position:absolute;right:2px;bottom:4px;width:15px;height:15px;border-radius:50%;background:#31dc82;border:3px solid #071019;box-shadow:0 0 0 1px rgba(49,220,130,.4)}.premium-name-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.premium-profile-name{font-size:1.34rem!important;line-height:1.05!important;margin:4px 0 2px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.premium-profile-company{color:#b6c0cc;font-weight:800;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.premium-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0}.premium-info-card{min-height:66px;padding:10px;border-radius:15px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.105)}.premium-info-card b{display:block;color:#8fbaff;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.premium-info-card span{display:block;color:#fff;font-weight:900;font-size:.9rem;line-height:1.16}.premium-stars{letter-spacing:1px;color:#566272;font-size:.86rem}.premium-about{font-size:.94rem;line-height:1.42;color:#c7d0dc;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;margin:8px 0 12px}.premium-skill-tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}.premium-skill-tag{font-size:.74rem;font-weight:900;color:#dbeeff;border:1px solid rgba(22,139,255,.24);background:rgba(22,139,255,.08);padding:6px 9px;border-radius:999px}.premium-profile-actions{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px}.premium-profile-actions button{min-height:40px!important;border-radius:12px!important;font-size:.8rem!important;padding:0 9px!important}.premium-profile-future{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}.premium-profile-future span{font-size:.7rem;color:#95a5b8;border:1px solid rgba(255,255,255,.11);border-radius:999px;padding:5px 8px}
+      @media(max-width:390px){.admin-account-compact-row{grid-template-columns:42px minmax(0,1fr) auto!important;gap:8px!important}.admin-account-state{display:none!important}.admin-account-compact-row .jp-tier-avatar{--sz:38px!important}.premium-info-grid{grid-template-columns:1fr}.premium-profile-actions{grid-template-columns:1fr 1fr}.premium-profile-actions .report{grid-column:auto}}
+      @media(min-width:760px){.admin-account-list,.admin-accounts-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.premium-info-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    `;
+  }
+
+  function typeFromText(text) {
+    const t = String(text || "").toLowerCase();
+    if (t.includes("admin") || t.includes("jp admin")) return "admin";
+    if (t.includes("hub") || t.includes("paid") || t.includes("member")) return "hub";
+    return "client";
+  }
+  function roleLabel(type) { return type === "admin" ? "JP Admin" : type === "hub" ? "Hub Member" : "Client Portal"; }
+  function initials(name, fallback = "JP") { return String(name || fallback).trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || fallback; }
+  function tierAvatar(type, text, cls = "") { return `<span class="jp-tier-avatar ${type} ${cls}" aria-hidden="true">${esc(text)}</span>`; }
+  function rolePill(type) { return `<span class="jp-role-pill ${type}">${roleLabel(type)}</span>`; }
+  function roleStar(type) { return `<span class="jp-role-star ${type}" aria-hidden="true">★</span>`; }
+
+  function installAccountTools(section) {
+    if (!section || $(".admin-account-tools", section)) return;
+    const tools = document.createElement("div");
+    tools.className = "admin-account-tools";
+    tools.innerHTML = `<input id="adminAccountSearch" class="admin-account-search" type="search" placeholder="Search accounts" autocomplete="off"><div class="admin-account-filters" role="list"><button class="admin-account-filter active" data-filter="all" type="button">All</button><button class="admin-account-filter" data-filter="admin" type="button">Admin</button><button class="admin-account-filter" data-filter="hub" type="button">Hub Members</button><button class="admin-account-filter" data-filter="client" type="button">Client Portal</button><button class="admin-account-filter" data-filter="suspended" type="button">Suspended</button></div>`;
+    const firstDetails = $("details", section);
+    section.insertBefore(tools, firstDetails || section.firstChild);
+  }
+
+  function normaliseAccountRow(row) {
+    if (!row || row.classList.contains("admin-account-compact-row")) return;
+    if (!row.closest("#adminAccountManagement")) return;
+    const oldIcon = $(".admin-stable-icon,.admin-row-icon,.admin-account-avatar", row);
+    const title = ($("h3", row)?.textContent || $("strong", row)?.textContent || "Account").trim();
+    const details = ($("p", row)?.textContent || row.textContent || "").replace(/\s+/g, " ").trim();
+    const email = ($("[data-email]", row)?.dataset.email || (details.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [""])[0] || "").trim();
+    const company = details.replace(title, "").replace(email, "").replace(/[·•]+/g, " ").replace(/\b(JP Admin|Hub Member|Client Portal|Admin|On|Offline)\b/gi, " ").replace(/\s+/g, " ").trim() || "Independent member";
+    const type = typeFromText(`${oldIcon?.textContent || ""} ${details}`);
+    const isOn = /\bon\b|online/i.test(details) && !/offline/i.test(details);
+    const actions = $(".admin-stable-actions,.admin-account-actions", row) || document.createElement("div");
+    actions.className = "admin-account-menu";
+    const idText = initials(title, type === "admin" ? "A" : type === "hub" ? "H" : "C");
+    row.className = `${row.className} admin-account-compact-row`;
+    row.dataset.accountType = type;
+    row.dataset.accountSearch = `${title} ${company} ${email} ${roleLabel(type)}`.toLowerCase();
+    row.innerHTML = `${tierAvatar(type, idText)}<div class="admin-account-main"><h3 class="admin-account-name">${esc(title)}</h3><div>${rolePill(type)}</div><span class="admin-account-company">${esc(company)}</span><span class="admin-account-email">${esc(email || "Email not set")}</span></div><span class="admin-account-state ${isOn ? "" : "off"}">${isOn ? "Online" : "Offline"}</span><button class="admin-account-more" type="button" data-account-more aria-label="Manage ${esc(title)}">⋮</button>`;
+    row.appendChild(actions);
+  }
+
+  function applyFilters() {
+    const section = $("#adminAccountManagement"); if (!section) return;
+    const q = ($("#adminAccountSearch", section)?.value || "").trim().toLowerCase();
+    const f = ($(".admin-account-filter.active", section)?.dataset.filter || "all");
+    $$(".admin-account-compact-row", section).forEach((row) => {
+      const type = row.dataset.accountType || "client";
+      const text = row.dataset.accountSearch || row.textContent.toLowerCase();
+      const suspended = /suspended|archived|removed/i.test(row.closest("details")?.textContent || "");
+      const okFilter = f === "all" || type === f || (f === "suspended" && suspended);
+      row.dataset.hidden = okFilter && (!q || text.includes(q)) ? "false" : "true";
+    });
+  }
+
+  function transformAccounts() {
+    const section = $("#adminAccountManagement"); if (!section) return;
+    installAccountTools(section);
+    $$("#adminAccountManagement .admin-stable-row, #adminAccountManagement .admin-account-row").forEach(normaliseAccountRow);
+    applyFilters();
+  }
+
+  function transformMemberProfile() {
+    const mount = $("#viewMount");
+    const card = $(".public-profile-card:not(.premium-profile-card)", mount || document); if (!card) return;
+    const oldBack = $("#backToDirectory", card);
+    const name = ($(".public-profile-name", card)?.textContent || $("h2,h3", card)?.textContent || "Member").trim();
+    const roleText = ($(".compact-role-pill,.jp-role-pill,.role-pill", card)?.textContent || card.textContent || "").trim();
+    const type = typeFromText(roleText);
+    const company = ($(".public-profile-company,.muted", card)?.textContent || (type === "admin" ? "JP Innovation Ltd" : "Independent member")).trim();
+    const info = $$(".public-profile-info,.profile-info-card,.info-card", card).map((el) => ({ label: (el.querySelector("b,strong,h4")?.textContent || "").trim(), value: (el.querySelector("span,p")?.textContent || el.textContent || "").replace(/^(Engineering Role|Location|Reputation|Availability)/i, "").trim() }));
+    const find = (key, fallback) => (info.find((i) => i.label.toLowerCase().includes(key))?.value || fallback).trim();
+    const role = find("engineering", "General Engineering");
+    const location = find("location", "Location TBC");
+    const reputation = find("reputation", "0 pts - No approved reviews yet");
+    const availability = find("availability", "Availability TBC");
+    const about = ($(".public-profile-about,.profile-about", card)?.textContent || Array.from(card.querySelectorAll("p")).map((p) => p.textContent.trim()).find((t) => t.length > 45) || "Innovation Hub member.").trim();
+    const skills = ($$(".skill-chip,.premium-skill-tag,.tag", card).map((n) => n.textContent.trim()).filter(Boolean).slice(0, 8));
+    if (!skills.length) skills.push(role);
+    const email = $("[data-member-email]", card)?.dataset.memberEmail || "";
+    card.className = `public-profile-card premium-profile-card ${type}`;
+    card.innerHTML = `<button id="backToDirectory" class="secondary-button premium-profile-back" type="button">← Directory</button><div class="premium-profile-hero"><div class="premium-profile-avatar-wrap">${tierAvatar(type, initials(name), "premium-profile-avatar")}<span class="premium-online-dot" aria-hidden="true"></span></div><div class="premium-profile-main"><div class="premium-name-row">${rolePill(type)}${roleStar(type)}<span class="muted">Online</span></div><h2 class="premium-profile-name">${esc(name)}</h2><p class="premium-profile-company">${esc(company)}</p></div></div><div class="premium-info-grid"><div class="premium-info-card"><b>🛠 Engineering Role</b><span>${esc(role)}</span></div><div class="premium-info-card"><b>📍 Location</b><span>${esc(location)}</span></div><div class="premium-info-card"><b>⭐ Reputation</b><span>${esc(reputation.replace(/ - /g, " · "))}</span><div class="premium-stars">★★★★★</div></div><div class="premium-info-card"><b>✅ Availability</b><span>${esc(availability)}</span></div></div><h3>About</h3><p class="premium-about">${esc(about)}</p><h3>Skills</h3><div class="premium-skill-tags">${skills.map((x) => `<span class="premium-skill-tag">${esc(x)}</span>`).join("")}</div><div class="premium-profile-actions"><button class="secondary-button message-member-button" type="button" ${email ? `data-member-email="${esc(email)}"` : ""}>Message</button><button class="primary-button" type="button">Connect</button><button class="secondary-button" type="button">Invite</button><button class="secondary-button report" type="button" aria-label="More actions">⋮</button></div><div class="premium-profile-future"><span>Portfolio</span><span>Certifications</span><span>Experience</span><span>Recent Posts</span><span>Reviews</span><span>Projects</span></div>`;
+    $("#backToDirectory", card)?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); if (typeof window.renderView === "function") window.renderView("directory"); });
+  }
+
+  function patchHeaderAvatar() {
+    const btn = $("#memberProfileButton"); if (!btn || btn.dataset.jpTierPatched === VERSION) return;
+    const txt = ($(".avatar,.profile-initials,.jp-tier-avatar", btn)?.textContent || "JH").trim();
+    const type = typeFromText(btn.textContent || document.body.textContent || "admin");
+    const existing = $(".avatar,.profile-initials,.jp-tier-avatar", btn);
+    if (existing) existing.outerHTML = tierAvatar(type, txt);
+    btn.dataset.jpTierPatched = VERSION;
+  }
+
+  function bind() {
+    document.addEventListener("click", (e) => {
+      const more = e.target.closest?.("[data-account-more]");
+      if (more) { e.preventDefault(); e.stopPropagation(); const row = more.closest(".admin-account-compact-row"); $$(".admin-account-compact-row.menu-open").forEach((r) => { if (r !== row) r.classList.remove("menu-open"); }); row?.classList.toggle("menu-open"); return; }
+      if (!e.target.closest?.(".admin-account-menu")) $$(".admin-account-compact-row.menu-open").forEach((r) => r.classList.remove("menu-open"));
+      const filter = e.target.closest?.(".admin-account-filter");
+      if (filter) { e.preventDefault(); const root = filter.closest(".admin-account-tools"); $$(".admin-account-filter", root).forEach((b) => b.classList.toggle("active", b === filter)); applyFilters(); }
+    }, true);
+    document.addEventListener("input", (e) => { if (e.target?.id === "adminAccountSearch") applyFilters(); }, true);
+  }
+
+  function run() { addStyles(); patchHeaderAvatar(); transformAccounts(); transformMemberProfile(); }
+  function install() {
+    run(); bind();
+    new MutationObserver(() => { requestAnimationFrame(run); }).observe(document.body, { childList:true, subtree:true });
+    window.addEventListener("pageshow", run);
+    console.info(`[${VERSION}] installed`);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once:true }); else install();
+})();
