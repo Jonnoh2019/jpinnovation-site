@@ -1,9 +1,11 @@
 (() => {
   "use strict";
 
-  const VERSION = "access-tier-fix-20260722c";
+  const VERSION = "access-tier-fix-20260722d";
   const CLIENT_VIEWS = new Set(["dashboard", "clientwork", "projects", "quotes", "messages", "notifications", "profile", "settings"]);
   const INACTIVE = new Set(["", "free", "pending", "rejected", "suspended", "removed"]);
+  let backendSessionChecked = false;
+  let backendHasSession = false;
 
   function clean(value) { return String(value || "").trim().toLowerCase(); }
   function esc(value) {
@@ -48,6 +50,7 @@
     return target;
   }
   function getUser() {
+    if (backendSessionChecked && !backendHasSession) return null;
     try { return normaliseLocalUser(typeof currentUser === "function" ? currentUser() : null); } catch { return null; }
   }
   function entryMode() { return new URLSearchParams(window.location.search).get("entry") === "hub" ? "hub" : "client"; }
@@ -82,7 +85,12 @@
   async function loadSignedInProfile() {
     if (!portalBackend) return null;
     const { data: sessionData, error: sessionError } = await portalBackend.auth.getSession();
-    if (sessionError || !sessionData?.session?.user) return null;
+    backendSessionChecked = true;
+    backendHasSession = Boolean(sessionData?.session?.user) && !sessionError;
+    if (sessionError || !sessionData?.session?.user) {
+      try { if (state) state.sessionEmail = ""; } catch {}
+      return null;
+    }
     const authUser = sessionData.session.user;
     const { data, error } = await portalBackend.from("profiles").select("user_id,email,full_name,business,account_type,membership_status,vetted_at,status").eq("user_id", authUser.id).maybeSingle();
     if (error) throw error;
@@ -181,9 +189,9 @@
   }
   function delayedAuthPrompt() {
     const params = new URLSearchParams(window.location.search);
-    if (!["hub", "client"].includes(params.get("entry")) || getUser()) return;
+    if (!["hub", "client"].includes(params.get("entry"))) return;
     window.setTimeout(() => {
-      if (getUser()) return;
+      if (backendHasSession || getUser()) return;
       const anyOpen = document.querySelector("#authDialog.open,#upgradeDialog.open,#clientFeatureDialog.open");
       if (!anyOpen && typeof openAuth === "function") openAuth(params.get("register") === "1" ? "register" : "signin");
     }, 2000);
