@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "access-tier-fix-20260722d";
+  const VERSION = "access-tier-fix-20260722e";
   const CLIENT_VIEWS = new Set(["dashboard", "clientwork", "projects", "quotes", "messages", "notifications", "profile", "settings"]);
   const INACTIVE = new Set(["", "free", "pending", "rejected", "suspended", "removed"]);
   let backendSessionChecked = false;
@@ -69,6 +69,7 @@
     const role = strictRole(user);
     const client = isClientContext(user);
     document.documentElement.dataset.jpAccessRole = role;
+    document.body.dataset.activeRole = role;
     document.documentElement.classList.toggle("hub-member-session", role === "admin" || role === "member");
     const adminVisible = role === "admin" && entryMode() === "hub";
     document.getElementById("profileAdminLink")?.classList.toggle("hidden", !adminVisible);
@@ -83,7 +84,7 @@
     if (roleNode) roleNode.textContent = client ? "Client Portal" : (role === "admin" ? "JP Admin" : "Innovation Hub member");
   }
   async function loadSignedInProfile() {
-    if (!portalBackend) return null;
+    if (!portalBackend?.auth?.getSession) return null;
     const { data: sessionData, error: sessionError } = await portalBackend.auth.getSession();
     backendSessionChecked = true;
     backendHasSession = Boolean(sessionData?.session?.user) && !sessionError;
@@ -97,7 +98,7 @@
     const profile = data || { user_id: authUser.id, email: authUser.email, full_name: authUser.user_metadata?.full_name || "", account_type: clean(authUser.email) === "jpinnovation.enquiries@gmail.com" ? "admin" : "client", membership_status: clean(authUser.email) === "jpinnovation.enquiries@gmail.com" ? "active" : "free", status: "active" };
     try {
       const email = clean(profile.email || authUser.email);
-      let user = (state.users || []).find((item) => clean(item.email) === email || item.id === profile.user_id);
+      let user = (state.users || []).find((item) => clean(item.email) === email || item.id === profile.user_id || item.user_id === profile.user_id);
       if (!user) { user = { email }; state.users.push(user); }
       normaliseLocalUser(user, profile);
       state.sessionEmail = email;
@@ -125,26 +126,30 @@
     try { return normaliseLocalUser((state.users || []).find((user) => user.id === userId || user.user_id === userId || clean(user.email) === email)); } catch { return null; }
   }
   async function rpc(name, params) { const { data, error } = await portalBackend.rpc(name, params); if (error) throw error; return Array.isArray(data) ? data[0] : data; }
+  async function setAccountAccess(params) { return rpc("admin_set_account_access", params); }
   async function manageAccess(member, action) {
     const userId = member?.id || member?.user_id;
     if (!portalBackend || !userId) throw new Error("This account cannot be updated safely because it is missing a backend user id.");
+    const previousRole = strictRole(member);
     const params = { p_user_id: userId, p_account_type: null, p_membership_status: null, p_profile_status: "active", p_reason: "" };
     if (action === "upgrade") Object.assign(params, { p_account_type: "member", p_membership_status: "active" });
     else if (action === "downgrade") Object.assign(params, { p_account_type: "client", p_membership_status: "free" });
     else if (action === "suspend") Object.assign(params, { p_membership_status: "suspended", p_reason: "Suspended by JP Innovation admin" });
-    else if (action === "restore" || action === "reactivate") Object.assign(params, { p_membership_status: strictRole(member) === "client" ? "free" : "active" });
+    else if (action === "restore" || action === "reactivate") Object.assign(params, { p_membership_status: previousRole === "client" ? "free" : "active" });
     else if (action === "remove") Object.assign(params, { p_account_type: "client", p_membership_status: "removed", p_profile_status: "removed", p_reason: "Archived by JP Innovation admin" });
     else return null;
-    try { await rpc("admin_manage_account", { p_user_id: userId, p_action: action, p_reason: params.p_reason || "" }); }
-    catch (error) {
-      if (!/admin_manage_account|function.*does not exist|schema cache|42883/i.test(error.message || "") && error.code !== "42883") throw error;
-      await rpc("admin_set_account_access", params);
+    try {
+      await rpc("admin_manage_account", { p_user_id: userId, p_action: action, p_reason: params.p_reason || "" });
+    } catch (error) {
+      console.warn(`[${VERSION}] admin_manage_account failed; trying admin_set_account_access fallback`, error);
+      await setAccountAccess(params);
     }
     const latest = await fetchProfile(userId);
     const role = clean(latest?.account_type);
     const membership = clean(latest?.membership_status);
     if (action === "upgrade" && (role !== "member" || membership !== "active")) throw new Error(`Upgrade failed. Database still shows ${role || "unknown"}/${membership || "unknown"}.`);
     if (action === "downgrade" && (role !== "client" || membership !== "free")) throw new Error(`Move to Client failed. Database still shows ${role || "unknown"}/${membership || "unknown"}.`);
+    if ((action === "suspend" || action === "remove") && !["suspended", "removed"].includes(membership)) throw new Error(`Account state was not saved. Database still shows ${membership || "unknown"}.`);
     return latest;
   }
   async function refreshAdminData(row) {
@@ -154,7 +159,7 @@
     try {
       const user = normaliseLocalUser(null, row);
       if (user && state?.users) {
-        const index = state.users.findIndex((item) => item.id === user.id || clean(item.email) === clean(user.email));
+        const index = state.users.findIndex((item) => item.id === user.id || item.user_id === user.user_id || clean(item.email) === clean(user.email));
         if (index >= 0) state.users[index] = { ...state.users[index], ...user }; else state.users.push(user);
         if (typeof syncMember === "function") syncMember(state.users[index >= 0 ? index : state.users.length - 1]);
         if (typeof saveState === "function") saveState();
@@ -191,8 +196,11 @@
     const params = new URLSearchParams(window.location.search);
     if (!["hub", "client"].includes(params.get("entry"))) return;
     window.setTimeout(() => {
-      if (backendHasSession || getUser()) return;
-      const anyOpen = document.querySelector("#authDialog.open,#upgradeDialog.open,#clientFeatureDialog.open");
+      if (backendHasSession) return;
+      if (backendSessionChecked && getUser()) return;
+      const appVisible = !document.getElementById("appShell")?.classList.contains("hidden") && !document.getElementById("appShell")?.hidden;
+      if (appVisible && backendHasSession) return;
+      const anyOpen = document.querySelector("#authDialog.open,#upgradeDialog.open,#clientFeatureDialog.open,[aria-hidden='false'].auth-dialog");
       if (!anyOpen && typeof openAuth === "function") openAuth(params.get("register") === "1" ? "register" : "signin");
     }, 2000);
   }
@@ -200,7 +208,7 @@
     if (document.getElementById("jpAccessTierStyles")) return;
     const style = document.createElement("style");
     style.id = "jpAccessTierStyles";
-    style.textContent = `.jp-access-tier-toast{position:fixed;left:50%;bottom:16px;z-index:2147483647;transform:translateX(-50%);width:min(520px,calc(100vw - 24px));display:grid;gap:3px;padding:13px 15px;border-radius:17px;border:1px solid rgba(52,211,153,.45);background:rgba(3,34,24,.96);box-shadow:0 18px 44px rgba(0,0,0,.36);color:#fff}.jp-access-tier-toast span{color:#b7c2d1}.jp-access-tier-toast.is-error{border-color:rgba(248,113,113,.55);background:rgba(44,8,16,.97)}[data-jp-access-role=client] #profileAdminLink,[data-jp-access-role=client] #profileMetricsLink,[data-jp-access-role=client] #profileMyPosts{display:none!important}`;
+    style.textContent = `.jp-access-tier-toast{position:fixed;left:50%;bottom:16px;z-index:2147483647;transform:translateX(-50%);width:min(520px,calc(100vw - 24px));display:grid;gap:3px;padding:13px 15px;border-radius:17px;border:1px solid rgba(52,211,153,.45);background:rgba(3,34,24,.96);box-shadow:0 18px 44px rgba(0,0,0,.36);color:#fff}.jp-access-tier-toast span{color:#b7c2d1}.jp-access-tier-toast.is-error{border-color:rgba(248,113,113,.55);background:rgba(44,8,16,.97)}[data-jp-access-role=client] #profileAdminLink,[data-jp-access-role=client] #profileMetricsLink,[data-jp-access-role=client] #profileMyPosts{display:none!important}.member-profile-menu{max-height:min(620px,calc(100dvh - 122px - env(safe-area-inset-bottom,0px)))!important;overflow-y:auto!important}.profile-menu-link{min-height:34px!important}.profile-menu-link small{display:none!important}@media(max-width:430px){.member-profile-menu{max-height:calc(100dvh - 112px - env(safe-area-inset-bottom,0px))!important}.profile-menu-header{min-height:42px!important}.profile-menu-link{min-height:32px!important;padding-top:5px!important;padding-bottom:5px!important}}`;
     document.head.appendChild(style);
   }
   async function install() {
