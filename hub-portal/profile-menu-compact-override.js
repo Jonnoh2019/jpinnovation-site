@@ -1,8 +1,8 @@
 /* JP Innovation profile-menu viewport safety.
-   This keeps the profile menu out of clipped/transformed header containers. */
+   This keeps Hub menu pop-outs compact enough for mobile screens. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-compact-override-20260722-ring-blue-only";
+  const VERSION = "profile-menu-compact-override-20260722-compact-popouts";
   document.documentElement.dataset.jpProfileMenuCompactOverride = VERSION;
 
   function installStyles() {
@@ -66,15 +66,16 @@
         left: max(14px, env(safe-area-inset-left)) !important;
         right: max(14px, env(safe-area-inset-right)) !important;
         top: var(--jp-profile-menu-top, 96px) !important;
-        bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+        bottom: calc(10px + env(safe-area-inset-bottom)) !important;
         width: auto !important;
         max-width: calc(100vw - 28px) !important;
-        height: calc(var(--jp-visible-vh, 100dvh) - var(--jp-profile-menu-top, 96px) - 14px - env(safe-area-inset-bottom)) !important;
-        min-height: 260px !important;
-        max-height: calc(var(--jp-visible-vh, 100dvh) - var(--jp-profile-menu-top, 96px) - 14px - env(safe-area-inset-bottom)) !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: calc(var(--jp-visible-vh, 100dvh) - var(--jp-profile-menu-top, 96px) - 10px - env(safe-area-inset-bottom)) !important;
         display: flex !important;
         flex-direction: column !important;
-        gap: 6px !important;
+        gap: 4px !important;
+        padding: 7px !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
         overscroll-behavior: contain !important;
@@ -96,23 +97,92 @@
         pointer-events: auto !important;
         transform: none !important;
         translate: none !important;
+        margin: 0 !important;
+      }
+      #memberProfileMenu.member-profile-menu.open .profile-menu-header {
+        min-height: 46px !important;
+        padding: 6px 8px !important;
+      }
+      #memberProfileMenu.member-profile-menu.open .profile-menu-header .jp-tier-avatar,
+      #memberProfileMenu.member-profile-menu.open .profile-menu-header #memberInitials,
+      #memberProfileMenu.member-profile-menu.open .profile-menu-header .avatar {
+        --sz: 40px !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
       }
       #memberProfileMenu.member-profile-menu.open .profile-menu-link {
         display: grid !important;
-        min-height: 44px !important;
+        min-height: 36px !important;
         max-height: none !important;
+        padding: 6px 8px !important;
+        gap: 8px !important;
+        font-size: 13px !important;
+        border-radius: 12px !important;
+      }
+      #memberProfileMenu.member-profile-menu.open .profile-menu-link small { display: none !important; }
+      #memberProfileMenu.member-profile-menu.open .profile-menu-link .profile-menu-icon,
+      #memberProfileMenu.member-profile-menu.open .profile-menu-link .menu-icon,
+      #memberProfileMenu.member-profile-menu.open .profile-menu-link span:first-child {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        border-radius: 9px !important;
+        font-size: 13px !important;
       }
       @media (min-width: 761px) {
         #memberProfileMenu.member-profile-menu.open {
           left: auto !important;
           right: 18px !important;
-          width: min(390px, calc(100vw - 36px)) !important;
+          width: min(360px, calc(100vw - 36px)) !important;
           max-width: calc(100vw - 36px) !important;
         }
       }
       @media (max-width: 430px) {
-        #memberProfileMenu.member-profile-menu.open .profile-menu-link { min-height: 42px !important; }
-        #memberProfileMenu.member-profile-menu.open .profile-menu-link small { display: none !important; }
+        #memberProfileMenu.member-profile-menu.open .profile-menu-link { min-height: 34px !important; }
+      }
+      @media (max-width: 760px) {
+        .app-shell.mobile-menu-open .sidebar,
+        body.mobile-dashboard-menu-open .sidebar {
+          padding: 8px !important;
+          gap: 4px !important;
+          overflow-y: auto !important;
+          overscroll-behavior: contain !important;
+        }
+        .app-shell.mobile-menu-open .sidebar .nav-link,
+        body.mobile-dashboard-menu-open .sidebar .nav-link {
+          min-height: 36px !important;
+          height: 36px !important;
+          padding: 6px 8px !important;
+          gap: 8px !important;
+          border-radius: 12px !important;
+          font-size: 13px !important;
+          line-height: 1 !important;
+        }
+        .app-shell.mobile-menu-open .sidebar .nav-icon,
+        body.mobile-dashboard-menu-open .sidebar .nav-icon {
+          width: 28px !important;
+          height: 28px !important;
+          min-width: 28px !important;
+          border-radius: 9px !important;
+          font-size: 13px !important;
+        }
+        .app-shell.mobile-menu-open .sidebar .site-return-button,
+        .app-shell.mobile-menu-open .sidebar .logout-button,
+        body.mobile-dashboard-menu-open .sidebar .site-return-button,
+        body.mobile-dashboard-menu-open .sidebar .logout-button {
+          min-height: 36px !important;
+          height: 36px !important;
+          padding: 6px 8px !important;
+          border-radius: 12px !important;
+          font-size: 13px !important;
+        }
+      }
+      @media (max-width: 360px) {
+        #memberProfileMenu.member-profile-menu.open { gap: 3px !important; padding: 6px !important; }
+        #memberProfileMenu.member-profile-menu.open .profile-menu-link { min-height: 32px !important; padding: 5px 7px !important; font-size: 12px !important; }
+        .app-shell.mobile-menu-open .sidebar .nav-link,
+        body.mobile-dashboard-menu-open .sidebar .nav-link { min-height: 34px !important; height: 34px !important; font-size: 12px !important; }
       }
     `;
   }
