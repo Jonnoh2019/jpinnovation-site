@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "access-tier-fix-20260722e";
+  const VERSION = "access-tier-fix-20260722f";
   const CLIENT_VIEWS = new Set(["dashboard", "clientwork", "projects", "quotes", "messages", "notifications", "profile", "settings"]);
   const INACTIVE = new Set(["", "free", "pending", "rejected", "suspended", "removed"]);
   let backendSessionChecked = false;
@@ -208,7 +208,7 @@
     if (document.getElementById("jpAccessTierStyles")) return;
     const style = document.createElement("style");
     style.id = "jpAccessTierStyles";
-    style.textContent = `.jp-access-tier-toast{position:fixed;left:50%;bottom:16px;z-index:2147483647;transform:translateX(-50%);width:min(520px,calc(100vw - 24px));display:grid;gap:3px;padding:13px 15px;border-radius:17px;border:1px solid rgba(52,211,153,.45);background:rgba(3,34,24,.96);box-shadow:0 18px 44px rgba(0,0,0,.36);color:#fff}.jp-access-tier-toast span{color:#b7c2d1}.jp-access-tier-toast.is-error{border-color:rgba(248,113,113,.55);background:rgba(44,8,16,.97)}[data-jp-access-role=client] #profileAdminLink,[data-jp-access-role=client] #profileMetricsLink,[data-jp-access-role=client] #profileMyPosts{display:none!important}.member-profile-menu{max-height:min(620px,calc(100dvh - 122px - env(safe-area-inset-bottom,0px)))!important;overflow-y:auto!important}.profile-menu-link{min-height:34px!important}.profile-menu-link small{display:none!important}@media(max-width:430px){.member-profile-menu{max-height:calc(100dvh - 112px - env(safe-area-inset-bottom,0px))!important}.profile-menu-header{min-height:42px!important}.profile-menu-link{min-height:32px!important;padding-top:5px!important;padding-bottom:5px!important}}`;
+    style.textContent = `.jp-access-tier-toast{position:fixed;left:50%;bottom:16px;z-index:2147483647;transform:translateX(-50%);width:min(520px,calc(100vw - 24px));display:grid;gap:3px;padding:13px 15px;border-radius:17px;border:1px solid rgba(52,211,153,.45);background:rgba(3,34,24,.96);box-shadow:0 18px 44px rgba(0,0,0,.36);color:#fff}.jp-access-tier-toast span{color:#b7c2d1}.jp-access-tier-toast.is-error{border-color:rgba(248,113,113,.55);background:rgba(44,8,16,.97)}[data-jp-access-role=client] #profileAdminLink,[data-jp-access-role=client] #profileMetricsLink,[data-jp-access-role=client] #profileMyPosts{display:none!important}#memberProfileButton.member-chip.role-admin{border:2px solid #168bff!important;box-shadow:0 0 0 1px rgba(22,139,255,.55),0 10px 28px rgba(0,0,0,.3)!important}.member-profile-menu{max-height:min(620px,calc(100dvh - 122px - env(safe-area-inset-bottom,0px)))!important;overflow-y:auto!important}.profile-menu-link{min-height:34px!important}.profile-menu-link small{display:none!important}@media(max-width:430px){.member-profile-menu{max-height:calc(100dvh - 112px - env(safe-area-inset-bottom,0px))!important}.profile-menu-header{min-height:42px!important}.profile-menu-link{min-height:32px!important;padding-top:5px!important;padding-bottom:5px!important}}`;
     document.head.appendChild(style);
   }
   async function install() {
