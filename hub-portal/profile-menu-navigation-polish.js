@@ -2,7 +2,7 @@
    Small, deterministic owner for profile-menu taps. No global render wrapping. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-navigation-polish-20260722-stable-final2";
+  const VERSION = "profile-menu-navigation-polish-20260722-stable-final3";
   if (window.__jpProfileMenuNavigationPolish === VERSION) return;
   window.__jpProfileMenuNavigationPolish = VERSION;
   document.documentElement.dataset.jpProfileMenuNavigationPolish = VERSION;
@@ -22,8 +22,8 @@
   function topOffset() {
     const header = $(".workspace-header") || $("header");
     const rect = header?.getBoundingClientRect?.();
-    const bottom = rect ? Math.round(rect.bottom + 8) : 96;
-    return Math.max(84, Math.min(bottom, vh() - 280));
+    const bottom = rect ? Math.round(rect.bottom + 6) : 92;
+    return Math.max(76, Math.min(bottom, vh() - 390));
   }
   function setVars() {
     document.documentElement.style.setProperty("--jp-visible-vh", `${vh()}px`);
@@ -35,16 +35,16 @@
     if (!style) { style = document.createElement("style"); style.id = "jpStableFinalProfileMenuCss"; document.head.appendChild(style); }
     style.textContent = `
       #memberProfileMenu.member-profile-menu:not(.open),#memberProfileMenu.member-profile-menu[aria-hidden="true"]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;height:0!important;max-height:0!important;overflow:hidden!important;transform:none!important;translate:none!important;clip-path:none!important}
-      #memberProfileMenu.member-profile-menu.open{position:fixed!important;top:var(--jp-profile-menu-top,96px)!important;left:max(12px,env(safe-area-inset-left))!important;right:max(12px,env(safe-area-inset-right))!important;bottom:calc(12px + env(safe-area-inset-bottom))!important;width:auto!important;max-width:calc(100vw - 24px)!important;height:auto!important;min-height:0!important;max-height:calc(var(--jp-visible-vh,100dvh) - var(--jp-profile-menu-top,96px) - 12px - env(safe-area-inset-bottom))!important;display:flex!important;flex-direction:column!important;gap:6px!important;padding:8px!important;box-sizing:border-box!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;transform:none!important;translate:none!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:99999!important;clip-path:none!important;contain:none!important}
+      #memberProfileMenu.member-profile-menu.open{position:fixed!important;top:var(--jp-profile-menu-top,92px)!important;left:max(12px,env(safe-area-inset-left))!important;right:max(12px,env(safe-area-inset-right))!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;width:auto!important;max-width:calc(100vw - 24px)!important;height:auto!important;min-height:0!important;max-height:calc(var(--jp-visible-vh,100dvh) - var(--jp-profile-menu-top,92px) - 10px - env(safe-area-inset-bottom))!important;display:flex!important;flex-direction:column!important;gap:4px!important;padding:7px!important;box-sizing:border-box!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;transform:none!important;translate:none!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:99999!important;clip-path:none!important;contain:none!important}
       #memberProfileMenu.member-profile-menu.open .profile-menu-header,#memberProfileMenu.member-profile-menu.open .profile-menu-link{flex:0 0 auto!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;transform:none!important;translate:none!important;margin:0!important}
-      #memberProfileMenu.member-profile-menu.open .profile-menu-header{display:grid!important;min-height:56px!important;margin-bottom:2px!important}
-      #memberProfileMenu.member-profile-menu.open .profile-menu-link{display:grid!important;min-height:42px!important;max-height:none!important}
+      #memberProfileMenu.member-profile-menu.open .profile-menu-header{display:grid!important;min-height:48px!important;margin-bottom:1px!important}
+      #memberProfileMenu.member-profile-menu.open .profile-menu-link{display:grid!important;min-height:36px!important;max-height:none!important}
       #memberProfileMenu.member-profile-menu.open .profile-menu-link small{display:none!important}
       #memberProfileMenu.member-profile-menu.open .profile-menu-link[aria-busy="true"]{opacity:.62!important;pointer-events:none!important}
       body.jp-profile-menu-locked{overflow:hidden!important;touch-action:none!important}
       body.jp-profile-menu-locked #memberProfileMenu,body.jp-profile-menu-locked #memberProfileButton{touch-action:manipulation!important}
       @media(min-width:761px){#memberProfileMenu.member-profile-menu.open{left:auto!important;right:18px!important;width:min(390px,calc(100vw - 36px))!important;max-width:calc(100vw - 36px)!important}}
-      @media(max-width:360px){#memberProfileMenu.member-profile-menu.open{left:8px!important;right:8px!important;max-width:calc(100vw - 16px)!important;gap:4px!important;padding:7px!important}#memberProfileMenu.member-profile-menu.open .profile-menu-link{min-height:39px!important}}
+      @media(max-width:360px){#memberProfileMenu.member-profile-menu.open{left:8px!important;right:8px!important;max-width:calc(100vw - 16px)!important;gap:3px!important;padding:6px!important}#memberProfileMenu.member-profile-menu.open .profile-menu-header{min-height:44px!important}#memberProfileMenu.member-profile-menu.open .profile-menu-link{min-height:34px!important}}
     `;
   }
 
@@ -180,7 +180,7 @@
     window.visualViewport?.addEventListener("scroll", () => { setVars(); });
     window.addEventListener("resize", () => { setVars(); });
     window.addEventListener("pageshow", () => { setVars(); closeMenu(); bindRoutes(); removeRecoveredCard(); });
-    new MutationObserver(() => { removeRecoveredCard(); bindRoutes(); }).observe(document.body, { childList:true, subtree:true });
+    new MutationObserver(() => { removeRecoveredCard(); bindRoutes(); }).observe(mount() || document.body, { childList:true, subtree:true });
     console.info(`[${VERSION}] installed`);
   }
 
@@ -191,21 +191,22 @@
 /* JP Innovation mobile-first Accounts + Member Profile redesign. */
 (() => {
   "use strict";
-  const VERSION = "accounts-profile-mobile-redesign-20260722-live1";
+  const VERSION = "accounts-profile-mobile-redesign-20260722-live2";
   if (window.__jpAccountsProfileMobileRedesign === VERSION) return;
   window.__jpAccountsProfileMobileRedesign = VERSION;
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = (v = "") => String(v ?? "").replace(/[&<>'"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[c]));
+  let runQueued = false;
 
   function addStyles() {
     let s = $("#jpAccountsProfileMobileRedesignCss");
     if (!s) { s = document.createElement("style"); s.id = "jpAccountsProfileMobileRedesignCss"; document.head.appendChild(s); }
     s.textContent = `
-      :root{--jp-gold:#c89b2c;--jp-gold-dark:#8b6514;--jp-gold-hi:#f3d36a;--jp-blue:#076ad8;--jp-blue-dark:#062a67;--jp-ring-blue:#168bff;--jp-card:rgba(18,24,31,.86);--jp-card2:rgba(10,20,31,.92);--jp-border:rgba(255,255,255,.12)}
+      :root{--jp-gold:#b78a26;--jp-gold-dark:#70500f;--jp-gold-hi:#e7c45e;--jp-blue:#0756bd;--jp-blue-dark:#031d49;--jp-ring-blue:#168bff;--jp-card:rgba(18,24,31,.86);--jp-card2:rgba(10,20,31,.92);--jp-border:rgba(255,255,255,.12)}
       .jp-tier-avatar{--sz:42px;width:var(--sz)!important;height:var(--sz)!important;min-width:var(--sz)!important;aspect-ratio:1/1!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;font-weight:950!important;letter-spacing:.01em!important;line-height:1!important;color:#fff!important;text-shadow:0 1px 3px rgba(0,0,0,.45)!important;overflow:hidden!important;flex:0 0 var(--sz)!important}
-      .jp-tier-avatar.admin{background:radial-gradient(circle at 35% 28%,var(--jp-gold-hi) 0%,var(--jp-gold) 42%,var(--jp-gold-dark) 100%)!important;border:3px solid var(--jp-ring-blue)!important;box-shadow:inset 0 1px 4px rgba(255,255,255,.5),inset 0 -5px 9px rgba(65,43,5,.42),0 0 0 1px rgba(255,255,255,.78),0 6px 15px rgba(22,139,255,.22)!important}
+      .jp-tier-avatar.admin{background:radial-gradient(circle at 35% 28%,var(--jp-gold-hi) 0%,var(--jp-gold) 42%,var(--jp-gold-dark) 100%)!important;border:3px solid var(--jp-ring-blue)!important;box-shadow:inset 0 1px 4px rgba(255,255,255,.42),inset 0 -5px 9px rgba(45,31,5,.48),0 6px 15px rgba(22,139,255,.2)!important}
       .jp-tier-avatar.hub{background:radial-gradient(circle at 36% 25%,#168bff 0%,#0756bd 48%,#05285f 100%)!important;border:3px solid var(--jp-gold)!important;box-shadow:inset 0 1px 4px rgba(255,255,255,.28),0 0 0 1px rgba(255,255,255,.35),0 5px 12px rgba(0,0,0,.28)!important}
       .jp-tier-avatar.client{background:radial-gradient(circle at 36% 25%,#168bff 0%,#0756bd 48%,#05285f 100%)!important;border:3px solid rgba(255,255,255,.9)!important;box-shadow:inset 0 1px 4px rgba(255,255,255,.22),0 5px 12px rgba(0,0,0,.24)!important}
       .jp-role-pill{display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:100%;min-height:24px;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:950;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;line-height:1}
@@ -213,7 +214,7 @@
       .jp-role-pill.hub{color:#fff;background:linear-gradient(135deg,#08285a,#0a63d7);border:1px solid var(--jp-gold)}
       .jp-role-pill.client{color:#fff;background:linear-gradient(135deg,#092a60,#0a64d9);border:1px solid rgba(255,255,255,.75)}
       .jp-role-star{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;line-height:1;flex:0 0 24px}.jp-role-star.admin{background:radial-gradient(circle at 35% 28%,var(--jp-gold-hi),var(--jp-gold) 45%,var(--jp-gold-dark));color:#fff;border:2px solid var(--jp-ring-blue)}.jp-role-star.hub{background:linear-gradient(145deg,#0a63d7,#05285f);color:#fff;border:2px solid var(--jp-gold)}.jp-role-star.client{background:linear-gradient(145deg,#168bff,#0756bd);color:#fff;border:1px solid rgba(255,255,255,.8)}
-      #memberProfileButton .avatar,#memberProfileButton .profile-initials,#memberProfileButton .member-avatar,#memberProfileButton .jp-tier-avatar{--sz:44px!important}.profile-menu-header .avatar,.profile-menu-header .profile-initials,.profile-menu-header .jp-tier-avatar{--sz:48px!important}
+      #memberProfileButton .avatar,#memberProfileButton .profile-initials,#memberProfileButton .member-avatar,#memberProfileButton .jp-tier-avatar{--sz:44px!important}.profile-menu-header .avatar,.profile-menu-header .profile-initials,.profile-menu-header .jp-tier-avatar{--sz:44px!important}
       #adminAccountManagement{overflow:visible!important}.admin-account-tools{display:grid;gap:10px;margin:12px 0}.admin-account-search{width:100%;min-height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.045);color:#fff;padding:0 14px;font-weight:750;box-sizing:border-box}.admin-account-filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}.admin-account-filter{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);color:#d8e6f6;border-radius:999px;min-height:34px;padding:0 12px;font-weight:900;white-space:nowrap}.admin-account-filter.active{background:linear-gradient(135deg,#075bd4,#0a84ff);color:white;border-color:#168bff}
       #adminAccountManagement details{border-radius:18px!important}#adminAccountManagement summary{min-height:54px!important}.admin-account-compact-row{position:relative;display:grid!important;grid-template-columns:46px minmax(0,1fr) auto auto!important;align-items:center!important;gap:10px!important;min-height:76px!important;padding:12px!important;border-radius:18px!important;border:1px solid rgba(255,255,255,.11)!important;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(4,8,13,.68))!important;margin:10px 0!important;box-sizing:border-box!important;overflow:visible!important}.admin-account-compact-row .jp-tier-avatar{--sz:42px!important}.admin-account-main{min-width:0!important;display:grid;gap:3px}.admin-account-name{font-size:1rem!important;font-weight:950!important;color:#fff!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.12!important;margin:0!important}.admin-account-company,.admin-account-email{display:block;color:#aeb9c8!important;font-size:.82rem!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.15!important}.admin-account-email{font-size:.78rem!important;color:#8fa0b5!important}.admin-account-state{display:inline-flex;align-items:center;gap:5px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#78f0ad;font-size:.66rem;font-weight:950;text-transform:uppercase;padding:5px 8px;white-space:nowrap}.admin-account-state.off{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#aeb9c8}.admin-account-more{width:38px;height:38px;border-radius:13px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.055);color:#fff;font-size:22px;font-weight:950;display:inline-flex;align-items:center;justify-content:center}.admin-account-menu{display:none;position:absolute;right:10px;top:58px;z-index:30;width:min(250px,calc(100vw - 58px));padding:8px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(7,12,18,.98);box-shadow:0 18px 42px rgba(0,0,0,.42);grid-template-columns:1fr;gap:7px}.admin-account-compact-row.menu-open .admin-account-menu{display:grid!important}.admin-account-menu .admin-action{width:100%!important;min-height:40px!important;margin:0!important;border-radius:12px!important;font-size:.86rem!important}.admin-account-menu .admin-action.primary,.admin-account-menu .admin-action[data-action="upgrade"]{background:linear-gradient(135deg,#076bdc,#0a84ff)!important;color:#fff!important}.admin-account-compact-row[data-hidden="true"]{display:none!important}
       .premium-profile-card{padding:14px!important;border-radius:20px!important;background:linear-gradient(145deg,rgba(15,25,35,.96),rgba(5,9,14,.94))!important;border:1px solid rgba(255,255,255,.12)!important;box-shadow:0 18px 44px rgba(0,0,0,.28)!important}.premium-profile-card.admin{border-left:3px solid var(--jp-gold)!important}.premium-profile-card.hub{border-left:3px solid var(--jp-gold)!important}.premium-profile-card.client{border-left:3px solid var(--jp-ring-blue)!important}.premium-profile-back{display:inline-flex!important;align-items:center!important;gap:6px!important;width:auto!important;min-height:34px!important;padding:0 11px!important;border-radius:12px!important;margin:0 0 10px!important;font-size:.82rem!important}.premium-profile-hero{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center;padding:13px;border-radius:18px;background:radial-gradient(circle at 15% 5%,rgba(22,139,255,.16),rgba(255,255,255,.035) 44%,rgba(0,0,0,.06));border:1px solid rgba(255,255,255,.11);margin-bottom:12px}.premium-profile-hero .jp-tier-avatar{--sz:58px!important;font-size:1.18rem!important}.premium-profile-avatar-wrap{position:relative;width:64px;height:64px;display:grid;place-items:center}.premium-online-dot{position:absolute;right:2px;bottom:4px;width:15px;height:15px;border-radius:50%;background:#31dc82;border:3px solid #071019;box-shadow:0 0 0 1px rgba(49,220,130,.4)}.premium-name-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.premium-profile-name{font-size:1.34rem!important;line-height:1.05!important;margin:4px 0 2px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.premium-profile-company{color:#b6c0cc;font-weight:800;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.premium-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0}.premium-info-card{min-height:66px;padding:10px;border-radius:15px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.105)}.premium-info-card b{display:block;color:#8fbaff;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.premium-info-card span{display:block;color:#fff;font-weight:900;font-size:.9rem;line-height:1.16}.premium-stars{letter-spacing:1px;color:#566272;font-size:.86rem}.premium-about{font-size:.94rem;line-height:1.42;color:#c7d0dc;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;margin:8px 0 12px}.premium-skill-tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}.premium-skill-tag{font-size:.74rem;font-weight:900;color:#dbeeff;border:1px solid rgba(22,139,255,.24);background:rgba(22,139,255,.08);padding:6px 9px;border-radius:999px}.premium-profile-actions{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px}.premium-profile-actions button{min-height:40px!important;border-radius:12px!important;font-size:.8rem!important;padding:0 9px!important}.premium-profile-future{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}.premium-profile-future span{font-size:.7rem;color:#95a5b8;border:1px solid rgba(255,255,255,.11);border-radius:999px;padding:5px 8px}
@@ -222,10 +223,18 @@
     `;
   }
 
+  function currentRoleType() {
+    const p = window.state?.currentProfile || window.state?.signedInProfile || window.currentProfile || {};
+    const role = String(p.account_type || p.role || "").toLowerCase();
+    const membership = String(p.membership_status || p.membershipStatus || "").toLowerCase();
+    if (role === "admin" || p.is_admin === true || p.isAdmin === true) return "admin";
+    if (role === "hub" || role === "member" || role === "paid" || membership === "paid" || membership === "hub") return "hub";
+    return "client";
+  }
   function typeFromText(text) {
     const t = String(text || "").toLowerCase();
     if (t.includes("admin") || t.includes("jp admin")) return "admin";
-    if (t.includes("hub") || t.includes("paid") || t.includes("member")) return "hub";
+    if (t.includes("hub") || t.includes("paid")) return "hub";
     return "client";
   }
   function roleLabel(type) { return type === "admin" ? "JP Admin" : type === "hub" ? "Hub Member" : "Client Portal"; }
@@ -235,12 +244,13 @@
   function roleStar(type) { return `<span class="jp-role-star ${type}" aria-hidden="true">★</span>`; }
 
   function installAccountTools(section) {
-    if (!section || $(".admin-account-tools", section)) return;
+    if (!section || section.querySelector(".admin-account-tools")) return;
     const tools = document.createElement("div");
     tools.className = "admin-account-tools";
     tools.innerHTML = `<input id="adminAccountSearch" class="admin-account-search" type="search" placeholder="Search accounts" autocomplete="off"><div class="admin-account-filters" role="list"><button class="admin-account-filter active" data-filter="all" type="button">All</button><button class="admin-account-filter" data-filter="admin" type="button">Admin</button><button class="admin-account-filter" data-filter="hub" type="button">Hub Members</button><button class="admin-account-filter" data-filter="client" type="button">Client Portal</button><button class="admin-account-filter" data-filter="suspended" type="button">Suspended</button></div>`;
-    const firstDetails = $("details", section);
-    section.insertBefore(tools, firstDetails || section.firstChild);
+    const firstDetails = section.querySelector(":scope > details") || section.querySelector("details");
+    const ref = firstDetails && firstDetails.parentNode === section ? firstDetails : section.firstChild;
+    try { section.insertBefore(tools, ref); } catch (error) { console.warn(`[${VERSION}] account tools insert recovered`, error); section.prepend(tools); }
   }
 
   function normaliseAccountRow(row) {
@@ -284,9 +294,8 @@
   }
 
   function transformMemberProfile() {
-    const mount = $("#viewMount");
-    const card = $(".public-profile-card:not(.premium-profile-card)", mount || document); if (!card) return;
-    const oldBack = $("#backToDirectory", card);
+    const viewMount = $("#viewMount");
+    const card = $(".public-profile-card:not(.premium-profile-card)", viewMount || document); if (!card) return;
     const name = ($(".public-profile-name", card)?.textContent || $("h2,h3", card)?.textContent || "Member").trim();
     const roleText = ($(".compact-role-pill,.jp-role-pill,.role-pill", card)?.textContent || card.textContent || "").trim();
     const type = typeFromText(roleText);
@@ -307,15 +316,21 @@
   }
 
   function patchHeaderAvatar() {
-    const btn = $("#memberProfileButton"); if (!btn || btn.dataset.jpTierPatched === VERSION) return;
-    const txt = ($(".avatar,.profile-initials,.jp-tier-avatar", btn)?.textContent || "JH").trim();
-    const type = typeFromText(btn.textContent || document.body.textContent || "admin");
+    const btn = $("#memberProfileButton"); if (!btn) return;
     const existing = $(".avatar,.profile-initials,.jp-tier-avatar", btn);
-    if (existing) existing.outerHTML = tierAvatar(type, txt);
-    btn.dataset.jpTierPatched = VERSION;
+    const txt = (existing?.textContent || "JH").trim();
+    const type = currentRoleType();
+    if (!existing || !existing.classList.contains("jp-tier-avatar") || !existing.classList.contains(type)) {
+      if (existing) existing.outerHTML = tierAvatar(type, txt);
+    }
+    const header = $("#memberProfileMenu .profile-menu-header");
+    const hExisting = header && $(".avatar,.profile-initials,.jp-tier-avatar", header);
+    if (hExisting && (!hExisting.classList.contains("jp-tier-avatar") || !hExisting.classList.contains(type))) hExisting.outerHTML = tierAvatar(type, hExisting.textContent.trim() || txt);
   }
 
   function bind() {
+    if (document.documentElement.dataset.jpAccountProfileBind === VERSION) return;
+    document.documentElement.dataset.jpAccountProfileBind = VERSION;
     document.addEventListener("click", (e) => {
       const more = e.target.closest?.("[data-account-more]");
       if (more) { e.preventDefault(); e.stopPropagation(); const row = more.closest(".admin-account-compact-row"); $$(".admin-account-compact-row.menu-open").forEach((r) => { if (r !== row) r.classList.remove("menu-open"); }); row?.classList.toggle("menu-open"); return; }
@@ -327,9 +342,15 @@
   }
 
   function run() { addStyles(); patchHeaderAvatar(); transformAccounts(); transformMemberProfile(); }
+  function scheduleRun() {
+    if (runQueued) return;
+    runQueued = true;
+    requestAnimationFrame(() => { runQueued = false; run(); });
+  }
   function install() {
     run(); bind();
-    new MutationObserver(() => { requestAnimationFrame(run); }).observe(document.body, { childList:true, subtree:true });
+    const target = $("#viewMount") || document.body;
+    new MutationObserver(scheduleRun).observe(target, { childList:true, subtree:true });
     window.addEventListener("pageshow", run);
     console.info(`[${VERSION}] installed`);
   }
