@@ -2,7 +2,7 @@
    This keeps the profile menu out of clipped/transformed header containers. */
 (() => {
   "use strict";
-  const VERSION = "profile-menu-compact-override-20260722-ring-clean-fullscreen-menu";
+  const VERSION = "profile-menu-compact-override-20260722-ring-clean-inline";
   document.documentElement.dataset.jpProfileMenuCompactOverride = VERSION;
 
   function installStyles() {
@@ -114,12 +114,30 @@
     `;
   }
 
+  function applyAvatarRingClean() {
+    const trigger = document.querySelector("#memberProfileButton.member-chip");
+    const avatar = document.querySelector("#memberInitials");
+    if (trigger) {
+      trigger.style.setProperty("border", "1px solid rgba(22,139,255,.46)", "important");
+      trigger.style.setProperty("outline", "none", "important");
+      trigger.style.setProperty("box-shadow", "0 0 0 1px rgba(22,139,255,.14), 0 10px 26px rgba(0,0,0,.34)", "important");
+    }
+    if (avatar) {
+      avatar.style.setProperty("border", "3px solid #168bff", "important");
+      avatar.style.setProperty("outline", "none", "important");
+      avatar.style.setProperty("border-radius", "999px", "important");
+      avatar.style.setProperty("aspect-ratio", "1 / 1", "important");
+      avatar.style.setProperty("box-shadow", "inset 0 1px 3px rgba(255,255,255,.30), inset 0 -4px 9px rgba(50,31,2,.42), 0 6px 16px rgba(0,0,0,.35)", "important");
+    }
+  }
+
   function ensureBodyRoot() {
     const menu = document.querySelector("#memberProfileMenu.member-profile-menu");
     if (menu && menu.parentElement !== document.body) {
       document.body.appendChild(menu);
       menu.dataset.jpBodyRoot = VERSION;
     }
+    applyAvatarRingClean();
     return menu;
   }
 
@@ -157,18 +175,20 @@
       try { menu.scrollTop = 0; } catch (_) {}
     }
     if (trigger) trigger.setAttribute("aria-expanded", "false");
+    applyAvatarRingClean();
   }
 
   installStyles();
   ensureBodyRoot();
   setMenuVars();
+  applyAvatarRingClean();
   window.addEventListener("pageshow", cleanClosedState, true);
   window.addEventListener("popstate", cleanClosedState, true);
-  window.addEventListener("resize", setMenuVars, true);
+  window.addEventListener("resize", () => { setMenuVars(); applyAvatarRingClean(); }, true);
   window.visualViewport?.addEventListener("resize", setMenuVars);
   window.visualViewport?.addEventListener("scroll", setMenuVars);
   document.addEventListener("visibilitychange", cleanClosedState, true);
-  document.addEventListener("pointerup", () => { ensureBodyRoot(); setMenuVars(); }, true);
-  new MutationObserver(() => { ensureBodyRoot(); }).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener("pointerup", () => { ensureBodyRoot(); setMenuVars(); applyAvatarRingClean(); }, true);
+  new MutationObserver(() => { ensureBodyRoot(); applyAvatarRingClean(); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
   console.info(`[${VERSION}] installed`);
 })();
