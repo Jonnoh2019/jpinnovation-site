@@ -1,14 +1,18 @@
 (() => {
   "use strict";
 
-  const VERSION = "thread-profile-signout-fix-20260723a";
+  const VERSION = "thread-profile-signout-fix-20260723b";
   const INACTIVE = new Set(["", "free", "pending", "rejected", "suspended", "removed"]);
+  let signingOut = false;
 
-  function clean(value) { return String(value || "").trim().toLowerCase(); }
-  function esc(value) {
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+  const clean = (value) => String(value || "").trim().toLowerCase();
+  const esc = (value) => {
     if (typeof escapeHtml === "function") return escapeHtml(value == null ? "" : String(value));
     return String(value == null ? "" : value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" }[char]));
-  }
+  };
+
   function roleOf(user) {
     if (!user) return "client";
     const email = clean(user.email);
@@ -19,20 +23,26 @@
     if (role === "member" && !INACTIVE.has(membership) && status !== "removed") return "member";
     return "client";
   }
-  function current() { try { return typeof currentUser === "function" ? currentUser() : null; } catch { return null; } }
+
+  function current() {
+    try { return typeof currentUser === "function" ? currentUser() : null; } catch { return null; }
+  }
+
   function toast(title, detail = "", error = false) {
     if (typeof showSuccessToast === "function" && !error) { showSuccessToast(title, detail); return; }
-    document.querySelector(".jp-thread-fix-toast")?.remove();
+    $(".jp-thread-fix-toast")?.remove();
     const node = document.createElement("div");
     node.className = "jp-thread-fix-toast" + (error ? " is-error" : "");
     node.innerHTML = `<strong>${esc(title)}</strong>${detail ? `<span>${esc(detail)}</span>` : ""}`;
     document.body.appendChild(node);
     setTimeout(() => node.remove(), 4200);
   }
+
   function initials(value) {
     const parts = String(value || "JP").trim().split(/\s+/).filter(Boolean);
     return (parts.length ? parts.slice(0, 2).map((part) => part[0]).join("") : "JP").toUpperCase();
   }
+
   function memberFromName(name) {
     const wanted = clean(name);
     let found = null;
@@ -44,6 +54,7 @@
     }
     return found || { name };
   }
+
   function avatar(user, className = "jp-thread-author-avatar") {
     try {
       if (typeof profileAvatarMarkup === "function") return profileAvatarMarkup(user, `${className} jp-role-avatar`);
@@ -53,11 +64,13 @@
     if (photo) return `<span class="${esc(className)} jp-role-avatar role-${esc(role)} has-photo"><img src="${esc(photo)}" alt="${esc(user?.name || "Member")} profile photo"></span>`;
     return `<span class="${esc(className)} jp-role-avatar role-${esc(role)}">${esc(initials(user?.name || user?.email))}</span>`;
   }
+
   function roleBadge(user) {
     const role = roleOf(user);
     const label = role === "admin" ? "JP Admin" : role === "member" ? "Hub Member" : "Client Portal";
     return `<span class="jp-author-role-badge role-${esc(role)}">${esc(label)}</span>`;
   }
+
   function dateText(value) {
     const raw = String(value || "").trim();
     if (!raw || /today|just now/i.test(raw)) return raw || "Recently";
@@ -65,19 +78,108 @@
     if (!Number.isFinite(parsed)) return raw;
     return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(parsed));
   }
-  function openProfileFor(member) {
+
+  function closeMenusAndUnlock() {
+    try { if (typeof setMemberProfileMenuOpen === "function") setMemberProfileMenuOpen(false); } catch {}
+    try { if (typeof setMobileDashboardMenuOpen === "function") setMobileDashboardMenuOpen(false); } catch {}
+    const menu = $("#memberProfileMenu");
+    if (menu) {
+      menu.classList.remove("open", "active", "show", "visible", "is-open", "is-opening", "is-closing");
+      menu.hidden = true;
+      menu.setAttribute("aria-hidden", "true");
+      menu.style.removeProperty("display");
+      menu.style.removeProperty("pointer-events");
+    }
+    $("#memberProfileButton")?.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("member-profile-menu-open", "jp-profile-menu-open", "jp-profile-menu-locked", "mobile-dashboard-menu-open", "profile-menu-open", "menu-scroll-locked", "jp-menu-hard-lock");
+    document.documentElement.classList.remove("member-profile-menu-open", "jp-profile-menu-open", "profile-menu-open", "menu-scroll-locked", "jp-menu-hard-lock");
+    [document.body, document.documentElement].forEach((node) => {
+      node.style.removeProperty("overflow");
+      node.style.removeProperty("pointer-events");
+      node.style.removeProperty("touch-action");
+    });
+    $$(".profile-menu-backdrop,.member-profile-backdrop,.jp-profile-menu-backdrop,.profile-backdrop,[data-profile-backdrop]").forEach((node) => node.remove());
+  }
+
+  function signOutUrl() {
+    const params = new URLSearchParams(location.search || "");
+    const mode = params.get("entry") === "client" ? "client" : "hub";
+    return `/hub-portal/index.html?entry=${mode}&signin=1&signedout=1&v=${VERSION}`;
+  }
+
+  async function doSignOut(button) {
+    if (signingOut) return;
+    signingOut = true;
+    if (button) {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+    }
+    closeMenusAndUnlock();
     try {
-      if (typeof renderMemberProfile === "function") { renderMemberProfile(member); return; }
-    } catch (error) { console.warn(`[${VERSION}] member profile open failed`, error); }
+      try { if (typeof markHubOffline === "function") await markHubOffline(); } catch (error) { console.warn(`[${VERSION}] offline mark failed`, error); }
+      try { if (portalBackend?.auth?.signOut) await portalBackend.auth.signOut(); } catch (error) { console.warn(`[${VERSION}] Supabase signOut failed; continuing local sign-out`, error); }
+      try { localStorage.removeItem("jpActiveHubAccess"); } catch {}
+      try { sessionStorage.removeItem("jpActiveHubAccess"); } catch {}
+      try {
+        if (typeof state !== "undefined" && state) {
+          state.sessionEmail = "";
+          state.activeUserEmail = "";
+          if (typeof saveState === "function") saveState();
+        }
+      } catch {}
+      document.documentElement.classList.remove("hub-member-session", "restoring-portal-session");
+      document.body.classList.remove("hub-member-session");
+      $("#appShell")?.classList.add("hidden");
+      $("#publicShell")?.classList.remove("hidden");
+      location.replace(signOutUrl());
+    } catch (error) {
+      console.error(`[${VERSION}] sign out failed`, error);
+      signingOut = false;
+      if (button) {
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+      }
+      toast("Sign out failed.", "Please try again.", true);
+    }
+  }
+
+  function signOutTarget(event) {
+    const target = event.target?.closest?.("#logoutButton,.profile-menu-signout,[data-profile-action='signout'],[data-action='signout']");
+    if (target) return target;
+    const row = event.target?.closest?.("#memberProfileMenu .profile-menu-link");
+    if (row && /sign\s*out/i.test(row.textContent || "")) return row;
+    return null;
+  }
+
+  function installSignOut() {
+    if (window.jpThreadFixSignOutInstalled === VERSION) return;
+    window.jpThreadFixSignOutInstalled = VERSION;
+    const handler = (event) => {
+      const button = signOutTarget(event);
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      doSignOut(button);
+    };
+    window.addEventListener("pointerdown", handler, true);
+    window.addEventListener("touchstart", handler, true);
+    window.addEventListener("mousedown", handler, true);
+    window.addEventListener("click", handler, true);
+  }
+
+  function openProfileFor(member) {
+    try { if (typeof renderMemberProfile === "function") { renderMemberProfile(member); return; } } catch (error) { console.warn(`[${VERSION}] member profile open failed`, error); }
     try { if (typeof renderView === "function") renderView("directory"); } catch {}
   }
+
   function enhanceThreads() {
-    document.querySelectorAll(".thread-card").forEach((card) => {
-      if (card.dataset.jpThreadAuthorFixed === "1") return;
+    $$(".thread-card").forEach((card) => {
+      if (card.dataset.jpThreadAuthorFixed === VERSION) return;
       const title = card.querySelector(":scope > h3");
       const meta = card.querySelector(":scope > .meta-row");
       if (!title || !meta) return;
-      const pills = Array.from(meta.querySelectorAll(":scope > .pill"));
+      const pills = $$(":scope > .pill", meta);
       const authorPill = pills.find((pill) => pill.classList.contains("author-reputation"));
       if (!authorPill) return;
       const datePill = pills.find((pill) => pill !== authorPill && /\d|today|just now|yesterday|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(pill.textContent || ""));
@@ -91,11 +193,7 @@
       header.innerHTML = `
         <button class="jp-thread-author-avatar-link" type="button" aria-label="Open ${esc(fullName)} profile">${avatar(member)}</button>
         <div class="jp-thread-author-copy">
-          <div class="jp-thread-author-name-line">
-            <button class="jp-thread-author-name" type="button">${esc(fullName)}</button>
-            ${roleBadge(member)}
-            ${member.verified || roleOf(member) === "admin" ? `<span class="jp-author-verified" aria-label="Verified">✓</span>` : ""}
-          </div>
+          <div class="jp-thread-author-name-line"><button class="jp-thread-author-name" type="button">${esc(fullName)}</button>${roleBadge(member)}${member.verified || roleOf(member) === "admin" ? `<span class="jp-author-verified" aria-label="Verified">✓</span>` : ""}</div>
           <div class="jp-thread-author-subline">${username ? `<span>@${esc(username)}</span><span>•</span>` : ""}<span>${esc(dateText(datePill?.textContent || ""))}</span>${editedPill ? `<span>•</span><span>${esc(editedPill.textContent)}</span>` : ""}</div>
         </div>`;
       header.querySelectorAll("button").forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openProfileFor(member); }));
@@ -105,24 +203,25 @@
       if (!meta.querySelector(".pill,button,a")) meta.remove();
       card.querySelector(":scope > .thread-pin-actions")?.classList.add("jp-compact-admin-actions");
       card.querySelector(":scope > .report-button")?.classList.add("jp-thread-text-action");
-      card.dataset.jpThreadAuthorFixed = "1";
+      card.dataset.jpThreadAuthorFixed = VERSION;
     });
-    document.querySelectorAll(".reply-form").forEach((form) => {
+    $$(".reply-form").forEach((form) => {
       const text = form.querySelector("textarea");
       const button = form.querySelector("button[type='submit']");
-      if (!text || !button || form.dataset.jpReplyDisableFixed === "1") return;
+      if (!text || !button || form.dataset.jpReplyDisableFixed === VERSION) return;
       const sync = () => { button.disabled = !text.value.trim(); };
       text.addEventListener("input", sync);
       sync();
-      form.dataset.jpReplyDisableFixed = "1";
+      form.dataset.jpReplyDisableFixed = VERSION;
     });
   }
+
   function enhancePhotoRemoval() {
-    const manager = document.querySelector(".profile-photo-manager");
-    if (!manager || manager.dataset.jpRemovePhotoFixed === "1") return;
+    const manager = $(".profile-photo-manager");
+    if (!manager || manager.dataset.jpRemovePhotoFixed === VERSION) return;
     const user = current();
     const hasPhoto = Boolean(user?.profilePhotoUrl || user?.profile_photo_url || user?.profilePhotoPendingUrl || user?.profile_photo_pending_url);
-    if (!hasPhoto) { manager.dataset.jpRemovePhotoFixed = "1"; return; }
+    if (!hasPhoto) { manager.dataset.jpRemovePhotoFixed = VERSION; return; }
     const button = document.createElement("button");
     button.type = "button";
     button.className = "secondary-button jp-remove-profile-photo";
@@ -150,38 +249,11 @@
       }
     });
     manager.querySelector(".profile-photo-upload")?.insertAdjacentElement("afterend", button);
-    manager.dataset.jpRemovePhotoFixed = "1";
+    manager.dataset.jpRemovePhotoFixed = VERSION;
   }
-  function installSignOut() {
-    if (window.jpThreadFixSignOutInstalled) return;
-    window.jpThreadFixSignOutInstalled = true;
-    window.addEventListener("click", async (event) => {
-      const button = event.target?.closest?.("#logoutButton,.profile-menu-signout");
-      if (!button) return;
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      button.disabled = true;
-      try {
-        try { if (typeof setMemberProfileMenuOpen === "function") setMemberProfileMenuOpen(false); } catch {}
-        try { if (typeof setMobileDashboardMenuOpen === "function") setMobileDashboardMenuOpen(false); } catch {}
-        try { if (typeof markHubOffline === "function") await markHubOffline(); } catch {}
-        if (portalBackend?.auth?.signOut) await portalBackend.auth.signOut();
-        try { localStorage.removeItem("jpActiveHubAccess"); } catch {}
-        try { if (state) { state.sessionEmail = ""; if (typeof saveState === "function") saveState(); } } catch {}
-        document.getElementById("appShell")?.classList.add("hidden");
-        document.getElementById("publicShell")?.classList.remove("hidden");
-        const mode = new URLSearchParams(location.search).get("entry") === "client" ? "client" : "hub";
-        location.replace(`/hub-portal/index.html?entry=${mode}&signin=1&signedout=1&v=${VERSION}`);
-      } catch (error) {
-        console.error(`[${VERSION}] sign out failed`, error);
-        button.disabled = false;
-        toast("Sign out failed.", "Please try again.", true);
-      }
-    }, true);
-  }
+
   function styles() {
-    if (document.getElementById("jpThreadProfileSignoutStyles")) return;
+    if ($("#jpThreadProfileSignoutStyles")) return;
     const style = document.createElement("style");
     style.id = "jpThreadProfileSignoutStyles";
     style.textContent = `
@@ -195,13 +267,17 @@
     `;
     document.head.appendChild(style);
   }
+
   function enhance() { enhanceThreads(); enhancePhotoRemoval(); }
+
   function install() {
     styles();
     installSignOut();
     enhance();
-    const mount = document.getElementById("viewMount");
+    const mount = $("#viewMount");
     if (mount) new MutationObserver(() => requestAnimationFrame(enhance)).observe(mount, { childList: true, subtree: true });
+    console.info(`[${VERSION}] installed`);
   }
+
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true }); else install();
 })();
