@@ -1,0 +1,109 @@
+/* Shared JP Innovation mobile/header consistency pass. */
+:root {
+  --jp-shared-mobile-logo-w: clamp(300px, 58vw, 420px);
+  --jp-shared-header-control-h: 58px;
+  --jp-shared-header-radius: 18px;
+  --jp-shared-header-gap: 12px;
+}
+
+.site-header .brand img,
+.portal-header .brand img,
+.hub-header .brand img,
+.workspace-mobile-logo img {
+  width: var(--jp-shared-mobile-logo-w) !important;
+  max-width: calc(100vw - 44px) !important;
+  height: auto !important;
+  margin-inline: auto !important;
+}
+
+.portal-header,
+.hub-header {
+  padding: 12px 22px !important;
+  gap: var(--jp-shared-header-gap) !important;
+}
+
+.portal-header .public-nav,
+.hub-header .public-nav {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: var(--jp-shared-header-gap) !important;
+  width: 100% !important;
+}
+
+.home-icon-button,
+.section-switch-button,
+.menu-toggle,
+#mobileMenuButton,
+#dashboardHomeButton,
+.notification-bell,
+.member-chip {
+  min-height: var(--jp-shared-header-control-h) !important;
+  height: var(--jp-shared-header-control-h) !important;
+  border-radius: var(--jp-shared-header-radius) !important;
+  box-sizing: border-box !important;
+}
+
+.section-switch-button {
+  padding-block: 0 !important;
+  padding-inline: 16px !important;
+}
+
+.workspace-header {
+  gap: var(--jp-shared-header-gap) !important;
+}
+
+.workspace-mobile-logo {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.workspace-header-actions {
+  align-items: center !important;
+  gap: var(--jp-shared-header-gap) !important;
+}
+
+@media (max-width: 760px) {
+  .site-header .header-inner {
+    padding: 12px 22px !important;
+    gap: var(--jp-shared-header-gap) !important;
+  }
+
+  .site-header .brand {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .site-header .header-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr !important;
+    gap: var(--jp-shared-header-gap) !important;
+    align-items: center !important;
+  }
+
+  .site-header .section-switcher {
+    justify-self: end !important;
+  }
+
+  .portal-header .brand,
+  .hub-header .brand,
+  .workspace-mobile-logo {
+    margin-bottom: 2px !important;
+  }
+
+  .workspace-header {
+    padding: 12px 22px !important;
+  }
+
+  .workspace-header-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: auto auto 1fr !important;
+  }
+
+  .account-control-cluster {
+    justify-self: end !important;
+  }
+}
