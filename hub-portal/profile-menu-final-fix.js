@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "admin-account-popover-photo-rpc-20260724d";
+  const VERSION = "admin-account-popover-photo-rpc-20260724e";
   if (window.__jpAdminAccountPopoverPhotoRpc === VERSION) return;
   window.__jpAdminAccountPopoverPhotoRpc = VERSION;
 
@@ -13,7 +13,6 @@
   const clean = (value = "") => String(value || "").trim().toLowerCase();
   const stateRef = () => { try { if (typeof state !== "undefined") return state; } catch (_) {} return window.state || {}; };
   const backend = () => { try { if (typeof portalBackend !== "undefined") return portalBackend; } catch (_) {} return window.portalBackend || null; };
-  const current = () => { try { if (typeof currentUser === "function") return currentUser(); } catch (_) {} return stateRef().currentUser || null; };
   const notify = (title, detail = "", error = false) => {
     const fn = error ? (window.showErrorToast || window.showSuccessToast) : window.showSuccessToast;
     if (typeof fn === "function") return fn(title, detail);
@@ -21,6 +20,7 @@
   };
 
   let serverProfiles = [];
+  let serverPhotoApprovals = [];
   let activeMenu = null;
   let activeSource = null;
   const pendingStatuses = new Set(["pending", "awaiting", "awaiting_approval", "pending_approval"]);
@@ -66,7 +66,7 @@
 
   function pendingPhotos() {
     const app = stateRef();
-    const source = serverProfiles.length ? serverProfiles : [...(app.users || []), ...(app.members || [])].map(normalise).filter(Boolean);
+    const source = serverPhotoApprovals.length ? serverPhotoApprovals : (serverProfiles.length ? serverProfiles : [...(app.users || []), ...(app.members || [])].map(normalise).filter(Boolean));
     const map = new Map();
     source.forEach((profile) => {
       const pending = profile?.profilePhotoPendingUrl || profile?.profile_photo_pending_url || "";
@@ -83,24 +83,46 @@
     } catch (_) {}
   }
 
+  async function refreshPhotoApprovals() {
+    const pb = backend();
+    if (!pb?.rpc) return false;
+    try {
+      const { data, error } = await pb.rpc("admin_list_profile_photo_approvals");
+      if (error) throw error;
+      serverPhotoApprovals = Array.isArray(data) ? data.map(normalise).filter(Boolean) : [];
+      serverPhotoApprovals.forEach(mergeProfile);
+      exposePending();
+      return true;
+    } catch (error) {
+      serverPhotoApprovals = [];
+      if (!/Admin access required/i.test(error?.message || "")) {
+        console.warn(`[${VERSION}] photo approval queue refresh failed`, error);
+      }
+      exposePending();
+      return false;
+    }
+  }
+
   async function refreshProfiles(render = false) {
     const pb = backend();
     if (!pb?.from) return false;
+    let ok = false;
     try {
       const { data, error } = await pb.from("profiles").select("*").order("full_name", { ascending: true });
       if (error) throw error;
       serverProfiles = Array.isArray(data) ? data.map(normalise).filter(Boolean) : [];
       serverProfiles.forEach(mergeProfile);
-      exposePending();
-      try { if (typeof renderNotifications === "function") renderNotifications(); } catch (_) {}
-      if (render) {
-        try { if (typeof renderView === "function") renderView(stateRef().activeView || "admin"); } catch (_) {}
-      }
-      return true;
+      ok = true;
     } catch (error) {
       console.warn(`[${VERSION}] profile refresh failed`, error);
-      return false;
     }
+    await refreshPhotoApprovals();
+    exposePending();
+    try { if (typeof renderNotifications === "function") renderNotifications(); } catch (_) {}
+    if (render) {
+      try { if (typeof renderView === "function") renderView(stateRef().activeView || "admin"); } catch (_) {}
+    }
+    return ok;
   }
 
   function missingRpc(error) {
@@ -337,7 +359,7 @@
     compactAccountMenus();
     refreshProfiles(false);
     new MutationObserver(() => { compactAccountMenus(); exposePending(); }).observe(document.body, { childList: true, subtree: true });
-    window.jpProfilePhotoRpcWorkflow = { version: VERSION, refreshProfiles, pendingPhotos, submitPhotoForApproval, moderatePhoto };
+    window.jpProfilePhotoRpcWorkflow = { version: VERSION, refreshProfiles, refreshPhotoApprovals, pendingPhotos, submitPhotoForApproval, moderatePhoto };
     console.info(`[${VERSION}] installed`);
   }
 
