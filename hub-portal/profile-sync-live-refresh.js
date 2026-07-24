@@ -1,22 +1,17 @@
 (() => {
-  const VERSION = "profile-sync-live-refresh-20260723b";
+  const VERSION = "profile-sync-live-refresh-20260723c";
   const ROLE_ORDER = { admin: 0, hub: 1, client: 2 };
   let syncing = false;
   let lastSync = 0;
   let directoryTimer = null;
-  let identityTimer = null;
 
   function getPortalBackend() {
-    try {
-      if (typeof portalBackend !== "undefined" && portalBackend) return portalBackend;
-    } catch (error) {}
+    try { if (typeof portalBackend !== "undefined" && portalBackend) return portalBackend; } catch (error) {}
     return window.portalBackend || null;
   }
 
   function getAppState() {
-    try {
-      if (typeof state !== "undefined" && state) return state;
-    } catch (error) {}
+    try { if (typeof state !== "undefined" && state) return state; } catch (error) {}
     return window.state || null;
   }
 
@@ -85,11 +80,9 @@
     const matches = (item) => String(item?.email || item?.id || "").toLowerCase() === key || (profile.id && item?.id === profile.id);
     const merged = (old = {}) => ({ ...old, ...profile, profilePhotoUrl: profile.profilePhotoUrl || old.profilePhotoUrl || "" });
     const userIndex = appState.users.findIndex(matches);
-    if (userIndex >= 0) appState.users[userIndex] = merged(appState.users[userIndex]);
-    else appState.users.push(profile);
+    if (userIndex >= 0) appState.users[userIndex] = merged(appState.users[userIndex]); else appState.users.push(profile);
     const memberIndex = appState.members.findIndex(matches);
-    if (memberIndex >= 0) appState.members[memberIndex] = merged(appState.members[memberIndex]);
-    else appState.members.push(profile);
+    if (memberIndex >= 0) appState.members[memberIndex] = merged(appState.members[memberIndex]); else appState.members.push(profile);
     if (appState.currentUser && matches(appState.currentUser)) appState.currentUser = merged(appState.currentUser);
   }
 
@@ -147,17 +140,12 @@
     if (avatar.querySelector("img")) target.setAttribute("aria-label", profile.fullName || profile.name || "Profile");
   }
 
-  function updateCurrentIdentityNow() {
+  function updateCurrentIdentity() {
     const appState = getAppState();
     const current = appState?.currentUser;
     if (!current) return;
     updateAvatarTarget(document.querySelector("#memberInitials"), current, "role-avatar--header");
     updateAvatarTarget(document.querySelector("#profileMenuAvatar"), current, "role-avatar--menu");
-  }
-
-  function updateCurrentIdentity() {
-    clearTimeout(identityTimer);
-    identityTimer = setTimeout(updateCurrentIdentityNow, 50);
   }
 
   async function refreshSharedProfiles(force = false) {
@@ -188,7 +176,6 @@
     const email = profile.email || "";
     const company = profile.company || (role === "admin" ? "JP Innovation Ltd" : role === "hub-member" ? "Innovation Hub member" : "Client Portal member");
     const roleLabel = role === "admin" ? "JP Admin" : role === "hub-member" ? "Hub Member" : "Client Portal";
-    const status = profile.online ? "Online" : "Offline";
     return `<article class="directory-row directory-row--${role}" data-member-email="${email}">
       ${avatarMarkup(profile, "directory-row__avatar")}
       <div class="directory-row__body">
@@ -196,7 +183,7 @@
         <small>${company}</small>
         <span class="directory-row__email">${email || "No email saved"}</span>
       </div>
-      <div class="directory-row__side"><span class="online-pill ${profile.online ? "is-online" : ""}">${status}</span><button class="secondary-button directory-row__button" data-view-member="${email || profile.id}" type="button">View</button></div>
+      <div class="directory-row__side"><span class="online-pill ${profile.online ? "is-online" : ""}">${profile.online ? "Online" : "Offline"}</span><button class="secondary-button directory-row__button" data-view-member="${email || profile.id}" type="button">View</button></div>
     </article>`;
   }
 
@@ -258,19 +245,26 @@
     document.head.appendChild(style);
   }
 
+  function startSafeRefreshLoop() {
+    let ticks = 0;
+    const timer = setInterval(() => {
+      ticks += 1;
+      updateCurrentIdentity();
+      if (document.querySelector("#directoryResults")) renderDirectorySoon();
+      if (ticks === 2 || ticks === 8 || ticks === 20) refreshSharedProfiles(false);
+      if (ticks >= 30) clearInterval(timer);
+    }, 1000);
+  }
+
   function start() {
     installStyles();
     installAvatarPatch();
     installDirectoryPatch();
     updateCurrentIdentity();
     refreshSharedProfiles(true);
+    startSafeRefreshLoop();
     document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshSharedProfiles(true); });
     window.addEventListener("focus", () => refreshSharedProfiles(true));
-    const observer = new MutationObserver(() => {
-      updateCurrentIdentity();
-      if (document.querySelector("#directoryResults")) renderDirectorySoon();
-    });
-    observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
     window.jpProfileSyncLiveRefresh = { version: VERSION, refresh: refreshSharedProfiles, profiles: sharedProfiles };
   }
 
