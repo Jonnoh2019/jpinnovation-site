@@ -1,204 +1,215 @@
 (() => {
   "use strict";
 
-  const VERSION = "admin-account-popover-photo-bridge-20260724c";
-  if (window.__jpAdminAccountPopoverPhotoBridge === VERSION) return;
-  window.__jpAdminAccountPopoverPhotoBridge = VERSION;
+  const VERSION = "admin-account-popover-photo-rpc-20260724d";
+  if (window.__jpAdminAccountPopoverPhotoRpc === VERSION) return;
+  window.__jpAdminAccountPopoverPhotoRpc = VERSION;
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
-  const esc = (value = "") => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" })[char]);
-  const cssEsc = (value = "") => window.CSS?.escape ? CSS.escape(String(value)) : String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+  const esc = (value = "") => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;"
+  })[char]);
   const clean = (value = "") => String(value || "").trim().toLowerCase();
-  const appState = () => { try { if (typeof state !== "undefined") return state; } catch (_) {} return window.state || {}; };
+  const stateRef = () => { try { if (typeof state !== "undefined") return state; } catch (_) {} return window.state || {}; };
   const backend = () => { try { if (typeof portalBackend !== "undefined") return portalBackend; } catch (_) {} return window.portalBackend || null; };
-  const current = () => { try { if (typeof currentUser === "function") return currentUser(); } catch (_) {} return appState().currentUser || null; };
-  const toast = (title, detail = "", isError = false) => {
-    const fn = isError ? (window.showErrorToast || window.showSuccessToast) : window.showSuccessToast;
+  const current = () => { try { if (typeof currentUser === "function") return currentUser(); } catch (_) {} return stateRef().currentUser || null; };
+  const notify = (title, detail = "", error = false) => {
+    const fn = error ? (window.showErrorToast || window.showSuccessToast) : window.showSuccessToast;
     if (typeof fn === "function") return fn(title, detail);
-    console[isError ? "warn" : "log"](`[${VERSION}] ${title}`, detail);
+    console[error ? "warn" : "log"](`[${VERSION}] ${title}`, detail);
   };
 
   let serverProfiles = [];
+  let activeMenu = null;
+  let activeSource = null;
+  const pendingStatuses = new Set(["pending", "awaiting", "awaiting_approval", "pending_approval"]);
 
-  function normalise(raw) {
-    if (!raw) return null;
-    const email = clean(raw.email || raw.user_email || "");
-    const id = raw.id || raw.user_id || raw.auth_user_id || email;
+  function normalise(row) {
+    if (!row) return null;
+    const email = clean(row.email || row.user_email || "");
+    const id = row.id || row.user_id || row.auth_user_id || email;
     if (!id && !email) return null;
-    const name = raw.name || raw.full_name || raw.fullName || email || "Member";
     return {
-      ...raw,
+      ...row,
       id,
-      user_id: raw.user_id || raw.auth_user_id || raw.id || id,
+      user_id: row.user_id || row.auth_user_id || row.id || id,
       email,
-      name,
-      role: raw.role || raw.account_type || raw.accountType || "client",
-      profilePhotoUrl: raw.profilePhotoUrl ?? raw.profile_photo_url ?? "",
-      profilePhotoPendingUrl: raw.profilePhotoPendingUrl ?? raw.profile_photo_pending_url ?? "",
-      profilePhotoStatus: raw.profilePhotoStatus ?? raw.profile_photo_status ?? "",
-      profilePhotoSubmittedAt: raw.profilePhotoSubmittedAt ?? raw.profile_photo_submitted_at ?? "",
-      profilePhotoReviewedAt: raw.profilePhotoReviewedAt ?? raw.profile_photo_reviewed_at ?? ""
+      name: row.name || row.full_name || row.fullName || email || "Member",
+      role: row.role || row.account_type || row.accountType || "client",
+      profilePhotoUrl: row.profilePhotoUrl ?? row.profile_photo_url ?? "",
+      profilePhotoPendingUrl: row.profilePhotoPendingUrl ?? row.profile_photo_pending_url ?? "",
+      profilePhotoStatus: row.profilePhotoStatus ?? row.profile_photo_status ?? "none",
+      profilePhotoSubmittedAt: row.profilePhotoSubmittedAt ?? row.profile_photo_submitted_at ?? "",
+      profilePhotoReviewedAt: row.profilePhotoReviewedAt ?? row.profile_photo_reviewed_at ?? ""
     };
   }
 
-  const profileKey = (profile) => clean(profile?.email || profile?.user_id || profile?.id || "");
-  const sameProfile = (a, b) => profileKey(a) === profileKey(b) || (a?.user_id && a.user_id === b?.user_id) || (a?.id && a.id === b?.id);
+  const keyFor = (profile) => clean(profile?.email || profile?.user_id || profile?.id || "");
+  const same = (a, b) => keyFor(a) === keyFor(b) || (a?.user_id && a.user_id === b?.user_id) || (a?.id && a.id === b?.id);
 
-  function mergeProfile(profile, serverFresh = false) {
-    const app = appState();
-    if (!app || !profile) return;
+  function mergeProfile(row) {
+    const profile = normalise(row);
+    if (!profile) return null;
+    const app = stateRef();
     app.users = Array.isArray(app.users) ? app.users : [];
     app.members = Array.isArray(app.members) ? app.members : [];
     [app.users, app.members].forEach((list) => {
-      const index = list.findIndex((item) => sameProfile(item, profile));
-      if (index >= 0) {
-        list[index] = serverFresh ? { ...list[index], ...profile } : { ...list[index], ...profile };
-      } else {
-        list.push(profile);
-      }
+      const index = list.findIndex((item) => same(item, profile));
+      if (index >= 0) list[index] = { ...list[index], ...profile };
+      else list.push(profile);
     });
-    if (app.currentUser && sameProfile(app.currentUser, profile)) app.currentUser = { ...app.currentUser, ...profile };
+    if (app.currentUser && same(app.currentUser, profile)) app.currentUser = { ...app.currentUser, ...profile };
     try { if (typeof saveState === "function") saveState(); } catch (_) {}
-  }
-
-  function allProfiles() {
-    const map = new Map();
-    const add = (raw) => {
-      const profile = normalise(raw);
-      if (!profile) return;
-      const key = profileKey(profile);
-      if (!key) return;
-      map.set(key, { ...(map.get(key) || {}), ...profile });
-    };
-    const app = appState();
-    (app.users || []).forEach(add);
-    (app.members || []).forEach(add);
-    try { if (Array.isArray(secureAdminProfiles)) secureAdminProfiles.forEach((row) => add(typeof secureProfileUser === "function" ? secureProfileUser(row) : row)); } catch (_) {}
-    serverProfiles.forEach(add);
-    const me = current();
-    if (me) add(me);
-    return Array.from(map.values());
+    return profile;
   }
 
   function pendingPhotos() {
-    const source = serverProfiles.length ? serverProfiles : allProfiles();
+    const app = stateRef();
+    const source = serverProfiles.length ? serverProfiles : [...(app.users || []), ...(app.members || [])].map(normalise).filter(Boolean);
     const map = new Map();
     source.forEach((profile) => {
-      const p = normalise(profile);
-      const pendingUrl = p?.profilePhotoPendingUrl || "";
-      const status = String(p?.profilePhotoStatus || "").toLowerCase();
-      if (pendingUrl && ["pending", "pending_approval", "awaiting", "awaiting_approval"].includes(status)) map.set(profileKey(p), p);
+      const pending = profile?.profilePhotoPendingUrl || profile?.profile_photo_pending_url || "";
+      const status = String(profile?.profilePhotoStatus || profile?.profile_photo_status || "").toLowerCase();
+      if (pending && pendingStatuses.has(status)) map.set(keyFor(profile), normalise(profile));
     });
     return Array.from(map.values());
   }
 
-  async function refreshProfiles({ render = false } = {}) {
-    const pb = backend();
-    if (!pb?.from) return false;
-    try {
-      const { data, error } = await pb.from("profiles").select("*").order("full_name", { ascending: true });
-      if (error) throw error;
-      serverProfiles = Array.isArray(data) ? data.map(normalise).filter(Boolean) : [];
-      serverProfiles.forEach((profile) => mergeProfile(profile, true));
-      try { if (typeof renderNotifications === "function") renderNotifications(); } catch (_) {}
-      if (render) {
-        try { if (typeof renderView === "function") renderView(appState().activeView || "admin"); } catch (_) {}
-      }
-      return true;
-    } catch (error) {
-      console.warn(`[${VERSION}] live profile refresh failed`, error);
-      return false;
-    }
-  }
-
-  async function updatePhotoRecord(profile, action) {
-    const pb = backend();
-    if (!pb?.from) throw new Error("Secure profile backend is unavailable.");
-    const pending = profile.profilePhotoPendingUrl || "";
-    if (!pending) throw new Error("No pending photo is available for this member.");
-    const reviewedAt = new Date().toISOString();
-    const changes = action === "approve"
-      ? { profile_photo_url: pending, profile_photo_pending_url: null, profile_photo_status: "approved", profile_photo_reviewed_at: reviewedAt }
-      : { profile_photo_pending_url: null, profile_photo_status: profile.profilePhotoUrl ? "approved" : "rejected", profile_photo_reviewed_at: reviewedAt };
-    let query = pb.from("profiles").update(changes);
-    query = profile.user_id || profile.id ? query.eq("user_id", profile.user_id || profile.id) : query.eq("email", profile.email);
-    const { error } = await query;
-    if (error) throw error;
-    mergeProfile(normalise({ ...profile, ...changes }), true);
-    await refreshProfiles({ render: false });
-  }
-
-  function exposePendingPhotoSource() {
+  function exposePending() {
     try {
       window.pendingProfilePhotos = pendingPhotos;
       if (typeof pendingProfilePhotos !== "undefined") pendingProfilePhotos = pendingPhotos;
     } catch (_) {}
   }
 
-  function installPhotoBridge() {
-    exposePendingPhotoSource();
-    document.addEventListener("click", async (event) => {
-      const button = event.target.closest?.(".profile-photo-action");
-      if (!button) return;
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      const profile = pendingPhotos().find((item) => clean(item.email) === clean(button.dataset.email || "") || String(item.user_id || item.id || "") === String(button.dataset.userId || ""));
-      if (!profile) return toast("Photo request not found.", "Refresh registrations and try again.", true);
-      button.disabled = true;
-      try {
-        await updatePhotoRecord(profile, button.dataset.photoAction === "approve" ? "approve" : "reject");
-        exposePendingPhotoSource();
-        toast(button.dataset.photoAction === "approve" ? "Profile photo approved." : "Profile photo rejected.", "The member record has been updated.");
-        try { if (typeof renderNotifications === "function") renderNotifications(); } catch (_) {}
-        try { if (typeof renderView === "function") renderView("admin"); } catch (_) {}
-      } catch (error) {
-        console.error(`[${VERSION}] photo approval failed`, error);
-        toast("Photo approval failed.", error.message || "Please try again.", true);
-      } finally {
-        button.disabled = false;
+  async function refreshProfiles(render = false) {
+    const pb = backend();
+    if (!pb?.from) return false;
+    try {
+      const { data, error } = await pb.from("profiles").select("*").order("full_name", { ascending: true });
+      if (error) throw error;
+      serverProfiles = Array.isArray(data) ? data.map(normalise).filter(Boolean) : [];
+      serverProfiles.forEach(mergeProfile);
+      exposePending();
+      try { if (typeof renderNotifications === "function") renderNotifications(); } catch (_) {}
+      if (render) {
+        try { if (typeof renderView === "function") renderView(stateRef().activeView || "admin"); } catch (_) {}
       }
-    }, true);
+      return true;
+    } catch (error) {
+      console.warn(`[${VERSION}] profile refresh failed`, error);
+      return false;
+    }
+  }
 
+  function missingRpc(error) {
+    return /function|schema cache|not found|does not exist/i.test(error?.message || "");
+  }
+
+  async function submitPhotoForApproval(dataUrl) {
+    const pb = backend();
+    if (!pb?.rpc) throw new Error("Profile photo approval backend is unavailable.");
+    const { data, error } = await pb.rpc("submit_profile_photo_for_approval", { p_photo_data: dataUrl });
+    if (error) throw error;
+    mergeProfile(data);
+    await refreshProfiles(false);
+  }
+
+  async function moderatePhoto(profile, action) {
+    const pb = backend();
+    if (!pb?.rpc) throw new Error("Profile photo approval backend is unavailable.");
+    const target = profile?.user_id || profile?.id;
+    if (!target) throw new Error("Selected member is missing a user ID.");
+    const { data, error } = await pb.rpc("admin_moderate_profile_photo", {
+      p_target_user: target,
+      p_action: action,
+      p_reason: ""
+    });
+    if (error) throw error;
+    mergeProfile(data);
+    await refreshProfiles(false);
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("That photo could not be read."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function installPhotoHandlers() {
+    exposePending();
     document.addEventListener("change", async (event) => {
       const input = event.target;
       if (input?.id !== "profilePhotoInput") return;
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
+
       const file = input.files?.[0];
-      const user = current();
-      const pb = backend();
-      if (!file || !user?.id || !pb?.from) return;
-      if (!/^image\/(png|jpeg|webp)$/i.test(file.type)) return toast("Photo not accepted.", "Please upload a PNG, JPG or WebP image.", true);
-      if (file.size > 2.5 * 1024 * 1024) return toast("Photo is too large.", "Please upload an image under 2.5MB.", true);
+      if (!file) return;
+      if (!/^image\/(png|jpeg|webp)$/i.test(file.type)) {
+        input.value = "";
+        return notify("Photo not accepted.", "Please upload a PNG, JPG or WebP image.", true);
+      }
+      if (file.size > 2.5 * 1024 * 1024) {
+        input.value = "";
+        return notify("Photo is too large.", "Please upload an image under 2.5MB.", true);
+      }
+
+      input.disabled = true;
       try {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result || ""));
-          reader.onerror = () => reject(new Error("That photo could not be read."));
-          reader.readAsDataURL(file);
-        });
-        const changes = { profile_photo_pending_url: dataUrl, profile_photo_status: "pending", profile_photo_submitted_at: new Date().toISOString() };
-        const { error } = await pb.from("profiles").update(changes).eq("user_id", user.id);
-        if (error) throw error;
-        mergeProfile(normalise({ ...user, ...changes }), true);
-        await refreshProfiles({ render: false });
-        exposePendingPhotoSource();
-        toast("Profile photo submitted.", "Your profile photo has been submitted for approval.");
+        await submitPhotoForApproval(await readFileAsDataUrl(file));
+        notify("Profile photo submitted.", "Your profile photo has been submitted for approval.");
         try { if (typeof renderNotifications === "function") renderNotifications(); } catch (_) {}
         try { if (typeof renderView === "function") renderView("profile"); } catch (_) {}
       } catch (error) {
+        console.error(`[${VERSION}] profile photo submit failed`, error);
+        notify(
+          missingRpc(error) ? "Photo approval setup is missing." : "Photo upload was not saved for approval.",
+          missingRpc(error) ? "Run supabase-profile-photo-approvals.sql once in Supabase, then try again." : (error.message || "Please try again."),
+          true
+        );
+      } finally {
+        input.disabled = false;
         input.value = "";
-        console.error(`[${VERSION}] photo upload failed`, error);
-        toast("Photo upload was not saved for approval.", "The live approval queue could not be updated. Please try again.", true);
+      }
+    }, true);
+
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest?.(".profile-photo-action");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      const email = clean(button.dataset.email || "");
+      const userId = String(button.dataset.userId || "");
+      const profile = pendingPhotos().find((item) => clean(item.email) === email || String(item.user_id || item.id || "") === userId);
+      if (!profile) return notify("Photo request not found.", "Refresh registrations and try again.", true);
+
+      const action = button.dataset.photoAction === "reject" ? "reject" : "approve";
+      button.disabled = true;
+      try {
+        await moderatePhoto(profile, action);
+        notify(action === "approve" ? "Profile photo approved." : "Profile photo rejected.", "The approval queue has been updated.");
+        try { if (typeof renderNotifications === "function") renderNotifications(); } catch (_) {}
+        try { if (typeof renderView === "function") renderView("admin"); } catch (_) {}
+      } catch (error) {
+        console.error(`[${VERSION}] profile photo moderation failed`, error);
+        notify(
+          missingRpc(error) ? "Photo approval setup is missing." : "Photo approval failed.",
+          missingRpc(error) ? "Run supabase-profile-photo-approvals.sql once in Supabase, then try again." : (error.message || "Please try again."),
+          true
+        );
+      } finally {
+        button.disabled = false;
       }
     }, true);
   }
-
-  let activeMenu = null;
-  let activeSource = null;
 
   function closeAccountMenu() {
     if (activeMenu) activeMenu.remove();
@@ -207,19 +218,25 @@
     $$(".jp-account-menu-source[aria-expanded='true'],[data-account-more][aria-expanded='true']").forEach((button) => button.setAttribute("aria-expanded", "false"));
   }
 
-  function sourceActions(source) {
+  function sourceContext(source) {
     const row = source.closest("[data-account-row],.account-management-card-final,.admin-member-row,.admin-stable-row,.feed-item");
     const actions = row ? $$(".admin-action", row).filter((button) => button.dataset.adminAction) : [];
     const profileButton = row ? $(".view-profile-button,[data-profile-member-id],[data-profile-member-email],[data-view-member]", row) : null;
     return { row, actions, profileButton };
   }
 
-  function positionPopover(menu, source) {
+  function positionMenu(menu, source) {
     const rect = source.getBoundingClientRect();
     const margin = 10;
     const width = Math.min(288, window.innerWidth - margin * 2);
     const maxHeight = Math.max(150, window.innerHeight - margin * 2 - 12);
-    Object.assign(menu.style, { width: `${width}px`, maxHeight: `${maxHeight}px`, left: `${Math.max(margin, Math.min(window.innerWidth - width - margin, rect.right - width))}px`, top: "0px", visibility: "hidden" });
+    Object.assign(menu.style, {
+      width: `${width}px`,
+      maxHeight: `${maxHeight}px`,
+      left: `${Math.max(margin, Math.min(window.innerWidth - width - margin, rect.right - width))}px`,
+      top: "0px",
+      visibility: "hidden"
+    });
     document.body.appendChild(menu);
     const height = Math.min(menu.offsetHeight || 240, maxHeight);
     const below = rect.bottom + 8;
@@ -229,7 +246,7 @@
     menu.style.visibility = "visible";
   }
 
-  function installAccountMenuButtons() {
+  function compactAccountMenus() {
     $$(".admin-actions,.amf-actions,.admin-stable-actions").forEach((actions) => {
       if (actions.closest(".profile-photo-admin-card") || actions.classList.contains("profile-photo-actions")) return;
       const buttons = $$(".admin-action", actions).filter((button) => button.dataset.adminAction);
@@ -252,15 +269,15 @@
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        const source = activeSource;
-        const { actions, profileButton } = source ? sourceActions(source) : { actions: [], profileButton: null };
+        const ctx = activeSource ? sourceContext(activeSource) : { actions: [], profileButton: null };
         const action = item.dataset.adminAction || "";
-        const sourceButton = actions.find((button) => button.dataset.adminAction === action && clean(button.dataset.email || "") === clean(item.dataset.email || ""));
+        const sourceButton = ctx.actions.find((button) => button.dataset.adminAction === action && clean(button.dataset.email || "") === clean(item.dataset.email || ""));
         closeAccountMenu();
-        if (action === "view-profile" && profileButton) profileButton.click();
+        if (action === "view-profile" && ctx.profileButton) ctx.profileButton.click();
         else sourceButton?.click();
         return;
       }
+
       const source = event.target.closest?.(".jp-account-menu-source,[data-account-more]");
       if (!source) {
         if (!event.target.closest?.(".jp-account-actions-popover")) closeAccountMenu();
@@ -269,16 +286,15 @@
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      const { actions, profileButton } = sourceActions(source);
-      if (!actions.length && !profileButton) return;
+
+      const ctx = sourceContext(source);
+      if (!ctx.actions.length && !ctx.profileButton) return;
       closeAccountMenu();
-      source.setAttribute("aria-expanded", "true");
       activeSource = source;
+      source.setAttribute("aria-expanded", "true");
       const items = [];
-      if (profileButton) {
-        items.push(`<button type="button" role="menuitem" class="jp-account-popover-action" data-admin-action="view-profile" data-email="${esc(profileButton.dataset.profileMemberEmail || "")}">View profile</button>`);
-      }
-      actions.forEach((button) => {
+      if (ctx.profileButton) items.push(`<button type="button" role="menuitem" class="jp-account-popover-action" data-admin-action="view-profile" data-email="${esc(ctx.profileButton.dataset.profileMemberEmail || "")}">View profile</button>`);
+      ctx.actions.forEach((button) => {
         const action = button.dataset.adminAction || "";
         const danger = button.classList.contains("danger-action") || ["remove", "suspend"].includes(action);
         const primary = button.classList.contains("primary-button") || ["upgrade", "verify", "restore"].includes(action);
@@ -290,7 +306,7 @@
       menu.setAttribute("role", "menu");
       menu.innerHTML = items.join("");
       activeMenu = menu;
-      positionPopover(menu, source);
+      positionMenu(menu, source);
     }, true);
     document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeAccountMenu(); }, true);
     window.addEventListener("scroll", closeAccountMenu, true);
@@ -298,9 +314,9 @@
   }
 
   function addStyles() {
-    if ($("#jpAdminAccountPopoverPhotoBridgeStyles")) return;
+    if ($("#jpAdminAccountPopoverPhotoRpcStyles")) return;
     const style = document.createElement("style");
-    style.id = "jpAdminAccountPopoverPhotoBridgeStyles";
+    style.id = "jpAdminAccountPopoverPhotoRpcStyles";
     style.textContent = `
       .jp-inline-admin-action-source{display:none!important}
       .admin-actions:has(.jp-account-menu-source),.amf-actions:has(.jp-account-menu-source),.admin-stable-actions:has(.jp-account-menu-source){display:flex!important;justify-content:flex-end!important;gap:0!important;overflow:visible!important;min-height:0!important}
@@ -316,12 +332,12 @@
 
   function start() {
     addStyles();
-    installPhotoBridge();
+    installPhotoHandlers();
     installAccountPopover();
-    installAccountMenuButtons();
-    refreshProfiles({ render: false }).then(() => exposePendingPhotoSource());
-    new MutationObserver(() => { installAccountMenuButtons(); exposePendingPhotoSource(); }).observe(document.body, { childList: true, subtree: true });
-    window.jpAdminAccountPopoverPhotoBridge = { version: VERSION, refreshProfiles, pendingPhotos, closeAccountMenu };
+    compactAccountMenus();
+    refreshProfiles(false);
+    new MutationObserver(() => { compactAccountMenus(); exposePending(); }).observe(document.body, { childList: true, subtree: true });
+    window.jpProfilePhotoRpcWorkflow = { version: VERSION, refreshProfiles, pendingPhotos, submitPhotoForApproval, moderatePhoto };
     console.info(`[${VERSION}] installed`);
   }
 
