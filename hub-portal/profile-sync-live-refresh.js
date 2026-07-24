@@ -1,9 +1,10 @@
 (() => {
-  const VERSION = "profile-sync-live-refresh-20260723a";
+  const VERSION = "profile-sync-live-refresh-20260723b";
   const ROLE_ORDER = { admin: 0, hub: 1, client: 2 };
   let syncing = false;
   let lastSync = 0;
   let directoryTimer = null;
+  let identityTimer = null;
 
   function getPortalBackend() {
     try {
@@ -132,21 +133,31 @@
     return `<span class="${cls}" aria-hidden="true">${initials}</span>`;
   }
 
-  function updateCurrentIdentity() {
+  function updateAvatarTarget(target, profile, extraClass) {
+    if (!target || !profile) return;
+    const key = [profile.email || profile.id || "", profile.profilePhotoUrl || "", roleClass(profile), extraClass].join("|");
+    if (target.dataset.syncAvatarKey === key) return;
+    const replacement = document.createElement("span");
+    replacement.innerHTML = avatarMarkup(profile, extraClass);
+    const avatar = replacement.firstElementChild;
+    if (!avatar) return;
+    target.dataset.syncAvatarKey = key;
+    target.className = avatar.className;
+    target.innerHTML = avatar.innerHTML;
+    if (avatar.querySelector("img")) target.setAttribute("aria-label", profile.fullName || profile.name || "Profile");
+  }
+
+  function updateCurrentIdentityNow() {
     const appState = getAppState();
     const current = appState?.currentUser;
     if (!current) return;
-    const selectors = ["#memberInitials", "#profileMenuAvatar"];
-    selectors.forEach((selector) => {
-      const target = document.querySelector(selector);
-      if (!target) return;
-      const replacement = document.createElement("span");
-      replacement.innerHTML = avatarMarkup(current, target.id === "memberInitials" ? "role-avatar--header" : "role-avatar--menu");
-      const avatar = replacement.firstElementChild;
-      target.className = avatar.className;
-      target.innerHTML = avatar.innerHTML;
-      if (avatar.querySelector("img")) target.setAttribute("aria-label", current.fullName || current.name || "Profile");
-    });
+    updateAvatarTarget(document.querySelector("#memberInitials"), current, "role-avatar--header");
+    updateAvatarTarget(document.querySelector("#profileMenuAvatar"), current, "role-avatar--menu");
+  }
+
+  function updateCurrentIdentity() {
+    clearTimeout(identityTimer);
+    identityTimer = setTimeout(updateCurrentIdentityNow, 50);
   }
 
   async function refreshSharedProfiles(force = false) {
@@ -200,12 +211,15 @@
       if (!search) return true;
       return [profile.fullName, profile.name, profile.email, profile.company, profile.engineeringRole, profile.location].join(" ").toLowerCase().includes(search);
     });
-    target.innerHTML = profiles.length ? profiles.map(directoryCard).join("") : `<div class="empty-state"><strong>No members found</strong><p>Try clearing the search or changing the filter.</p></div>`;
+    const html = profiles.length ? profiles.map(directoryCard).join("") : `<div class="empty-state"><strong>No members found</strong><p>Try clearing the search or changing the filter.</p></div>`;
+    if (target.dataset.syncDirectoryHtml === html) return;
+    target.dataset.syncDirectoryHtml = html;
+    target.innerHTML = html;
   }
 
   function renderDirectorySoon() {
     clearTimeout(directoryTimer);
-    directoryTimer = setTimeout(renderDirectory, 80);
+    directoryTimer = setTimeout(renderDirectory, 120);
   }
 
   function installDirectoryPatch() {
@@ -256,7 +270,7 @@
       updateCurrentIdentity();
       if (document.querySelector("#directoryResults")) renderDirectorySoon();
     });
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
     window.jpProfileSyncLiveRefresh = { version: VERSION, refresh: refreshSharedProfiles, profiles: sharedProfiles };
   }
 
