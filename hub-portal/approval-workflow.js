@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "approval-workflow-20260725a";
+  const VERSION = "approval-workflow-20260725b";
   if (window.__jpApprovalWorkflow === VERSION) return;
   window.__jpApprovalWorkflow = VERSION;
 
@@ -315,6 +315,60 @@
     const fallbackView = text.includes("photo") || text.includes("approval") || text.includes("registration") ? "admin" : "notifications";
     const view = shortcut.dataset.viewLink || shortcut.dataset.view || fallbackView;
     safeRenderView(view, shortcut.dataset.targetId || (view === "admin" ? "adminProfilePhotos" : ""));
+  }, true);
+
+  window.addEventListener("click", (event) => {
+    const target = event.target;
+    const topBell = target.closest?.("#topNotificationBell");
+    const closeButton = target.closest?.("#closeNotifications");
+    const shortcut = target.closest?.("#notificationPopover .notification-shortcut");
+    if (!topBell && !closeButton && !shortcut) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    if (topBell) {
+      const willOpen = !$("#notificationPopover")?.classList.contains("open");
+      closeTransientUi();
+      try { if (typeof renderNotifications === "function") renderNotifications(); } catch (error) { console.warn(`[${VERSION}] notification render failed`, error); }
+      const popover = $("#notificationPopover");
+      const bell = $("#topNotificationBell");
+      if (popover) {
+        popover.classList.toggle("open", willOpen);
+        popover.setAttribute("aria-hidden", willOpen ? "false" : "true");
+      }
+      bell?.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      return;
+    }
+
+    if (closeButton) {
+      $("#notificationPopover")?.classList.remove("open");
+      $("#notificationPopover")?.setAttribute("aria-hidden", "true");
+      $("#topNotificationBell")?.setAttribute("aria-expanded", "false");
+      closeTransientUi();
+      return;
+    }
+
+    if (shortcut) {
+      const postId = shortcut.dataset.postId || "";
+      const replyId = shortcut.dataset.replyId || "";
+      const targetId = shortcut.dataset.targetId || "";
+      if (postId && typeof openBoardNotification === "function") {
+        closeTransientUi();
+        try { openBoardNotification(postId, replyId); }
+        catch (error) {
+          console.error(`[${VERSION}] board notification failed`, error);
+          safeRenderView("boards");
+        } finally {
+          window.setTimeout(closeTransientUi, 50);
+        }
+        return;
+      }
+      const text = String(shortcut.textContent || "").toLowerCase();
+      const fallbackView = text.includes("photo") || text.includes("approval") || text.includes("registration") ? "admin" : "notifications";
+      safeRenderView(shortcut.dataset.viewLink || fallbackView, targetId || (fallbackView === "admin" ? "adminProfilePhotos" : ""));
+    }
   }, true);
 
   function addStyles() {
