@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260725-approval-freeze-fix-1";
+const JP_SW_VERSION = "jp-sw-20260725-notification-dedupe-1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -14,6 +14,20 @@ self.addEventListener("activate", (event) => {
   })());
 });
 
+function stableNotificationTag(payload = {}) {
+  const raw = [
+    payload.id,
+    payload.notification_id,
+    payload.event_key,
+    payload.submission_id,
+    payload.url,
+    payload.view,
+    payload.title,
+    payload.body || payload.message
+  ].filter(Boolean).join("|") || "jp-admin-notification";
+  return "jp-" + raw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 72);
+}
+
 function notificationPayload(event) {
   const jpIcon = "/assets/jp-app-icon-512.png?v=" + JP_SW_VERSION;
   const jpBadge = "/assets/jp-notification-badge.svg?v=" + JP_SW_VERSION;
@@ -27,8 +41,8 @@ function notificationPayload(event) {
       icon: payload.icon || jpIcon,
       image: payload.image || jpIcon,
       badge: payload.badge || jpBadge,
-      tag: payload.tag || `jp-admin-${view}-${Date.now()}`,
-      renotify: true,
+      tag: payload.tag || stableNotificationTag({ ...payload, view, url, body }),
+      renotify: false,
       requireInteraction: true,
       silent: false,
       timestamp: Date.now(),
