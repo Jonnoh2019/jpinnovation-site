@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260722-compact-menu-popouts-1";
+const JP_SW_VERSION = "jp-sw-20260725-approval-freeze-fix-1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
