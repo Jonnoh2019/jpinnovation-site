@@ -398,3 +398,186 @@
   window.jpApprovalWorkflow = { version: VERSION, closeTransientUi, refreshProfiles, refreshPhotoApprovals, pendingPhotos, submitPhotoForApproval, moderatePhoto };
   console.info(`[${VERSION}] installed`);
 })();
+(() => {
+  "use strict";
+
+  const VERSION = "notification-freeze-dedupe-final-20260725a";
+  if (window.__jpNotificationFreezeDedupeFinal === VERSION) return;
+  window.__jpNotificationFreezeDedupeFinal = VERSION;
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const clean = (value = "") => String(value || "").trim();
+  const seen = new Map();
+  let navigating = false;
+
+  function clearUiLocks() {
+    const body = document.body;
+    const root = document.documentElement;
+    ["overflow", "pointerEvents", "touchAction"].forEach((prop) => {
+      body.style[prop] = "";
+      root.style[prop] = "";
+    });
+    [
+      "member-profile-menu-open",
+      "mobile-dashboard-menu-open",
+      "jp-menu-hard-lock",
+      "jp-profile-menu-open",
+      "jp-profile-nav-lock",
+      "jp-profile-regression-lock",
+      "profile-menu-open"
+    ].forEach((name) => body.classList.remove(name));
+
+    $("#notificationPopover")?.classList.remove("open");
+    $("#notificationPopover")?.setAttribute("aria-hidden", "true");
+    $("#topNotificationBell")?.setAttribute("aria-expanded", "false");
+    $("#memberProfileMenu")?.classList.remove("open", "is-opening", "is-closing");
+    $("#memberProfileMenu")?.setAttribute("aria-hidden", "true");
+    $("#memberProfileButton")?.setAttribute("aria-expanded", "false");
+    $("#dashboardSidebar")?.classList.remove("open");
+    $("#mobileMenuBackdrop")?.classList.remove("open");
+    $("#mobileMenuButton")?.setAttribute("aria-expanded", "false");
+    document.querySelectorAll(".profile-menu-backdrop,.member-profile-backdrop,.notification-backdrop,.jp-account-actions-popover,.jp-stale-overlay").forEach((node) => node.remove());
+  }
+
+  function toast(title, detail = "", error = false) {
+    const fn = error ? (window.showErrorToast || window.showSuccessToast) : window.showSuccessToast;
+    if (typeof fn === "function") fn(title, detail);
+  }
+
+  function notificationKey(item = {}) {
+    return [
+      clean(item.id || item.notification_id || item.event_key || item.targetId || item.target_id || ""),
+      clean(item.title || ""),
+      clean(item.detail || item.body || ""),
+      clean(item.view || item.target_view || "")
+    ].filter(Boolean).join("|").toLowerCase();
+  }
+
+  function remember(key, ttl = 120000) {
+    if (!key) return false;
+    const now = Date.now();
+    for (const [stored, time] of seen) {
+      if (now - time > ttl) seen.delete(stored);
+    }
+    const storageKey = "jpShownPhoneNotification:" + key;
+    try {
+      const storedTime = Number(sessionStorage.getItem(storageKey) || 0);
+      if (storedTime && now - storedTime < ttl) return false;
+      sessionStorage.setItem(storageKey, String(now));
+    } catch (_) {}
+    if (seen.has(key) && now - seen.get(key) < ttl) return false;
+    seen.set(key, now);
+    return true;
+  }
+
+  async function showOnePhoneNotification(item = {}) {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+    if (Notification.permission !== "granted") return;
+    const key = notificationKey(item);
+    if (!remember(key)) return;
+    const registration = typeof registerNotificationServiceWorker === "function"
+      ? await registerNotificationServiceWorker()
+      : await navigator.serviceWorker.ready;
+    const view = clean(item.view || item.target_view || "notifications") || "notifications";
+    const title = clean(item.title || "JP Innovation");
+    const detail = clean(item.detail || item.body || "Open JP Innovation to view it.");
+    await registration.showNotification(title.startsWith("JP Innovation") ? title : `JP Innovation: ${title}`, {
+      body: detail,
+      icon: "/assets/jp-innovation-logo.png?v=" + VERSION,
+      image: "/assets/jp-innovation-logo.png?v=" + VERSION,
+      badge: "/assets/jp-notification-badge.svg?v=" + VERSION,
+      tag: "jp-" + key.replace(/[^a-z0-9]+/g, "-").slice(0, 56),
+      renotify: false,
+      requireInteraction: true,
+      silent: false,
+      vibrate: [220, 90, 220],
+      actions: [{ action: "open", title: "Open JP Hub" }],
+      priority: "max",
+      urgency: "high",
+      importance: "max",
+      channelId: "jp-admin-alerts",
+      visibility: "public",
+      timestamp: Date.now(),
+      data: { url: `/hub-portal/index.html?entry=hub&view=${encodeURIComponent(view)}` }
+    });
+  }
+
+  window.maybeShowLocalPhoneNotification = async function maybeShowLocalPhoneNotificationDeduped(items = []) {
+    const list = Array.isArray(items) ? items : [];
+    const item = list.find((entry) => entry?.isNew) || list[0];
+    if (!item) return;
+    try {
+      await showOnePhoneNotification(item);
+    } catch (error) {
+      console.debug(`[${VERSION}] phone notification skipped`, error);
+    }
+  };
+
+  function openNotificationShortcut(shortcut) {
+    if (!shortcut || navigating) return;
+    navigating = true;
+    clearUiLocks();
+    const postId = shortcut.dataset.postId || "";
+    const replyId = shortcut.dataset.replyId || "";
+    const targetId = shortcut.dataset.targetId || "";
+    const text = clean(shortcut.textContent).toLowerCase();
+    const fallbackView = text.includes("photo") || text.includes("approval") || text.includes("registration") ? "admin" : "notifications";
+    const view = shortcut.dataset.viewLink || shortcut.dataset.view || fallbackView;
+    window.setTimeout(() => {
+      try {
+        if (postId && typeof openBoardNotification === "function") {
+          openBoardNotification(postId, replyId);
+        } else if (typeof renderView === "function") {
+          renderView(view);
+          if (targetId) {
+            requestAnimationFrame(() => {
+              const target = document.getElementById(targetId);
+              if (target?.matches?.("details")) target.open = true;
+              target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`[${VERSION}] notification click failed`, error);
+        toast("That notification could not be opened.", "Please try again.", true);
+      } finally {
+        clearUiLocks();
+        window.setTimeout(() => { navigating = false; }, 150);
+      }
+    }, 0);
+  }
+
+  window.addEventListener("click", (event) => {
+    const target = event.target;
+    const bell = target.closest?.("#topNotificationBell");
+    const close = target.closest?.("#closeNotifications");
+    const shortcut = target.closest?.("#notificationPopover .notification-shortcut");
+    if (!bell && !close && !shortcut) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    if (bell) {
+      const willOpen = !$("#notificationPopover")?.classList.contains("open");
+      clearUiLocks();
+      try { if (typeof renderNotifications === "function") renderNotifications(); } catch (error) { console.warn(`[${VERSION}] render notifications failed`, error); }
+      $("#notificationPopover")?.classList.toggle("open", willOpen);
+      $("#notificationPopover")?.setAttribute("aria-hidden", willOpen ? "false" : "true");
+      $("#topNotificationBell")?.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      return;
+    }
+    if (close) {
+      clearUiLocks();
+      return;
+    }
+    openNotificationShortcut(shortcut);
+  }, true);
+
+  window.addEventListener("pageshow", clearUiLocks);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) clearUiLocks();
+  });
+
+  console.info(`[${VERSION}] installed`);
+})();
+
