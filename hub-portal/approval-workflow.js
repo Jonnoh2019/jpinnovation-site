@@ -1,14 +1,16 @@
 (() => {
   "use strict";
 
-  const VERSION = "approval-workflow-20260724a";
+  const VERSION = "approval-workflow-20260725a";
   if (window.__jpApprovalWorkflow === VERSION) return;
   window.__jpApprovalWorkflow = VERSION;
 
   const clean = (value = "") => String(value || "").trim().toLowerCase();
+  const $ = (selector, root = document) => root.querySelector(selector);
   const pendingStatuses = new Set(["pending", "awaiting", "awaiting_approval", "pending_approval"]);
   let serverProfiles = [];
   let serverPhotoApprovals = [];
+  let busyPhotoAction = false;
 
   const appState = () => {
     try { if (typeof state !== "undefined") return state; } catch (_) {}
@@ -25,6 +27,66 @@
     if (typeof fn === "function") return fn(title, detail);
     console[isError ? "warn" : "log"](`[${VERSION}] ${title}`, detail);
   };
+
+  const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+  const withTimeout = (promise, ms, label) => Promise.race([
+    promise,
+    sleep(ms).then(() => { throw new Error(label || "The request timed out. Please try again."); })
+  ]);
+
+  function closeTransientUi() {
+    const body = document.body;
+    const root = document.documentElement;
+    ["overflow", "pointerEvents", "touchAction"].forEach((prop) => {
+      body.style[prop] = "";
+      root.style[prop] = "";
+    });
+    [
+      "member-profile-menu-open",
+      "mobile-dashboard-menu-open",
+      "jp-menu-hard-lock",
+      "jp-profile-menu-open",
+      "jp-profile-nav-lock",
+      "jp-profile-regression-lock",
+      "profile-menu-open"
+    ].forEach((name) => body.classList.remove(name));
+
+    $("#appShell")?.classList.remove("mobile-menu-open");
+    $("#dashboardSidebar")?.classList.remove("open");
+    $("#mobileMenuBackdrop")?.classList.remove("open");
+    $("#mobileMenuButton")?.setAttribute("aria-expanded", "false");
+
+    $("#memberProfileMenu")?.classList.remove("open", "is-opening", "is-closing");
+    $("#memberProfileMenu")?.setAttribute("aria-hidden", "true");
+    $("#memberProfileButton")?.setAttribute("aria-expanded", "false");
+
+    $("#notificationPopover")?.classList.remove("open");
+    $("#notificationPopover")?.setAttribute("aria-hidden", "true");
+    $("#topNotificationBell")?.setAttribute("aria-expanded", "false");
+
+    document.querySelectorAll(".jp-account-actions-popover,.profile-menu-backdrop,.member-profile-backdrop,.notification-backdrop,.jp-stale-overlay").forEach((node) => node.remove());
+  }
+
+  function safeRenderView(view, targetId = "") {
+    closeTransientUi();
+    try {
+      if (typeof renderView === "function") renderView(view || "notifications");
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      if (targetId) {
+        window.requestAnimationFrame(() => {
+          const target = document.getElementById(targetId);
+          if (!target) return;
+          if (target.matches("details")) target.open = true;
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+    } catch (error) {
+      console.error(`[${VERSION}] navigation failed`, error);
+      toast("That section could not be opened.", "Please try again.", true);
+    } finally {
+      window.setTimeout(closeTransientUi, 80);
+    }
+  }
 
   function normalise(row) {
     if (!row) return null;
@@ -116,9 +178,7 @@
     }
     await refreshPhotoApprovals();
     try { if (typeof renderNotifications === "function") renderNotifications(); } catch (_) {}
-    if (render) {
-      try { if (typeof renderView === "function") renderView(appState().activeView || "admin"); } catch (_) {}
-    }
+    if (render) safeRenderView(appState().activeView || "admin");
   }
 
   function missingRpc(error) {
@@ -128,7 +188,11 @@
   async function submitPhotoForApproval(dataUrl) {
     const pb = backend();
     if (!pb?.rpc) throw new Error("Profile photo approval backend is unavailable.");
-    const { data, error } = await pb.rpc("submit_profile_photo_for_approval", { p_photo_data: dataUrl });
+    const { data, error } = await withTimeout(
+      pb.rpc("submit_profile_photo_for_approval", { p_photo_data: dataUrl }),
+      20000,
+      "Photo upload timed out."
+    );
     if (error) throw error;
     mergeProfile(data);
     await refreshProfiles(false);
@@ -139,11 +203,15 @@
     if (!pb?.rpc) throw new Error("Profile photo approval backend is unavailable.");
     const target = profile?.user_id || profile?.id;
     if (!target) throw new Error("Selected member is missing a user ID.");
-    const { data, error } = await pb.rpc("admin_moderate_profile_photo", {
-      p_target_user: target,
-      p_action: action,
-      p_reason: ""
-    });
+    const { data, error } = await withTimeout(
+      pb.rpc("admin_moderate_profile_photo", {
+        p_target_user: target,
+        p_action: action,
+        p_reason: ""
+      }),
+      20000,
+      "Photo approval timed out."
+    );
     if (error) throw error;
     mergeProfile(data);
     await refreshProfiles(false);
@@ -164,6 +232,7 @@
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
+    closeTransientUi();
 
     const file = input.files?.[0];
     if (!file) return;
@@ -180,7 +249,7 @@
     try {
       await submitPhotoForApproval(await readFileAsDataUrl(file));
       toast("Profile photo submitted.", "Your profile photo has been submitted for approval.");
-      try { if (typeof renderView === "function") renderView("profile"); } catch (_) {}
+      safeRenderView("profile");
     } catch (error) {
       console.error(`[${VERSION}] profile photo submit failed`, error);
       toast(
@@ -188,9 +257,11 @@
         missingRpc(error) ? "Run supabase-profile-photo-approvals.sql once in Supabase, then try again." : (error.message || "Please try again."),
         true
       );
+      closeTransientUi();
     } finally {
       input.disabled = false;
       input.value = "";
+      window.setTimeout(closeTransientUi, 80);
     }
   }, true);
 
@@ -200,18 +271,25 @@
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
+    if (busyPhotoAction) return;
+    busyPhotoAction = true;
+    closeTransientUi();
 
+    button.disabled = true;
     const email = clean(button.dataset.email || "");
     const userId = String(button.dataset.userId || "");
-    const profile = pendingPhotos().find((item) => clean(item.email) === email || String(item.user_id || item.id || "") === userId);
-    if (!profile) return toast("Photo request not found.", "Refresh registrations and try again.", true);
-
-    const action = button.dataset.photoAction === "reject" ? "reject" : "approve";
-    button.disabled = true;
     try {
+      await refreshPhotoApprovals();
+      const profile = pendingPhotos().find((item) => clean(item.email) === email || String(item.user_id || item.id || "") === userId);
+      if (!profile) {
+        toast("Photo request not found.", "The approval queue has refreshed. Please check the admin section again.", true);
+        return safeRenderView("admin", "adminProfilePhotos");
+      }
+
+      const action = button.dataset.photoAction === "reject" ? "reject" : "approve";
       await moderatePhoto(profile, action);
       toast(action === "approve" ? "Profile photo approved." : "Profile photo rejected.", "The approval queue has been updated.");
-      try { if (typeof renderView === "function") renderView("admin"); } catch (_) {}
+      safeRenderView("admin", "adminProfilePhotos");
     } catch (error) {
       console.error(`[${VERSION}] profile photo moderation failed`, error);
       toast(
@@ -219,13 +297,50 @@
         missingRpc(error) ? "Run supabase-profile-photo-approvals.sql once in Supabase, then try again." : (error.message || "Please try again."),
         true
       );
+      closeTransientUi();
     } finally {
       button.disabled = false;
+      busyPhotoAction = false;
+      window.setTimeout(closeTransientUi, 80);
     }
   }, true);
 
+  document.addEventListener("click", (event) => {
+    const shortcut = event.target.closest?.("#notificationPopover .notification-shortcut");
+    if (!shortcut) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    const text = String(shortcut.textContent || "").toLowerCase();
+    const fallbackView = text.includes("photo") || text.includes("approval") || text.includes("registration") ? "admin" : "notifications";
+    const view = shortcut.dataset.viewLink || shortcut.dataset.view || fallbackView;
+    safeRenderView(view, shortcut.dataset.targetId || (view === "admin" ? "adminProfilePhotos" : ""));
+  }, true);
+
+  function addStyles() {
+    if ($("#jpApprovalWorkflowStyles")) return;
+    const style = document.createElement("style");
+    style.id = "jpApprovalWorkflowStyles";
+    style.textContent = `
+      .workspace-header-actions{align-items:center!important}
+      #mobileMenuButton.mobile-dashboard-menu,#dashboardHomeButton.header-icon-button{box-sizing:border-box!important;align-self:center!important}
+      #dashboardHomeButton.header-icon-button{aspect-ratio:1/1!important;padding:0!important;display:grid!important;place-items:center!important}
+      @media(max-width:760px){
+        #mobileMenuButton.mobile-dashboard-menu{height:56px!important;min-height:56px!important;max-height:56px!important;border-radius:18px!important;padding:0 16px!important}
+        #dashboardHomeButton.header-icon-button{width:56px!important;height:56px!important;min-width:56px!important;max-width:56px!important;min-height:56px!important;max-height:56px!important;border-radius:18px!important}
+        .account-control-cluster{min-height:56px!important}
+      }
+      @media(min-width:761px){
+        #mobileMenuButton.mobile-dashboard-menu{height:48px!important;min-height:48px!important;max-height:48px!important}
+        #dashboardHomeButton.header-icon-button{width:48px!important;height:48px!important;min-width:48px!important;max-width:48px!important;min-height:48px!important;max-height:48px!important}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  addStyles();
   exposePending();
   refreshProfiles(false);
-  window.jpApprovalWorkflow = { version: VERSION, refreshProfiles, refreshPhotoApprovals, pendingPhotos, submitPhotoForApproval, moderatePhoto };
+  window.jpApprovalWorkflow = { version: VERSION, closeTransientUi, refreshProfiles, refreshPhotoApprovals, pendingPhotos, submitPhotoForApproval, moderatePhoto };
   console.info(`[${VERSION}] installed`);
 })();
