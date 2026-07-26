@@ -1,12 +1,13 @@
 (() => {
   "use strict";
 
-  const VERSION = "notification-freeze-startup-final-20260726a";
+  const VERSION = "notification-freeze-startup-final-20260726b";
   if (window.__jpNotificationFreezeStartupFinal === VERSION) return;
   window.__jpNotificationFreezeStartupFinal = VERSION;
 
   const $ = (selector, root = document) => root.querySelector(selector);
   let navigating = false;
+  let bellBusy = false;
 
   function clearLocks() {
     const body = document.body;
@@ -43,11 +44,40 @@
     else console.warn(`[${VERSION}] ${title}`, detail);
   }
 
+  async function closeDuplicateVisiblePhoneNotifications() {
+    try {
+      if (!("serviceWorker" in navigator)) return;
+      const registration = await navigator.serviceWorker.ready;
+      if (!registration?.getNotifications) return;
+      const notifications = await registration.getNotifications({ includeTriggered: true });
+      const seen = new Set();
+      notifications
+        .slice()
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        .forEach((notification) => {
+          const url = notification.data?.url || "";
+          const key = [notification.tag || "jp", notification.title || "", notification.body || "", url].join("|").toLowerCase();
+          if (seen.has(key)) notification.close();
+          else seen.add(key);
+        });
+    } catch (error) {
+      console.warn(`[${VERSION}] duplicate notification cleanup failed`, error);
+    }
+  }
+
   // Critical: do not replay existing Hub notification rows into the Android bar when the app opens.
   // Real phone alerts should be delivered by push/service-worker events, not by renderNotifications().
   window.maybeShowLocalPhoneNotification = async function maybeShowLocalPhoneNotificationDisabledOnRender() {
     return undefined;
   };
+
+  function safeRenderNotifications() {
+    try {
+      if (typeof window.renderNotifications === "function") window.renderNotifications();
+    } catch (error) {
+      console.warn(`[${VERSION}] renderNotifications failed`, error);
+    }
+  }
 
   function openShortcut(shortcut) {
     if (!shortcut || navigating) return;
@@ -78,7 +108,7 @@
         showError("Notification could not be opened.", "Please try again.");
       } finally {
         clearLocks();
-        window.setTimeout(() => { navigating = false; }, 200);
+        window.setTimeout(() => { navigating = false; }, 250);
       }
     }, 0);
   }
@@ -95,12 +125,17 @@
     event.stopImmediatePropagation();
 
     if (bell) {
-      const willOpen = !$("#notificationPopover")?.classList.contains("open");
+      if (bellBusy) return;
+      bellBusy = true;
+      const popover = $("#notificationPopover");
+      const willOpen = !popover?.classList.contains("open");
       clearLocks();
-      try { if (typeof window.renderNotifications === "function") window.renderNotifications(); } catch (error) { console.warn(`[${VERSION}] renderNotifications failed`, error); }
-      $("#notificationPopover")?.classList.toggle("open", willOpen);
-      $("#notificationPopover")?.setAttribute("aria-hidden", willOpen ? "false" : "true");
+      safeRenderNotifications();
+      popover?.classList.toggle("open", willOpen);
+      popover?.setAttribute("aria-hidden", willOpen ? "false" : "true");
       $("#topNotificationBell")?.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      closeDuplicateVisiblePhoneNotifications();
+      window.setTimeout(() => { bellBusy = false; }, 200);
       return;
     }
 
@@ -112,10 +147,17 @@
     openShortcut(shortcut);
   }, true);
 
-  window.addEventListener("pageshow", clearLocks);
+  window.addEventListener("pageshow", () => {
+    clearLocks();
+    closeDuplicateVisiblePhoneNotifications();
+  });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) clearLocks();
+    if (!document.hidden) {
+      clearLocks();
+      closeDuplicateVisiblePhoneNotifications();
+    }
   });
 
+  closeDuplicateVisiblePhoneNotifications();
   console.info(`[${VERSION}] installed`);
 })();
