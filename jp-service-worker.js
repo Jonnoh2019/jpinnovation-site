@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260725-notification-dedupe-1";
+const JP_SW_VERSION = "jp-sw-20260726-notification-dedupe-2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -36,12 +36,13 @@ function notificationPayload(event) {
     const view = payload.view || "notifications";
     const url = payload.url || `/hub-portal/index.html?entry=hub&view=${encodeURIComponent(view)}`;
     const body = payload.body || payload.message || "You have a new Hub update.";
+    const tag = payload.tag || stableNotificationTag({ ...payload, view, url, body });
     return {
       body,
       icon: payload.icon || jpIcon,
       image: payload.image || jpIcon,
       badge: payload.badge || jpBadge,
-      tag: payload.tag || stableNotificationTag({ ...payload, view, url, body }),
+      tag,
       renotify: false,
       requireInteraction: true,
       silent: false,
@@ -50,7 +51,7 @@ function notificationPayload(event) {
       actions: [
         { action: "open", title: "Open JP Hub" }
       ],
-      data: { url },
+      data: { url, jpTag: tag },
       priority: payload.priority || "max",
       urgency: payload.urgency || "high",
       importance: payload.importance || "max",
@@ -78,9 +79,24 @@ function notificationPayload(event) {
   }
 }
 
+async function closeDuplicateNotifications(nextPayload) {
+  if (!self.registration?.getNotifications) return;
+  const existing = await self.registration.getNotifications({ includeTriggered: true });
+  const nextKey = [nextPayload.options.tag, nextPayload.title, nextPayload.options.body, nextPayload.options.data?.url || ""].join("|").toLowerCase();
+  for (const notification of existing) {
+    const currentKey = [notification.tag, notification.title, notification.body, notification.data?.url || ""].join("|").toLowerCase();
+    if (currentKey === nextKey || notification.tag === nextPayload.options.tag) {
+      notification.close();
+    }
+  }
+}
+
 self.addEventListener("push", (event) => {
   const payload = notificationPayload(event);
-  event.waitUntil(self.registration.showNotification(payload.title, payload.options));
+  event.waitUntil((async () => {
+    await closeDuplicateNotifications(payload);
+    await self.registration.showNotification(payload.title, payload.options);
+  })());
 });
 
 self.addEventListener("notificationclick", (event) => {
