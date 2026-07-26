@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "notification-freeze-startup-final-20260726c";
+  const VERSION = "notification-freeze-startup-final-20260726d";
   if (window.__jpNotificationFreezeStartupFinal === VERSION) return;
   window.__jpNotificationFreezeStartupFinal = VERSION;
 
@@ -210,6 +210,18 @@
     }
   });
 
+  function loadFinalProfileInteraction() {
+    if (window.__jpProfileNotificationInteractionFinal) return;
+    if (document.querySelector('script[src*="profile-notification-interaction-final.js"]')) return;
+    const script = document.createElement("script");
+    script.src = "profile-notification-interaction-final.js?v=profile-notification-interaction-final-20260726a";
+    script.defer = true;
+    script.onerror = () => console.error(`[${VERSION}] final profile/menu interaction guard failed to load`);
+    document.body.appendChild(script);
+  }
+
   closeDuplicateVisiblePhoneNotifications();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", loadFinalProfileInteraction, { once: true });
+  else loadFinalProfileInteraction();
   console.info(`[${VERSION}] installed`);
 })();
