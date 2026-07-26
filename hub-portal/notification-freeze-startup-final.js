@@ -1,15 +1,27 @@
 (() => {
   "use strict";
 
-  const VERSION = "notification-freeze-startup-final-20260726b";
+  const VERSION = "notification-freeze-startup-final-20260726c";
   if (window.__jpNotificationFreezeStartupFinal === VERSION) return;
   window.__jpNotificationFreezeStartupFinal = VERSION;
 
   const $ = (selector, root = document) => root.querySelector(selector);
   let navigating = false;
   let bellBusy = false;
+  let suppressNextClickUntil = 0;
 
-  function clearLocks() {
+  function escapeValue(value = "") {
+    if (typeof window.escapeHtml === "function") return window.escapeHtml(value);
+    return String(value).replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    })[char]);
+  }
+
+  function clearLocks(options = {}) {
     const body = document.body;
     const root = document.documentElement;
     [body, root].forEach((node) => {
@@ -17,6 +29,7 @@
       node.style.overflow = "";
       node.style.pointerEvents = "";
       node.style.touchAction = "";
+      node.style.position = "";
     });
     [
       "member-profile-menu-open",
@@ -27,13 +40,16 @@
       "jp-profile-regression-lock",
       "profile-menu-open"
     ].forEach((name) => body?.classList.remove(name));
-    $("#notificationPopover")?.classList.remove("open");
-    $("#notificationPopover")?.setAttribute("aria-hidden", "true");
-    $("#topNotificationBell")?.setAttribute("aria-expanded", "false");
+    if (!options.keepNotifications) {
+      $("#notificationPopover")?.classList.remove("open");
+      $("#notificationPopover")?.setAttribute("aria-hidden", "true");
+      $("#topNotificationBell")?.setAttribute("aria-expanded", "false");
+    }
     $("#memberProfileMenu")?.classList.remove("open", "is-opening", "is-closing");
     $("#memberProfileMenu")?.setAttribute("aria-hidden", "true");
     $("#memberProfileButton")?.setAttribute("aria-expanded", "false");
     $("#dashboardSidebar")?.classList.remove("open");
+    $("#appShell")?.classList.remove("mobile-menu-open");
     $("#mobileMenuBackdrop")?.classList.remove("open");
     $("#mobileMenuButton")?.setAttribute("aria-expanded", "false");
     document.querySelectorAll(".profile-menu-backdrop,.member-profile-backdrop,.notification-backdrop,.jp-account-actions-popover,.jp-stale-overlay").forEach((node) => node.remove());
@@ -55,8 +71,7 @@
         .slice()
         .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
         .forEach((notification) => {
-          const url = notification.data?.url || "";
-          const key = [notification.tag || "jp", notification.title || "", notification.body || "", url].join("|").toLowerCase();
+          const key = [notification.tag || "jp", notification.title || "", notification.body || "", notification.data?.url || ""].join("|").toLowerCase();
           if (seen.has(key)) notification.close();
           else seen.add(key);
         });
@@ -65,18 +80,47 @@
     }
   }
 
-  // Critical: do not replay existing Hub notification rows into the Android bar when the app opens.
-  // Real phone alerts should be delivered by push/service-worker events, not by renderNotifications().
+  // Do not replay in-app notifications into the Android bar. Push notifications are handled by the service worker.
   window.maybeShowLocalPhoneNotification = async function maybeShowLocalPhoneNotificationDisabledOnRender() {
     return undefined;
   };
 
-  function safeRenderNotifications() {
+  const originalRenderNotifications = window.renderNotifications;
+  window.renderNotifications = function renderNotificationsWithoutPhoneReplay() {
     try {
-      if (typeof window.renderNotifications === "function") window.renderNotifications();
+      const user = typeof window.currentUser === "function" ? window.currentUser() : null;
+      const items = typeof window.notificationItems === "function" ? window.notificationItems(user) : [];
+      const unread = items.filter((item) => item.isNew).length;
+      const countLabel = unread > 9 ? "9+" : String(unread);
+      ["#notificationCount", "#notificationCountTop", "#profileAlertCount"].forEach((selector) => {
+        const badge = $(selector);
+        if (!badge) return;
+        badge.textContent = countLabel;
+        badge.classList.toggle("hidden", unread === 0);
+      });
+      const list = $("#notificationList");
+      if (list) {
+        list.innerHTML = items.length ? items.slice(0, 6).map((item) => `
+          <button class="notification-item notification-shortcut ${item.isNew ? "new" : ""}" data-view-link="${escapeValue(item.view || "notifications")}" data-target-id="${escapeValue(item.targetId || "")}" data-post-id="${escapeValue(item.postId || "")}" data-reply-id="${escapeValue(item.replyId || "")}" type="button">
+            <strong>${escapeValue(item.title)}</strong>
+            <span>${escapeValue(item.detail)}</span>
+          </button>
+        `).join("") : `<div class="notification-item"><strong>Nothing new</strong><span>New approvals, messages and account updates will appear here.</span></div>`;
+      }
+      if (typeof window.renderProfileChatNotifications === "function") window.renderProfileChatNotifications(items);
     } catch (error) {
-      console.warn(`[${VERSION}] renderNotifications failed`, error);
+      console.warn(`[${VERSION}] safe renderNotifications failed`, error);
+      try { originalRenderNotifications?.(); } catch (fallbackError) { console.warn(`[${VERSION}] original renderNotifications also failed`, fallbackError); }
     }
+  };
+
+  function setPopoverOpen(open) {
+    const popover = $("#notificationPopover");
+    const bell = $("#topNotificationBell");
+    if (!popover || !bell) return;
+    popover.classList.toggle("open", open);
+    popover.setAttribute("aria-hidden", open ? "false" : "true");
+    bell.setAttribute("aria-expanded", open ? "true" : "false");
   }
 
   function openShortcut(shortcut) {
@@ -113,39 +157,47 @@
     }, 0);
   }
 
-  window.addEventListener("click", (event) => {
+  function handleBell(event) {
+    if (bellBusy) return;
+    bellBusy = true;
+    suppressNextClickUntil = Date.now() + 650;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
+    const willOpen = !$("#notificationPopover")?.classList.contains("open");
+    clearLocks();
+    if (willOpen) {
+      window.renderNotifications();
+      setPopoverOpen(true);
+      closeDuplicateVisiblePhoneNotifications();
+    }
+    window.setTimeout(() => { bellBusy = false; }, 220);
+  }
+
+  function handleNotificationEvent(event) {
     const target = event.target;
     const bell = target.closest?.("#topNotificationBell");
     const close = target.closest?.("#closeNotifications");
     const shortcut = target.closest?.("#notificationPopover .notification-shortcut");
     if (!bell && !close && !shortcut) return;
-
+    if (event.type === "click" && Date.now() < suppressNextClickUntil && bell) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
-    event.stopImmediatePropagation();
+    event.stopImmediatePropagation?.();
+    if (bell) return handleBell(event);
+    if (close) return clearLocks();
+    return openShortcut(shortcut);
+  }
 
-    if (bell) {
-      if (bellBusy) return;
-      bellBusy = true;
-      const popover = $("#notificationPopover");
-      const willOpen = !popover?.classList.contains("open");
-      clearLocks();
-      safeRenderNotifications();
-      popover?.classList.toggle("open", willOpen);
-      popover?.setAttribute("aria-hidden", willOpen ? "false" : "true");
-      $("#topNotificationBell")?.setAttribute("aria-expanded", willOpen ? "true" : "false");
-      closeDuplicateVisiblePhoneNotifications();
-      window.setTimeout(() => { bellBusy = false; }, 200);
-      return;
-    }
-
-    if (close) {
-      clearLocks();
-      return;
-    }
-
-    openShortcut(shortcut);
-  }, true);
+  ["pointerdown", "click", "touchend"].forEach((type) => {
+    window.addEventListener(type, handleNotificationEvent, true);
+    document.addEventListener(type, handleNotificationEvent, true);
+  });
 
   window.addEventListener("pageshow", () => {
     clearLocks();
