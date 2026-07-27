@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260726-notification-dedupe-2";
+const JP_SW_VERSION = "jp-sw-20260727-profile-menu-single-owner";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
