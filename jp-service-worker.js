@@ -1,4 +1,4 @@
-const JP_SW_VERSION = "jp-sw-20260727-profile-menu-single-owner";
+const JP_SW_VERSION = "jp-sw-20260727-menu-freeze-owner-clean";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
