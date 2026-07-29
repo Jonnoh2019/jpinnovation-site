@@ -37,7 +37,12 @@ export function normalizeRole(profile = {}) {
 
 export function canAccess(profile, requirement = "public") {
   if (profile?.account_status === ACCOUNT_STATUS.SUSPENDED) return false;
-  return (ACCESS[requirement] || ACCESS.public).includes(normalizeRole(profile));
+  const role = normalizeRole(profile);
+  if (!(ACCESS[requirement] || ACCESS.public).includes(role)) return false;
+  if (requirement === "hub" && role === ROLES.HUB_MEMBER) {
+    return profile?.membership_status === "active";
+  }
+  return true;
 }
 
 export function homeRouteFor(profile) {
