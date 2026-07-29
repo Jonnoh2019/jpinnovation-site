@@ -10,12 +10,15 @@ Status: isolated rebuild branch only. Not deployed to production.
 - One overlay manager that owns scroll locking and cleanup.
 - One profile menu implementation that is removed from the DOM when closed.
 - One shared role-avatar implementation.
+- One Supabase session store and one profile repository.
 - Separate Admin, Hub member and Client dashboard routes.
 - Neutral denial routing: a user is returned to their own home route, never granted a higher role.
+- Missing profile rows fail closed as pending Client accounts, never as Admin.
+- Paid Hub routes require an active membership record.
 
 ## Verified
 
-- 8 automated unit/source regression tests pass.
+- 11 automated unit/source regression tests pass.
 - JavaScript syntax checks pass.
 - Profile menu opened and closed successfully 10 consecutive times.
 - Admin → My Profile navigation opens the destination directly.
@@ -25,6 +28,7 @@ Status: isolated rebuild branch only. Not deployed to production.
 - Client and Hub member attempts to open Admin routes are redirected to their own dashboards.
 - No browser warning or error logs were produced during the checks.
 - At 390 × 844 the complete profile menu remains inside the visible viewport.
+- An unauthenticated attempt to open the Admin route is redirected to the public homepage.
 
 ## Defect found and corrected during testing
 
@@ -35,6 +39,6 @@ test prevents `once: true` being reintroduced.
 
 ## Next migration gate
 
-Connect the shell to the existing Supabase session through a single auth store, then
-migrate account/profile reads behind repository modules. Production remains unchanged
-until the authenticated role tests and account-management workflows pass.
+Migrate account management and approval mutations behind typed repository modules,
+then verify role upgrades and downgrades against the isolated Supabase test workflow.
+Production remains unchanged until those workflows pass.
