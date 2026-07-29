@@ -16,7 +16,8 @@ test("profile trigger is not registered as a one-shot listener", () => {
 test("non-local environments never default to an admin role", () => {
   assert.match(
     mainSource,
-    /const role = localPreview && Object\.values\(ROLES\)\.includes\(requestedRole\)/
+    /const previewRole = localPreview && Object\.values\(ROLES\)\.includes\(requestedRole\)/
   );
-  assert.match(mainSource, /:\s*ROLES\.PUBLIC;/);
+  assert.doesNotMatch(mainSource, /:\s*ROLES\.ADMIN;/);
+  assert.match(mainSource, /new AuthStore/);
 });
