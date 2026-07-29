@@ -10,7 +10,8 @@ test("normalizes legacy role labels into canonical roles", () => {
 
 test("keeps client, Hub and Admin access separate", () => {
   assert.equal(canAccess({ role: "client", account_status: "active" }, "hub"), false);
-  assert.equal(canAccess({ role: "hub_member", account_status: "active" }, "hub"), true);
+  assert.equal(canAccess({ role: "hub_member", membership_status: "active", account_status: "active" }, "hub"), true);
+  assert.equal(canAccess({ role: "hub_member", membership_status: "pending", account_status: "active" }, "hub"), false);
   assert.equal(canAccess({ role: "hub_member", account_status: "active" }, "admin"), false);
   assert.equal(canAccess({ role: "admin", account_status: "active" }, "admin"), true);
 });
