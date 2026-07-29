@@ -35,15 +35,20 @@ export class Router {
     this.#onRoute(this.resolve());
   }
 
-  start() {
-    if (this.#started) return;
-    this.#started = true;
-    window.addEventListener("popstate", this.onPopState);
+  refresh() {
     const route = this.resolve();
     if (route.path !== window.location.pathname) {
       window.history.replaceState({ path: route.path }, "", route.path);
     }
     this.#onRoute(route);
+    return route;
+  }
+
+  start() {
+    if (this.#started) return;
+    this.#started = true;
+    window.addEventListener("popstate", this.onPopState);
+    this.refresh();
   }
 
   destroy() {
