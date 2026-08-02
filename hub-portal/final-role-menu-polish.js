@@ -317,42 +317,12 @@
     setLoggedInView.jpRoleWrapped = true;
   }
 
-  let lockY = 0;
-  function applyMenuLock() {
-    const open = document.body.classList.contains("mobile-dashboard-menu-open") || document.body.classList.contains("member-profile-menu-open");
-    if (open && !document.body.classList.contains("jp-menu-hard-lock")) {
-      lockY = window.scrollY || document.documentElement.scrollTop || 0;
-      document.body.style.top = `-${lockY}px`;
-      document.body.classList.add("jp-menu-hard-lock");
-    } else if (!open && document.body.classList.contains("jp-menu-hard-lock")) {
-      document.body.classList.remove("jp-menu-hard-lock");
-      document.body.style.top = "";
-      window.scrollTo(0, lockY);
-    }
-  }
-
-  function installMenuLock() {
-    if (document.body.dataset.jpFinalMenuLock === "1") return;
-    document.body.dataset.jpFinalMenuLock = "1";
-    new MutationObserver(applyMenuLock).observe(document.body, { attributes: true, attributeFilter: ["class"] });
-    window.addEventListener("click", (event) => {
-      if (event.target.closest?.(".sidebar .nav-link, #memberProfileMenu .profile-menu-link")) {
-        setTimeout(() => {
-          if (typeof setMobileDashboardMenuOpen === "function") setMobileDashboardMenuOpen(false);
-          if (typeof setMemberProfileMenuOpen === "function") setMemberProfileMenuOpen(false);
-          applyMenuLock();
-        }, 0);
-      }
-    }, true);
-  }
-
   function install() {
     addStyles();
     installDirectory();
     installStatusPanel();
     installSetLoggedInWrapper();
     updateHeaderRoleBadge();
-    installMenuLock();
   }
 
   window.jpAccountRoles = { ROLE_BADGES, accountRole, roleStar, rolePill, statusPanelHtml };
